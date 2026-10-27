@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mapgis-local-agent"
+version = "0.3.1"
+description = "MapGIS 6.7 native files, exact-build live state and Sky desktop binding"
+requires-python = ">=3.12"
+dependencies = ["mapgis2shp==2.6.0", "mcp>=1.20,<2", "psutil>=6"]
+
+[project.scripts]
+mapgis-agent = "mapgis_agent.cli:main"
+mapgis-agent-mcp = "mapgis_agent.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mapgis_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+

@@ -1,0 +1,1448 @@
+# SPDX-License-Identifier: Apache-2.0
+"""
+pymapgis.reader
+Provides reading support for MapGIS *.wt, *.wl, *.wp geospatial vector files.
+
+Compatible with Python 3.9+.
+"""
+
+from __future__ import annotations
+
+import datetime
+import os
+import struct
+from collections import deque
+from dataclasses import dataclass
+from typing import Any, BinaryIO, Dict, List, Optional, Tuple
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import pyproj
+import shapely
+import shapely.geometry
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+_MAGIC_POINT = b"WMAP`D22"
+_MAGIC_LINE = b"WMAP`D21"
+_MAGIC_POLYGON = b"WMAP`D23"
+
+_GEOMETRY_TYPE_MAP = {
+    _MAGIC_POINT: "POINT",
+    _MAGIC_LINE: "LINE",
+    _MAGIC_POLYGON: "POLYGON",
+}
+
+_HEADER_COUNT = 10
+# Native files carry a 16-entry index table; entries 11-16 hold auxiliary
+# sections (entry 11 = per-polygon label-box section, the display anchor
+# MapGIS's renderer requires -- 2026-10-18 finding) plus empty slots.
+_HEADER_COUNT_PHYSICAL = 16
+_HEADER_RECORD_SIZE = 10
+
+_POINT_RECORD_SIZE = 93
+_LINE_RECORD_SIZE = 57
+_ARC_RECORD_SIZE = 57
+_TOPO_RECORD_SIZE = 24
+
+# Point-record graphic parameter area (reverse-engineered, validated on
+# annotation layers of J43C001002; see docs/MapGIS_Vector_Format.md).
+# The 70 bytes after X/Y hold the display parameters MapGIS uses to draw the
+# point: byte 31 selects the point kind, and the size/angle fields follow a
+# kind-dependent layout (float32, millimetres / degrees).
+_POINT_TYPE_OFFSET = 31
+_POINT_SYMBOL_NO_OFFSET = 33  # int16 subgraph number (symbol points only)
+_POINT_TEXT_HEIGHT_OFFSET = 33  # float32 text height (text points only)
+_POINT_SIZE2_OFFSET = 37  # float32: symbol height / text width
+_POINT_SIZE3_OFFSET = 41  # float32: symbol width / text spacing
+_POINT_ANGLE_OFFSET = 45  # float32 rotation angle, degrees (CCW from east)
+# 2026-10-15 wat 明码补齐（LDZOFBB099.WT + 456.wat，1861 点逐字段等值
+# 定位；官方 WMAP9022 参数序 21/21 字段两型全对齐）：
+#   字符串点(0): ...角度@45, 中文字体u8@49, 西文字体u8@51, 字形u8@53,
+#                排列(u8@55 候选——wap 值恒 0 水平，未能从常零区细分),
+#                颜色u8@75, 图层u8@83, 透明输出(恒 0 未定位)
+#   子图点(1):   ...角度@45, 辅色(恒 0 未定位), 颜色u8@75, 线宽f32@49,
+#                图层u8@83, 透明输出(恒 0 未定位)
+# @49 按 kind 分读：字符串点=u8 中文字体 / 子图点=f32 子图笔宽。
+_POINT_FONT_ZH_OFFSET = 49   # uint8 中文字体（字符串点；子图点同址为笔宽 f32）
+_POINT_FONT_EN_OFFSET = 51   # uint8 西文字体（字符串点）
+_POINT_FONT_STYLE_OFFSET = 53  # uint8 字形（字符串点）
+_POINT_PEN_WIDTH_OFFSET = 49   # float32 子图笔宽/线宽，mm（子图点）
+_POINT_COLOR_OFFSET = 75    # uint8 颜色（两类点共用）
+_POINT_LAYER_OFFSET = 83    # uint8 图层（两类点共用）
+
+# Values of the point-kind byte at _POINT_TYPE_OFFSET.
+POINT_TYPE_TEXT = 0
+POINT_TYPE_SYMBOL = 1
+
+# Line-record graphic parameter offsets (reverse-engineered 2026-09; see
+# docs/MapGIS_Vector_Format.md).  The 39 bytes after the coordinate offset in
+# each 57-byte line record hold the line display parameters in the official
+# MapGIS order (线型号/辅助线型号/线颜色/线宽度/X系数/Y系数/辅助色/图层/
+# 透明输出 -- the trailing trio pinned 2026-10-15 against the official .wal
+# plain-text export).  Note the coefficient floats are NOT 4-byte aligned.
+_LINE_LINETYPE_OFFSET = 22  # int16 line-style number (style-library index)
+# 2026-10-15 修复：aux 实为 u8@24 + 独立标志字节 @25（原 int16 读法把
+# @25=1 并进高字节得 256，凭空造出幻影线型 (1,256)）。判别规则：
+# @25=0 → aux 有效（真双参数，如 (2,11)/(38,2)）；@25=1 → aux=0 即 (1,0)。
+_LINE_AUX_LINETYPE_OFFSET = 24  # uint8 auxiliary line-style number (低字节)
+_LINE_AUX_FLAG_OFFSET = 25     # uint8 aux 标志字节（0=正常，1=特殊/残留）
+_LINE_COLOR_OFFSET = 26  # int16 line colour index (Colorlib, 1-based)
+_LINE_WIDTH_OFFSET = 30  # float32 line width, millimetres
+_LINE_X_COEF_OFFSET = 35  # float32 pattern X coefficient (unaligned)
+_LINE_Y_COEF_OFFSET = 39  # float32 pattern Y coefficient (unaligned)
+# 2026-10-15 明码补齐：官方 wal 9 参数（线型号/辅助线型号/线色/线宽/
+# X系数/Y系数/辅助色/图层/透明输出）1538 样本逐字段等值定位 + 多幅
+# 7675 记录值域复核——@43=辅助色（0=无，色域 ⊂ Colorlib 870）、
+# @47=图层（按文件成组，0/2/3/5/10/20…）、@48=透明输出（库内全 0=否）。
+_LINE_AUX_COLOR_OFFSET = 43  # int16 auxiliary colour index (Colorlib, 0=无)
+_LINE_LAYER_OFFSET = 47      # uint8 图层号
+_LINE_TRANSPARENT_OFFSET = 48  # uint8 透明输出（0=否，1=白色填充透明）
+
+# Polygon graphic parameters live in the dedicated header section head_9
+# (index 8): one 40-byte record per polygon, first record empty, record i+1
+# corresponding to polygon ID i+1.
+#
+# 布局 v2（2026-10-22 用户 MapGIS 区参数对话框四次对账定案，取代旧
+# 2026-10-14 "u8@5=填充色/@6=图案/u16@9=图案色" 读法——后者三处全错）：
+#   u8  @1   class（区图层类码；0 令填充不可显示）
+#   u8  @5/@6/@7  field5/field6/field7（语义未裁定挂账；@7 为按层标志
+#                0/1/2/3/15；@6 呈岩性分带：沉积 26-91/侵入 128-132/
+#                变质 239-246）
+#   u16 @9   填充颜色（色号，值域 2..1465；>870 为用户扩展色域）
+#   u16 @13  填充图案号（Fillgrph 图案库索引；@12 恒 0）
+#   u16 @17/@21  图案高度/宽度（mm）= f32 位型高16位（值<<16 还原；
+#                低16位字节实测恒 0）
+#   u8  @23  图案颜色         u8  @30  图层
+# 对话框锚（CHFCAC→MapGIS 读数→字节）：
+#   BB001 000433: 填充色1046、其他0 → @9=1046 且 @11-39 全零 ✓
+#   BB001 000447: 填充色914、其他0 → @9=914 ✓
+#   BB003 000019: 填充1226/图案252/高3宽3/图案色9/图层3
+#                 → @9=1226 @13=252 @17=3.0 @21=3.0 @23=9 @30=3 全中 ✓
+#   BB003 000016: 填充1239/图案293/高4宽4/图案色9/图层3
+#                 → @9=1239 @13=293 @17=4.0 @21=4.0 @23=9 @30=3 全中 ✓
+# 旧 2026-10-15 wap 证据曾把 u16@9 标为图案色——wap f0 实为填充色字段。
+# 数据丢失教训：2026-03-12 重写的 jws 三幅（LDLYAAE002/BB003/BB009）
+# 因旧 writer 只回写 @5/@6/@9、@12-39 清零，图案层全部丢失；原文件为
+# 2019-10-31 的 .WP~ 备份。
+_POLYGON_PARAM_SECTION = 8
+_POLYGON_PARAM_RECORD_SIZE = 40
+_POLY_CLASS_OFFSET = 1        # uint8 class code（0=显示闸门）
+_POLY_FIELD5_OFFSET = 5       # uint8 语义未裁定（挂账）
+_POLY_FIELD6_OFFSET = 6       # uint8 语义未裁定（岩性分带特征）
+_POLY_FIELD7_OFFSET = 7       # uint8 按层标志（0/1/2/3/15）
+_POLY_FILL_COLOR_OFFSET = 9   # uint16 fill colour index（低字节@9）
+_POLY_PATTERN_OFFSET = 13     # uint16 fill-pattern number（Fillgrph 索引；
+                              # @12 恒 0——面16=293(25 01)/面19=252(fc 00)
+                              # 两锚定位 @13-14 LE）
+_POLY_PATTERN_HEIGHT_OFFSET = 17  # uint16 = f32 位型高16位（图案高度 mm）
+_POLY_PATTERN_WIDTH_OFFSET = 21   # uint16 = f32 位型高16位（图案宽度 mm）
+_POLY_PATTERN_COLOR_OFFSET = 23   # uint8 pattern colour index
+_POLY_LAYER_OFFSET = 30       # uint8 layer number
+
+# MapGIS stores geometry type codes in the attribute table.
+_ATTR_TYPE_STRING = 0
+_ATTR_TYPE_BYTE = 1
+_ATTR_TYPE_SHORT = 2
+_ATTR_TYPE_INT = 3
+_ATTR_TYPE_FLOAT = 4
+_ATTR_TYPE_DOUBLE = 5
+_ATTR_TYPE_DATE = 6
+_ATTR_TYPE_TIME = 7
+
+# CRS parameter byte offsets in the file header.
+_CRS_PROJECTION_OFFSET = 109
+_CRS_ELLIPSOID_OFFSET = 110
+_CRS_SCALE_OFFSET = 143
+_CRS_CENTRAL_MERIDIAN_OFFSET = 151
+_CRS_STD_LAT_OFFSET = 175
+
+# Which of the 10 header sections holds the attribute table.
+_ATTR_HEADER_INDEX = {
+    "POINT": 2,
+    "LINE": 2,
+    "POLYGON": 9,
+}
+
+# PROJ4 ellipsoid strings indexed by MapGIS ellipsoid code.
+_ELLIPSOID_PROJ4 = {
+    1: "+ellps=krass +towgs84=15.8,-154.4,-82.3,0,0,0,0 +units=m +no_defs",
+    2: "+a=6378140 +b=6356755.288157528",
+    7: "+datum=WGS84",
+    9: "+ellps=WGS72",
+    10: "+ellps=aust_SA +towgs84=-117.808,-51.536,137.784,0.303,0.446,0.234,-0.29",
+    11: "+ellps=aust_SA +towgs84=-134,-48,149,0,0,0,0",
+    16: "+ellps=krass",
+    116: "+ellps=clrk80 +towgs84=-166,-15,204,0,0,0,0",
+    "cgcs2000": "+ellps=GRS80",
+}
+
+# struct format characters for little-endian decoding.
+_STRUCT_FORMATS = {
+    _ATTR_TYPE_BYTE: "B",
+    _ATTR_TYPE_SHORT: "h",
+    _ATTR_TYPE_INT: "i",
+    _ATTR_TYPE_FLOAT: "f",
+    _ATTR_TYPE_DOUBLE: "d",
+}
+
+_ATTR_TYPE_NAMES = {
+    _ATTR_TYPE_STRING: "string",
+    _ATTR_TYPE_BYTE: "byte",
+    _ATTR_TYPE_SHORT: "short integer",
+    _ATTR_TYPE_INT: "integer",
+    _ATTR_TYPE_FLOAT: "float",
+    _ATTR_TYPE_DOUBLE: "double",
+    _ATTR_TYPE_DATE: "date",
+    _ATTR_TYPE_TIME: "time",
+}
+
+# Little-endian layout of one 39-byte field descriptor:
+#   name(20s) type(B) offset(i) pad(2x) length(h) pad(4x) decimals(h) pad(4x)
+# Standard (no-alignment) byte order keeps the fields at their documented offsets.
+_FIELD_DESCRIPTOR_STRUCT = struct.Struct("<20sBi2xh4xh4x")
+assert _FIELD_DESCRIPTOR_STRUCT.size == 39
+
+
+# ---------------------------------------------------------------------------
+# Exceptions
+# ---------------------------------------------------------------------------
+
+
+class MapGISError(Exception):
+    """Base exception for MapGIS reader errors."""
+
+
+class InvalidFileError(MapGISError):
+    """Raised when the file does not appear to be a supported MapGIS file."""
+
+    def __str__(self) -> str:
+        return "cannot detect the file's geometry type"
+
+
+class InvalidDirectoryError(MapGISError):
+    """Raised when a required directory or project file is missing."""
+
+
+class TopoError(MapGISError):
+    """Raised when polygon topology cannot be reconstructed."""
+
+    def __str__(self) -> str:
+        return "topo error in this wp file"
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _decode_gbk(buf: bytes) -> str:
+    """Decode a byte buffer as GBK, stripping trailing nulls.
+
+    If the buffer contains invalid GBK bytes, decode up to the first invalid
+    byte. This matches the behaviour of the original implementation.
+    """
+    buf = buf.split(b"\x00", 1)[0]
+    try:
+        return buf.decode("gbk")
+    except UnicodeDecodeError as exc:
+        return buf[: exc.start].decode("gbk")
+
+
+def _raw_dms_to_degrees(raw: float) -> float:
+    """Convert a MapGIS DMS-encoded double to decimal degrees.
+
+    The value is stored as ``DDDMMSS.sss`` (degrees, minutes, seconds) where
+    the integer part packs degrees, minutes, and seconds and the fractional
+    part holds sub-second precision. Arithmetic decoding avoids the rounding
+    and sign pitfalls of a string-based approach: it preserves fractional
+    seconds (lost when formatting with ``:.0f``) and handles western
+    longitudes (negative values) and short values without zero-padding.
+    """
+    sign = -1.0 if raw < 0 else 1.0
+    a = abs(raw)
+    # Split off the MMSS.sss tail; the remaining whole is DDD * 10000.
+    ms = a % 10000.0
+    degrees = (a - ms) / 10000.0
+    minutes = int(ms // 100.0)
+    seconds = ms - minutes * 100.0
+    return sign * (degrees + minutes / 60.0 + seconds / 3600.0)
+
+
+def _read_struct(file_obj: BinaryIO, fmt: str) -> Tuple[Any, ...]:
+    """Read *size* bytes from *file_obj* and unpack with struct."""
+    size = struct.calcsize(fmt)
+    buf = file_obj.read(size)
+    if len(buf) < size:
+        raise MapGISError(f"unexpected end of file: needed {size} bytes, got {len(buf)}")
+    return struct.unpack(fmt, buf)
+
+# ---------------------------------------------------------------------------
+# Attribute table
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class _Field:
+    """Descriptor for one column in the MapGIS attribute table."""
+
+    name: str
+    type_code: int
+    offset: int
+    length: int
+    decimals: int
+
+    @property
+    def type_name(self) -> str:
+        return _ATTR_TYPE_NAMES.get(self.type_code, f"unknown({self.type_code})")
+
+
+def _decode_attribute_field(record: bytes, field: _Field) -> Any:
+    """Decode a single attribute field from a raw record."""
+    if field.type_code == _ATTR_TYPE_STRING:
+        return _decode_gbk(record[field.offset : field.offset + field.length])
+
+    if field.type_code == _ATTR_TYPE_DATE:
+        chunk = record[field.offset : field.offset + max(field.length, 4)]
+        if len(chunk) < 4:
+            return None
+        year = struct.unpack("<h", chunk[:2])[0]
+        month = chunk[2]
+        day = chunk[3]
+        # Source data occasionally carries a zero month/day for missing dates;
+        # fall back to None instead of raising ValueError mid-parse.
+        try:
+            return datetime.date(year, month, day)
+        except (ValueError, OverflowError):
+            return None
+
+    if field.type_code == _ATTR_TYPE_TIME:
+        chunk = record[field.offset : field.offset + max(field.length, 10)]
+        if len(chunk) < 10:
+            return None
+        hour = chunk[0]
+        minute = chunk[1]
+        seconds = struct.unpack("<d", chunk[2:10])[0]
+        sec_whole = int(np.floor(seconds))
+        microsec = int(1_000_000 * (seconds - sec_whole))
+        try:
+            return datetime.time(hour, minute, sec_whole, microsec)
+        except (ValueError, OverflowError):
+            return None
+
+    fmt = _STRUCT_FORMATS.get(field.type_code)
+    if fmt is None:
+        return None
+    size = struct.calcsize(f"<{fmt}")
+    chunk = record[field.offset : field.offset + size]
+    return struct.unpack(f"<{fmt}", chunk)[0]
+
+
+def _read_attribute_records(
+    file_obj: BinaryIO,
+    record_count: int,
+    record_length: int,
+    fields: List[_Field],
+) -> pd.DataFrame:
+    """Read attribute records assuming the file position is at the first record."""
+    # Skip the empty first record (MapGIS convention).
+    file_obj.read(record_length)
+
+    if record_count <= 1:
+        return pd.DataFrame(columns=[field.name for field in fields])
+
+    # Read all remaining records in one go, then split into fixed-length views.
+    total_bytes = (record_count - 1) * record_length
+    records_buf = file_obj.read(total_bytes)
+    if len(records_buf) < total_bytes:
+        usable = len(records_buf) // record_length
+        records_buf = records_buf[: usable * record_length]
+    else:
+        usable = record_count - 1
+
+    records: List[List[Any]] = []
+    for i in range(usable):
+        start = i * record_length
+        record = records_buf[start : start + record_length]
+        records.append([_decode_attribute_field(record, field) for field in fields])
+
+    return pd.DataFrame(records, columns=[field.name for field in fields])
+
+
+def _read_attribute_header(
+    file_obj: BinaryIO, start: int
+) -> Tuple[int, int, List[_Field]]:
+    """Read the attribute table header and return (record_count, record_length, fields).
+
+    The 322-byte fixed prefix is followed by field_count (int16), record_count
+    (int32) and record_length (int16), then 18 bytes of padding, so the field
+    descriptors begin at offset 348 within the attribute section. The prefix
+    and descriptors are read in two bulk reads and unpacked structurally,
+    avoiding one syscall per field as the previous per-read loop did.
+    """
+    file_obj.seek(start)
+
+    # 322 (prefix) + 2 + 4 + 2 + 18 (padding) = 348 bytes precede the descriptors.
+    head = file_obj.read(348)
+    if len(head) < 348:
+        raise MapGISError("attribute header too short")
+    field_count, record_count, record_length = struct.unpack_from("<hih", head, 322)
+
+    if field_count <= 0:
+        return record_count, record_length, []
+
+    desc_size = _FIELD_DESCRIPTOR_STRUCT.size
+    desc_buf = file_obj.read(field_count * desc_size)
+    n_fields = len(desc_buf) // desc_size
+
+    fields: List[_Field] = []
+    for i in range(n_fields):
+        name_raw, type_code, offset, length, decimals = (
+            _FIELD_DESCRIPTOR_STRUCT.unpack_from(desc_buf, i * desc_size)
+        )
+        if type_code in _ATTR_TYPE_NAMES:
+            fields.append(
+                _Field(_decode_gbk(name_raw), type_code, offset, length, decimals)
+            )
+
+    return record_count, record_length, fields
+
+
+# ---------------------------------------------------------------------------
+# Coordinate reference system
+# ---------------------------------------------------------------------------
+
+
+def _read_crs(file_obj: BinaryIO) -> Tuple[Any, float]:
+    """Read the coordinate reference system and geometry scale factor.
+
+    Returns
+    -------
+    crs : pyproj.CRS or str
+        The detected CRS, or an empty string if no valid CRS was found.
+    scale : float
+        Factor applied to raw coordinates to obtain map units.
+    """
+    file_obj.seek(_CRS_PROJECTION_OFFSET)
+    projection_code = ord(file_obj.read(1))
+
+    file_obj.seek(_CRS_ELLIPSOID_OFFSET)
+    ellipsoid_code = ord(file_obj.read(1))
+
+    file_obj.seek(_CRS_SCALE_OFFSET)
+    scale = _read_struct(file_obj, "<d")[0]
+
+    proj_name = {5: "tmerc", 2: "aea", 3: "lcc"}.get(projection_code)
+    ellipsoid = _ELLIPSOID_PROJ4.get(ellipsoid_code)
+
+    if ellipsoid is None or scale == 0:
+        return "", 1.0
+
+    # Longitude/latitude (unprojected).
+    if projection_code == 0:
+        crs = pyproj.CRS(f"+proj=longlat {ellipsoid} +no_defs")
+        return crs, scale
+
+    if proj_name is None:
+        return "", 1.0
+
+    # Projected CRS: scale is stored in mm/map-unit; convert to m.
+    scale = scale / 1000.0
+
+    file_obj.seek(_CRS_CENTRAL_MERIDIAN_OFFSET)
+    central_meridian = _read_struct(file_obj, "<d")[0]
+    central_meridian = _raw_dms_to_degrees(central_meridian)
+
+    if projection_code == 5:  # Transverse Mercator
+        crs = pyproj.CRS(
+            f"+proj={proj_name} +lat_0=0 +lon_0={central_meridian} +k=1 "
+            f"+x_0=500000 +y_0=0 {ellipsoid} +units=m +no_defs"
+        )
+        return crs, scale
+
+    if projection_code in (2, 3):  # Albers / Lambert
+        file_obj.seek(_CRS_STD_LAT_OFFSET)
+        lat0 = _read_struct(file_obj, "<d")[0]
+        lat1 = _read_struct(file_obj, "<d")[0]
+        lat2 = _read_struct(file_obj, "<d")[0]
+        x_0 = _read_struct(file_obj, "<d")[0]
+        y_0 = _read_struct(file_obj, "<d")[0]
+
+        lat_0 = _raw_dms_to_degrees(lat0)
+        lat_1 = _raw_dms_to_degrees(lat1)
+        lat_2 = _raw_dms_to_degrees(lat2)
+
+        crs = pyproj.CRS(
+            f"+proj={proj_name} +lat_0={lat_0} +lon_0={central_meridian} "
+            f"+lat_1={lat_1} +lat_2={lat_2} +x_0={x_0} +y_0={y_0} "
+            f"{ellipsoid} +units=m +no_defs"
+        )
+        return crs, scale
+
+    return "", 1.0
+
+
+# ---------------------------------------------------------------------------
+# Geometry parsing
+# ---------------------------------------------------------------------------
+
+
+def _read_header_entries(
+    file_obj: BinaryIO, data_start: int, count: int = _HEADER_COUNT
+) -> List[Tuple[int, int]]:
+    """Read *count* header section entries and return (start, volume) tuples.
+
+    Callers that only need the ten logical sections use the default; the
+    physical table has 16 entries (entry 11 carries the per-polygon label-box
+    section), so polygon parsing requests all of them.
+    """
+    file_obj.seek(data_start)
+    entries: List[Tuple[int, int]] = []
+    for _ in range(count):
+        buf = file_obj.read(_HEADER_RECORD_SIZE)
+        if len(buf) < 8:
+            raise MapGISError("header entry too short")
+        start, volume = struct.unpack("<2i", buf[:8])
+        entries.append((start, volume))
+    return entries
+
+
+def _read_points(
+    file_obj: BinaryIO, start: int, section_size: int, scale: float
+) -> List[shapely.geometry.Point]:
+    """Read point geometries from the point section.
+
+    PDF article: each point record is 93 bytes; the first record is empty.
+    X coordinate is stored at bytes 7-14 and Y coordinate at bytes 15-22.
+    """
+    file_obj.seek(start)
+    buf = file_obj.read(section_size)
+    count = max(0, len(buf) // _POINT_RECORD_SIZE - 1)
+    if count == 0:
+        return []
+
+    # Structured layout of the 93-byte point record.
+    dtype = np.dtype([
+        ("_pad1", "u1", 7),
+        ("x", "<d"),
+        ("y", "<d"),
+        ("_pad2", "u1", 70),
+    ])
+    records = np.frombuffer(buf, dtype=dtype, offset=_POINT_RECORD_SIZE, count=count)
+    coords = np.column_stack([records["x"], records["y"]]) * scale
+    return [shapely.geometry.Point(xy) for xy in coords]
+
+
+_POINT_PARAM_COLUMNS = ["point_type", "symbol_no", "height", "width", "spacing",
+                       "angle", "color", "layer", "pen_width",
+                       "font_zh", "font_en", "font_style"]
+
+
+def _read_point_params(
+    file_obj: BinaryIO, start: int, section_size: int
+) -> pd.DataFrame:
+    """Decode the graphic-parameter area of point records.
+
+    Byte 31 of each 93-byte record distinguishes text annotations
+    (``POINT_TYPE_TEXT``) from subgraph symbols (``POINT_TYPE_SYMBOL``).  The
+    remaining fields share the same offsets but their meaning depends on the
+    kind:
+
+    ============= ============================ ============================
+    column        symbol point                 text point
+    ============= ============================ ============================
+    ``symbol_no`` int16 subgraph number @33    always 0
+    ``height``    float32 glyph height @37     float32 text height @33 (mm)
+    ``width``     float32 glyph width @41      float32 text width @37 (mm)
+    ``spacing``   NaN                          float32 char spacing @41 (mm)
+    ``angle``     float32 rotation @45, degrees counter-clockwise from east
+    ============= ============================ ============================
+
+    The angle convention is validated empirically: fault-symbol rotations in
+    J43C001002 annotation layers are parallel (mod 180) to the tangent angle
+    computed as ``atan2(dy, dx)`` of the associated line.
+
+    These parameters are *not* self-contained: ``symbol_no`` is an index into
+    the MapGIS system symbol library (Slib) of the originating MapGIS
+    installation, and the glyph definitions are not stored in the file.  The
+    same number may map to different glyphs under a different or customised
+    library, and what a rotation of zero means depends on the glyph design.
+    Interpret the values only in the context of the symbol library (and
+    library version) that produced the data.
+
+    The remaining parameters were pinned 2026-10-15 against the official
+    .wat plain-text export (LDZOFBB099.WT + 456.wat, 1861 points with
+    per-field exact equality; official WMAP9022 parameter order aligned
+    field-by-field for both point kinds): the shared tail ``color``
+    (uint8 @75) and ``layer`` (uint8 @83), plus the kind-dependent
+    ``font_zh``/``font_en``/``font_style`` (text points, uint8 @49/@51/@53)
+    and ``pen_width`` (symbol points, float32 @49, mm).  This resolves the
+    former open item on the subgraph colour field.  Caveat registered
+    honestly: the stored colour is the native MapGIS display value and may
+    differ from the colours a rendering pipeline adjudicates for itself
+    (the cross-sheet sample shows e.g. attitude symbols stored
+    yellow/violet where the renderer draws black) -- read it as data, not
+    as a style decree.  The 辅色 (symbol aux colour), 排列 (text
+    arrangement) and 透明输出 offsets stay unpinned: their .wat values
+    are constant zero in every sample, so no offset could be separated
+    from the all-zero tail bytes.
+    """
+    file_obj.seek(start)
+    buf = file_obj.read(section_size)
+    count = max(0, len(buf) // _POINT_RECORD_SIZE - 1)
+    if count == 0:
+        return pd.DataFrame(columns=_POINT_PARAM_COLUMNS)
+
+    # Overlapping views of the kind-dependent fields: symbol_no (int16 @33)
+    # overlaps the text height (float32 @33), so both are decoded for every
+    # record and selected per record afterwards.  The same applies to the
+    # @49 pair (text 中文字体 u8 / symbol 子图笔宽 f32) and to the tail
+    # fields colour @75 / layer @83, which are shared by both kinds (pinned
+    # 2026-10-15 against the official .wat plain-text export; see the
+    # offset constants above for the full field order).
+    dtype = np.dtype({
+        "names": ["point_type", "symbol_no", "f33", "f37", "f41", "angle",
+                  "pen49", "font_zh", "font_en", "font_style",
+                  "color", "layer"],
+        "formats": ["u1", "<i2", "<f4", "<f4", "<f4", "<f4",
+                    "<f4", "u1", "u1", "u1", "u1", "u1"],
+        "offsets": [
+            _POINT_TYPE_OFFSET,
+            _POINT_SYMBOL_NO_OFFSET,
+            _POINT_TEXT_HEIGHT_OFFSET,
+            _POINT_SIZE2_OFFSET,
+            _POINT_SIZE3_OFFSET,
+            _POINT_ANGLE_OFFSET,
+            _POINT_PEN_WIDTH_OFFSET,
+            _POINT_FONT_ZH_OFFSET,
+            _POINT_FONT_EN_OFFSET,
+            _POINT_FONT_STYLE_OFFSET,
+            _POINT_COLOR_OFFSET,
+            _POINT_LAYER_OFFSET,
+        ],
+        "itemsize": _POINT_RECORD_SIZE,
+    })
+    records = np.frombuffer(buf, dtype=dtype, offset=_POINT_RECORD_SIZE, count=count)
+
+    is_symbol = records["point_type"] == POINT_TYPE_SYMBOL
+    return pd.DataFrame(
+        {
+            "point_type": records["point_type"].astype(np.int64),
+            "symbol_no": np.where(is_symbol, records["symbol_no"], 0).astype(np.int64),
+            "height": np.where(is_symbol, records["f37"], records["f33"]),
+            "width": np.where(is_symbol, records["f41"], records["f37"]),
+            "spacing": np.where(is_symbol, np.nan, records["f41"]),
+            "angle": records["angle"].astype(np.float64),
+            "color": records["color"].astype(np.int64),
+            "layer": records["layer"].astype(np.int64),
+            "pen_width": np.where(is_symbol, records["pen49"], np.nan),
+            "font_zh": np.where(is_symbol, np.nan, records["font_zh"]),
+            "font_en": np.where(is_symbol, np.nan, records["font_en"]),
+            "font_style": np.where(is_symbol, np.nan, records["font_style"]),
+        },
+        columns=_POINT_PARAM_COLUMNS,
+    )
+
+
+def _read_arc_index(
+    file_obj: BinaryIO, start: int, section_size: int, record_size: int
+) -> List[Tuple[int, int]]:
+    """Read an arc index section and return (point_count, point_offset) pairs.
+
+    PDF article: each arc/line index record is 57 bytes; the first record is
+    empty.  The anchor point count is at bytes 10-13 and the coordinate offset
+    (relative to the coordinate section start) is at bytes 14-17.
+    """
+    file_obj.seek(start)
+    buf = file_obj.read(section_size)
+    count = max(0, len(buf) // record_size - 1)
+    if count == 0:
+        return []
+
+    dtype = np.dtype([
+        ("_pad1", "u1", 10),
+        ("point_count", "<i4"),
+        ("point_offset", "<i4"),
+        ("_pad2", "u1", record_size - 18),
+    ])
+    records = np.frombuffer(buf, dtype=dtype, offset=record_size, count=count)
+    return list(zip(records["point_count"].tolist(), records["point_offset"].tolist()))
+
+
+def _read_lines(
+    file_obj: BinaryIO,
+    start: int,
+    section_size: int,
+    coord_start: int,
+    coord_size: int,
+    scale: float,
+) -> List[shapely.geometry.LineString]:
+    """Read line geometries from the line/arc index and coordinate sections.
+
+    PDF article: coordinates are stored sequentially as double-precision XY
+    pairs (16 bytes per pair).  The arc index gives the byte offset and point
+    count for each line.
+    """
+    index = _read_arc_index(file_obj, start, section_size, _LINE_RECORD_SIZE)
+    if not index:
+        return []
+
+    file_obj.seek(coord_start)
+    coord_buf = file_obj.read(coord_size)
+
+    # NOTE: ``point_offset`` is a byte offset into the coordinate section and is
+    # not guaranteed to be 8-byte aligned (MapGIS coordinate blocks can start at
+    # arbitrary byte positions). Decode each arc from its own buffer slice
+    # instead of treating the whole section as an aligned double array.
+    geoms: List[shapely.geometry.LineString] = []
+    for point_count, point_offset in index:
+        if point_count < 0 or point_offset < 0:
+            raise MapGISError(
+                f"invalid arc index: point_count={point_count}, point_offset={point_offset}"
+            )
+        nbytes = point_count * 16
+        raw = coord_buf[point_offset : point_offset + nbytes]
+        if len(raw) < nbytes:
+            raise MapGISError(
+                f"coordinate block out of range: offset={point_offset}, "
+                f"points={point_count}, section_size={len(coord_buf)}"
+            )
+        coords = np.frombuffer(raw, dtype="<d").reshape(-1, 2) * scale
+        geoms.append(shapely.geometry.LineString(coords))
+    return geoms
+
+
+_LINE_PARAM_COLUMNS = ["linetype", "aux_linetype", "aux_flag", "color", "width",
+                       "x_coef", "y_coef", "aux_color", "layer", "transparent"]
+
+
+def _read_line_params(
+    file_obj: BinaryIO, start: int, section_size: int
+) -> pd.DataFrame:
+    """Decode the graphic-parameter area of line records.
+
+    Each 57-byte line index record carries the line display parameters after
+    the coordinate offset, in the official MapGIS order: the int16 style
+    number at 22 (index into the MapGIS line-style library, e.g. 1 = plain
+    solid line), the int16 auxiliary style number at 24 (辅助线型号, the
+    second record overlaid per the "线型号-辅助线型号" pair), the int16
+    colour index at 26 (Colorlib, 1-based; pinned 2026-10-14: every feature
+    of LYGREBA001 carries the constant 194 = RGB(0,255,175), matching the
+    user-adjudicated 青绿 of pair ("211","0"); across all 18 Kurgan line
+    layers every @26 value lies in [1, 546], i.e. inside the 870-entry
+    Colorlib), the float32 width in
+    millimetres at 30, and the float32 pattern coefficients at 35 (X) and
+    39 (Y) -- note the latter two are deliberately unaligned in the record.
+    The trailing three parameters were pinned 2026-10-15 against the
+    official .wal plain-text export (9-parameter line, ground-truth values
+    for every feature): the int16 auxiliary colour at 43 (辅助色,
+    Colorlib index, 0 = 无), the uint8 layer number at 47 (图层), and the
+    uint8 transparent-output flag at 48 (透明输出, 0 = 否).
+    Across all 18 Kurgan line layers every @26 value lies in [1, 546], i.e.
+    inside the 870-entry Colorlib.
+
+    Like point parameters, the style numbers reference the external MapGIS
+    line-style library and are not self-contained.
+    """
+    file_obj.seek(start)
+    buf = file_obj.read(section_size)
+    count = max(0, len(buf) // _LINE_RECORD_SIZE - 1)
+    if count == 0:
+        return pd.DataFrame(columns=_LINE_PARAM_COLUMNS)
+
+    dtype = np.dtype({
+        "names": ["linetype", "aux_linetype", "aux_flag", "color", "width",
+                  "x_coef", "y_coef", "aux_color", "layer", "transparent"],
+        "formats": ["<i2", "<u1", "<u1", "<i2", "<f4", "<f4", "<f4",
+                    "<i2", "<u1", "<u1"],
+        "offsets": [
+            _LINE_LINETYPE_OFFSET,
+            _LINE_AUX_LINETYPE_OFFSET,
+            _LINE_AUX_FLAG_OFFSET,
+            _LINE_COLOR_OFFSET,
+            _LINE_WIDTH_OFFSET,
+            _LINE_X_COEF_OFFSET,
+            _LINE_Y_COEF_OFFSET,
+            _LINE_AUX_COLOR_OFFSET,
+            _LINE_LAYER_OFFSET,
+            _LINE_TRANSPARENT_OFFSET,
+        ],
+        "itemsize": _LINE_RECORD_SIZE,
+    })
+    records = np.frombuffer(buf, dtype=dtype, offset=_LINE_RECORD_SIZE, count=count)
+    return pd.DataFrame(
+        {
+            "linetype": records["linetype"].astype(np.int64),
+            "aux_linetype": records["aux_linetype"].astype(np.int64),
+            "aux_flag": records["aux_flag"].astype(np.int64),
+            "color": records["color"].astype(np.int64),
+            "width": records["width"].astype(np.float64),
+            "x_coef": records["x_coef"].astype(np.float64),
+            "y_coef": records["y_coef"].astype(np.float64),
+            "aux_color": records["aux_color"].astype(np.int64),
+            "layer": records["layer"].astype(np.int64),
+            "transparent": records["transparent"].astype(np.int64),
+        },
+        columns=_LINE_PARAM_COLUMNS,
+    )
+
+
+_POLYGON_PARAM_COLUMNS = [
+    "class",
+    "fill_color",
+    "pattern",
+    "pattern_height",
+    "pattern_width",
+    "pattern_color",
+    "layer",
+    "field5",
+    "field6",
+    "field7",
+]
+
+
+def _read_polygon_params(
+    file_obj: BinaryIO, start: int, section_size: int
+) -> pd.DataFrame:
+    """Decode per-polygon graphic parameters from the head_9 section.
+
+    The section holds one 40-byte record per polygon (first record empty);
+    record *i* (0-based after the empty record) belongs to polygon ID *i + 1*.
+    布局 v2（2026-10-22 用户 MapGIS 区参数对话框四次对账定案）：
+
+    - uint8  @1: class（区图层类码；0 令填充不可显示）
+    - uint8  @5/@6/@7: field5/field6/field7（语义未裁定挂账；@7 按层标志
+      0/1/2/3/15；@6 呈岩性分带：沉积 26-91/侵入 128-132/变质 239-246）
+    - uint16 @9: 填充颜色（值域 2..1465；>870 为用户扩展色域）
+    - uint16 @12: 填充图案号（Fillgrph 图案库索引）
+    - float32 @17/@21: 图案高度/宽度（mm）
+    - uint8  @23: 图案颜色
+    - uint8  @30: 图层
+
+    对话框锚（CHFCAC→MapGIS 读数→字节全中）：
+    BB001 000433→填充1046/@9=1046、000447→914/@9=914；
+    BB003 000019→填充1226/图案252/高3宽3/图案色9/图层3→
+    @9=1226 @13=252 @17=3.0 @21=3.0 @23=9 @30=3；
+    000016→填充1239/图案293/高4宽4→@9=1239 @13=293 @17=4.0。
+    旧 2026-10-14 u8 读法（@5=填充色/@6=图案/@9=图案色）三处全错；
+    2026-09 int16 错位读法更是 <<8 垃圾。图案高宽为零时 MapGIS 不显示
+    花纹（"其他图形参数为0" 对话框实态）。colour/pattern 号引用外部
+    MapGIS 库（Colorlib/Fillgrph），非自包含。
+    """
+    file_obj.seek(start)
+    buf = file_obj.read(section_size)
+    count = max(0, len(buf) // _POLYGON_PARAM_RECORD_SIZE - 1)
+    if count == 0:
+        return pd.DataFrame(columns=_POLYGON_PARAM_COLUMNS)
+
+    dtype = np.dtype({
+        "names": [
+            "class", "fill_color", "pattern", "pattern_height",
+            "pattern_width", "pattern_color", "layer",
+            "field5", "field6", "field7",
+        ],
+        "formats": ["<u1", "<u2", "<u2", "<u2", "<u2", "<u1", "<u1",
+                    "<u1", "<u1", "<u1"],
+        "offsets": [
+            _POLY_CLASS_OFFSET,
+            _POLY_FILL_COLOR_OFFSET,
+            _POLY_PATTERN_OFFSET,
+            _POLY_PATTERN_HEIGHT_OFFSET,
+            _POLY_PATTERN_WIDTH_OFFSET,
+            _POLY_PATTERN_COLOR_OFFSET,
+            _POLY_LAYER_OFFSET,
+            _POLY_FIELD5_OFFSET,
+            _POLY_FIELD6_OFFSET,
+            _POLY_FIELD7_OFFSET,
+        ],
+        "itemsize": _POLYGON_PARAM_RECORD_SIZE,
+    })
+    records = np.frombuffer(
+        buf, dtype=dtype, offset=_POLYGON_PARAM_RECORD_SIZE, count=count
+    )
+    # 图案高/宽：u16 存 f32 位型高 16 位（值<<16 还原；如 0x4040→3.0mm）。
+    # 低 16 位字节实测恒 0；@23 图案色独立成字节（若按整 f32 读 @21-24
+    # 会把图案色字节并进尾数得 2.140625——对话框锚排斥该读法）。
+    return pd.DataFrame(
+        {
+            "class": records["class"].astype(np.int64),
+            "fill_color": records["fill_color"].astype(np.int64),
+            "pattern": records["pattern"].astype(np.int64),
+            "pattern_height": (
+                records["pattern_height"].astype(np.uint32) << 16
+            ).view(np.float32),
+            "pattern_width": (
+                records["pattern_width"].astype(np.uint32) << 16
+            ).view(np.float32),
+            "pattern_color": records["pattern_color"].astype(np.int64),
+            "layer": records["layer"].astype(np.int64),
+            "field5": records["field5"].astype(np.int64),
+            "field6": records["field6"].astype(np.int64),
+            "field7": records["field7"].astype(np.int64),
+        },
+        columns=_POLYGON_PARAM_COLUMNS,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Polygon topology
+# ---------------------------------------------------------------------------
+
+
+def _read_polygon_arcs(
+    file_obj: BinaryIO,
+    index_start: int,
+    index_size: int,
+    coord_start: int,
+    coord_size: int,
+    scale: float,
+) -> List[shapely.geometry.LineString]:
+    """Read raw polygon arcs (same structure as lines)."""
+    return _read_lines(
+        file_obj,
+        index_start,
+        index_size,
+        coord_start,
+        coord_size,
+        scale,
+    )
+
+
+def _read_topology_table(file_obj: BinaryIO, start: int, section_size: int) -> np.ndarray:
+    """Read the polygon topology table.
+
+    PDF article: each topology record is 24 bytes; the first record is empty.
+    The first 16 bytes contain 4 little-endian int32 values; columns 2 and 3
+    (0-indexed) hold the left and right polygon IDs of the arc.
+    """
+    file_obj.seek(start)
+    buf = file_obj.read(section_size)
+    count = max(0, len(buf) // _TOPO_RECORD_SIZE - 1)
+    if count == 0:
+        return np.empty((0, 4), dtype=np.int32)
+
+    dtype = np.dtype([
+        ("ids", "<4i4"),
+        ("_pad", "u1", 8),
+    ])
+    records = np.frombuffer(buf, dtype=dtype, offset=_TOPO_RECORD_SIZE, count=count)
+    return records["ids"].copy()
+
+
+class _PolygonTopologyBuilder:
+    """Reconstruct shapely Polygon/MultiPolygon objects from MapGIS arcs."""
+
+    def __init__(self, arcs: List[shapely.geometry.LineString], topology: np.ndarray):
+        self.arcs = arcs
+        self.topology = topology
+        # Precompute polygon-ID -> [(arc_index, reverse), ...] mapping so that
+        # ``build()`` does not rescan the full topology table for every polygon.
+        self._pid_to_arcs: Dict[int, List[Tuple[int, bool]]] = {}
+        for idx in range(len(topology)):
+            left = int(topology[idx, 2])
+            right = int(topology[idx, 3])
+            if left != 0:
+                self._pid_to_arcs.setdefault(left, []).append((idx, True))
+            if right != 0 and right != left:
+                self._pid_to_arcs.setdefault(right, []).append((idx, False))
+
+    # Spatial-hash cell size for endpoint matching, in map units. Shared
+    # endpoints coincide to within ~1e-6 (double-precision noise after the
+    # scale multiply); 1e-5 covers that with a 10x margin while staying far
+    # below any real vertex spacing, so distinct vertices never collide.
+    _ENDPOINT_MATCH_TOL = 1e-5
+
+    @staticmethod
+    def _merge_arcs_into_rings(
+        arcs: List[List[Tuple[float, float]]]
+    ) -> List[List[Tuple[float, float]]]:
+        """Chain arcs by matching endpoints into one or more closed rings.
+
+        Arcs that share an endpoint are linked greedily until every arc has
+        been consumed into a ring. Shared endpoints are *not* deduplicated,
+        matching the behaviour of the original MapGIS reader: two arcs of
+        length 2 and 4 sharing one endpoint yield a 6-point ring.
+
+        This reproduces the original greedy global nearest-pair walk but
+        replaces its O(n**3) per-iteration distance matrix with a spatial
+        hash. At every step the nearest unused endpoint to each open end of
+        the current chain is found in O(1) via a 3x3 cell probe (with an
+        O(n) linear fallback for genuine topological gaps larger than the
+        cell). The chain closes when its own two ends are at least as close
+        as any external endpoint -- the same closure condition the original
+        used to decide that a ring is complete -- so disjoint rings that
+        share a polygon ID are kept separate rather than fused. The chain
+        grows at whichever end is nearer its next neighbour, mirroring the
+        original's ability to extend the chain in either direction.
+        """
+        tol = _PolygonTopologyBuilder._ENDPOINT_MATCH_TOL
+
+        def key(pt: Tuple[float, float]) -> Tuple[int, int]:
+            return (int(pt[0] // tol), int(pt[1] // tol))
+
+        # endpoint_map: grid cell -> list of (arc_index, is_start)
+        endpoint_map: Dict[Tuple[int, int], List[Tuple[int, bool]]] = {}
+        for ai, arc in enumerate(arcs):
+            if not arc:
+                continue
+            endpoint_map.setdefault(key(arc[0]), []).append((ai, True))
+            endpoint_map.setdefault(key(arc[-1]), []).append((ai, False))
+
+        used = [False] * len(arcs)
+
+        def nearest(target: Tuple[float, float]) -> Optional[Tuple[float, int, bool]]:
+            """Return (distance, arc_index, is_start) for the nearest unused
+            endpoint to *target*, or None when no unused arc remains.
+
+            Fast path probes the 3x3 neighbourhood of hashed candidates; if
+            none is present the slow path scans every unused arc, matching
+            the original global-nearest behaviour for genuine gaps.
+            """
+            tx, ty = target
+            kx, ky = key(target)
+
+            best: Optional[Tuple[float, int, bool]] = None
+            for dkx in (-1, 0, 1):
+                for dky in (-1, 0, 1):
+                    for ai, is_start in endpoint_map.get((kx + dkx, ky + dky), ()):
+                        if used[ai]:
+                            continue
+                        pt = arcs[ai][0] if is_start else arcs[ai][-1]
+                        # Chebyshev distance, matching the original heuristic.
+                        d = max(abs(pt[0] - tx), abs(pt[1] - ty))
+                        if best is None or d < best[0]:
+                            best = (d, ai, is_start)
+            if best is not None:
+                return best
+
+            for ai, arc in enumerate(arcs):
+                if used[ai] or not arc:
+                    continue
+                for is_start, pt in ((True, arc[0]), (False, arc[-1])):
+                    d = max(abs(pt[0] - tx), abs(pt[1] - ty))
+                    if best is None or d < best[0]:
+                        best = (d, ai, is_start)
+            return best
+
+        rings: List[List[Tuple[float, float]]] = []
+        for start in range(len(arcs)):
+            if used[start] or not arcs[start]:
+                continue
+            used[start] = True
+            chain: deque = deque(arcs[start])
+            head = chain[0]
+            tail = chain[-1]
+
+            while True:
+                d_head_tail = max(abs(head[0] - tail[0]), abs(head[1] - tail[1]))
+                nt = nearest(tail)
+                nh = nearest(head)
+                d_tail = nt[0] if nt is not None else float("inf")
+                d_head = nh[0] if nh is not None else float("inf")
+
+                # Close when the chain's own ends are the nearest pair, i.e.
+                # no external endpoint is strictly closer than head-to-tail.
+                if d_head_tail <= d_tail and d_head_tail <= d_head:
+                    break
+
+                # Otherwise attach at whichever end is nearer its neighbour.
+                # Ties favour the head, matching the original's endpoint
+                # ordering (head precedes tail in the distance matrix).
+                if d_head <= d_tail:
+                    _, ai, is_start = nh
+                    used[ai] = True
+                    arc = arcs[ai]
+                    if is_start:
+                        # arc[0] sits at head; prepend arc so new head = arc[-1]
+                        chain.extendleft(arc)
+                    else:
+                        # arc[-1] sits at head; prepend reversed so new head = arc[0]
+                        chain.extendleft(reversed(arc))
+                    head = chain[0]
+                else:
+                    _, ai, is_start = nt
+                    used[ai] = True
+                    arc = arcs[ai]
+                    if is_start:
+                        chain.extend(arc)            # arc starts at the tail
+                    else:
+                        chain.extend(reversed(arc))  # arc ends at the tail
+                    tail = chain[-1]
+
+            rings.append(list(chain))
+
+        return rings
+
+    @staticmethod
+    def _build_multipolygon(
+        rings: List[List[Tuple[float, float]]]
+    ) -> shapely.geometry.MultiPolygon:
+        """Build a MultiPolygon from closed rings, classifying shells and holes.
+
+        This is a cleaned-up, iterative version of the original recursive
+        ``get_multipolygons`` function.
+        """
+        if not rings:
+            return shapely.geometry.MultiPolygon()
+
+        remaining = [list(ring) for ring in rings]
+        polygons: List[shapely.geometry.Polygon] = []
+
+        while remaining:
+            n = len(remaining)
+            # Precompute shapely polygons and bounds once per ring; the naive
+            # approach rebuilds every polygon inside the inner loop.
+            polys: List[Optional[shapely.geometry.Polygon]] = []
+            bounds: List[Optional[Tuple[float, float, float, float]]] = []
+            for ring in remaining:
+                try:
+                    p = shapely.geometry.Polygon(ring)
+                    polys.append(p)
+                    bounds.append(p.bounds)
+                except Exception:
+                    polys.append(None)
+                    bounds.append(None)
+
+            within = np.zeros((n, n), dtype=bool)
+            for i in range(n):
+                poly_i = polys[i]
+                if poly_i is None:
+                    continue
+                bounds_i = bounds[i]
+                for j in range(n):
+                    if i == j or polys[j] is None:
+                        continue
+                    # Bounding-box prefilter: a ring can only be within another
+                    # ring if its bbox is fully inside the other's bbox.
+                    bj = bounds[j]
+                    if not (
+                        bj[0] <= bounds_i[0]
+                        and bj[1] <= bounds_i[1]
+                        and bounds_i[2] <= bj[2]
+                        and bounds_i[3] <= bj[3]
+                    ):
+                        continue
+                    try:
+                        contained = poly_i.within(polys[j])
+                    except Exception:
+                        contained = any(
+                            shapely.geometry.Point(pt).within(polys[j])
+                            for pt in remaining[i]
+                        )
+                    within[i, j] = bool(contained)
+
+            # Rings with no parent are shells; rings contained in exactly one
+            # other ring are direct holes of that shell.
+            shell_to_holes: Dict[int, List[int]] = {}
+            next_remaining: List[List[Tuple[float, float]]] = []
+
+            for i in range(n):
+                parent_count = int(within[i].sum())
+                if parent_count == 0:
+                    shell_to_holes.setdefault(i, [])
+                elif parent_count == 1:
+                    parent = int(np.argwhere(within[i])[0][0])
+                    shell_to_holes.setdefault(parent, []).append(i)
+                else:
+                    # Nested hole: process in a later iteration.
+                    next_remaining.append(remaining[i])
+
+            for shell_idx, hole_indices in shell_to_holes.items():
+                shell = remaining[shell_idx]
+                # A valid polygon shell needs at least 4 coordinates (3
+                # distinct vertices plus closure). Degenerate rings produced
+                # by arc merging -- collapsed slivers or near-zero-length arcs
+                # -- would otherwise raise ValueError in shapely; skip them.
+                if len(shell) < 4:
+                    continue
+                holes = [remaining[h] for h in hole_indices if len(remaining[h]) >= 4]
+                try:
+                    polygons.append(shapely.geometry.Polygon(shell, holes))
+                except (ValueError, OSError):
+                    # Extremely malformed shell: retry without holes, then skip.
+                    try:
+                        polygons.append(shapely.geometry.Polygon(shell))
+                    except (ValueError, OSError):
+                        continue
+
+            remaining = next_remaining
+
+        return shapely.geometry.MultiPolygon(polygons)
+
+    def build(self, polygon_id: int) -> shapely.geometry.BaseGeometry:
+        """Build the geometry for a single polygon ID."""
+        entries = self._pid_to_arcs.get(polygon_id, [])
+        if not entries:
+            return shapely.geometry.Polygon()
+
+        # Preserve the original orientation hint: when the left polygon ID
+        # (column 2) matches the target ID, reverse the arc coordinates.
+        oriented_arcs: List[List[Tuple[float, float]]] = []
+        for arc_idx, reverse in entries:
+            coords = list(self.arcs[arc_idx].coords)
+            if reverse:
+                coords = coords[::-1]
+            oriented_arcs.append(coords)
+
+        if len(oriented_arcs) == 1:
+            # Single-arc polygon: preserve the original simple Polygon path.
+            return shapely.geometry.Polygon(oriented_arcs[0])
+
+        rings = self._merge_arcs_into_rings(oriented_arcs)
+        return self._build_multipolygon(rings)
+
+
+# ---------------------------------------------------------------------------
+# Public Reader
+# ---------------------------------------------------------------------------
+
+
+class Reader:
+    """Read a MapGIS vector file (*.wt, *.wl, *.wp) into a GeoDataFrame.
+
+    Parameters
+    ----------
+    filepath : str or pathlib.Path
+        Path to the MapGIS file.
+    make_valid : bool, optional
+        If True (default), apply ``shapely.make_valid`` to polygon geometries
+        that are invalid after reconstruction. This fixes most self-intersection
+        artifacts produced by the MapGIS arc-merging step without changing areas
+        in any meaningful way. Set to False to obtain the raw reconstructed
+        geometries (matching the behaviour of the original 1.0 reader).
+    read_point_params : bool, optional
+        Point files (``.wt``) only: also decode the per-point graphic
+        parameter area (text vs. symbol kind, subgraph number, glyph size in
+        millimetres, rotation angle in degrees). The columns ``point_type``,
+        ``symbol_no``, ``height``, ``width``, ``spacing`` and ``angle`` are
+        appended to :attr:`geodataframe` and are also available separately as
+        :attr:`point_params`. Default False (attribute table only).
+    read_graphic_params : bool, optional
+        Decode graphic parameters for any file type: point parameters for
+        ``.wt`` (as above), line parameters for ``.wl`` (columns ``linetype``,
+        ``aux_linetype``, ``color``, ``width``, ``x_coef``, ``y_coef``,
+        exposed as :attr:`line_params`), and polygon parameters for ``.wp``
+        (columns ``fill_color``, ``pattern``, ``pattern_color`` from the
+        head_9 section, exposed as :attr:`polygon_params`). Style and colour
+        numbers reference the external MapGIS symbol/line-style/pattern
+        libraries and are not self-contained. Default False.
+
+    Examples
+    --------
+    >>> with Reader("example.wp") as r:
+    ...     print(r)
+    ...     r.geodataframe.to_file("example.shp")
+    """
+
+    def __init__(
+        self,
+        filepath: Any,
+        make_valid: bool = True,
+        read_point_params: bool = False,
+        read_graphic_params: bool = False,
+    ) -> None:
+        self._filepath = os.fspath(filepath)
+        self._make_valid = make_valid
+        self._read_point_params = read_point_params
+        self._read_graphic_params = read_graphic_params
+        self.shapeType: Optional[str] = None
+        self.crs: Any = ""
+        self.bbox: Optional[np.ndarray] = None
+        self.fields: List[Tuple[str, str, int]] = []
+        self.data: pd.DataFrame = pd.DataFrame()
+        self.geom: List[shapely.geometry.base.BaseGeometry] = []
+        self.point_params: pd.DataFrame = pd.DataFrame()
+        self.line_params: pd.DataFrame = pd.DataFrame()
+        self.polygon_params: pd.DataFrame = pd.DataFrame()
+        self.geodataframe: gpd.GeoDataFrame = gpd.GeoDataFrame()
+        self._polygon_active_ids: List[int] = []
+
+        # The file is fully parsed and closed here; the context-manager
+        # interface is kept only for backward compatibility.
+        with open(self._filepath, "rb") as file_obj:
+            self._parse(file_obj)
+
+    def _parse(self, file_obj: BinaryIO) -> None:
+        """Parse the entire file."""
+        magic = file_obj.read(8)
+        if magic not in _GEOMETRY_TYPE_MAP:
+            raise InvalidFileError()
+        self.shapeType = _GEOMETRY_TYPE_MAP[magic]
+
+        file_obj.read(4)
+        data_start = _read_struct(file_obj, "<i")[0]
+        header_entries = _read_header_entries(
+            file_obj, data_start, _HEADER_COUNT_PHYSICAL
+        )
+        self._raw_sections: Dict[int, bytes] = {}
+        self._raw_tail = b""
+        end = max((s + v for s, v in header_entries if v), default=0)
+        for i, (s, v) in enumerate(header_entries):
+            if v:
+                file_obj.seek(s)
+                self._raw_sections[i] = file_obj.read(v)
+        file_obj.seek(0, 2)
+        file_size = file_obj.tell()
+        file_obj.seek(end)
+        self._raw_tail = file_obj.read(max(0, file_size - end))
+
+        attr_start, _ = header_entries[_ATTR_HEADER_INDEX[self.shapeType]]
+        record_count, record_length, fields = _read_attribute_header(
+            file_obj, attr_start
+        )
+        self.fields = [
+            (field.name, field.type_name, field.length) for field in fields
+        ]
+        # 保留原始字段元数据供 Writer 往返复用（2026-10-18 原生验收实证：
+        # MapGIS 依赖原始字段声明宽度/描述符，密排压缩会导致区显示被拒）
+        file_obj.seek(attr_start + 348)
+        raw_blocks = [file_obj.read(39) for _ in range(len(fields))]
+        self._field_meta = {
+            "record_length": record_length,
+            "fields": [
+                {
+                    "name": f.name,
+                    "type_code": f.type_code,
+                    "offset": f.offset,
+                    "length": f.length,
+                    "decimals": f.decimals,
+                }
+                for f in fields
+            ],
+            "raw_descriptors": {
+                f.name: raw_blocks[i] for i, f in enumerate(fields)
+            },
+        }
+        self.data = _read_attribute_records(
+            file_obj, record_count, record_length, fields
+        )
+
+        self.crs, scale = _read_crs(file_obj)
+
+        geom_start, geom_size = header_entries[0]
+        coord_start, coord_size = header_entries[1]
+
+        if self.shapeType == "POINT":
+            self.geom = _read_points(file_obj, geom_start, geom_size, scale)
+            if self._read_point_params or self._read_graphic_params:
+                self.point_params = _read_point_params(file_obj, geom_start, geom_size)
+        elif self.shapeType == "LINE":
+            self.geom = _read_lines(
+                file_obj, geom_start, geom_size, coord_start, coord_size, scale
+            )
+            if self._read_graphic_params:
+                self.line_params = _read_line_params(file_obj, geom_start, geom_size)
+        elif self.shapeType == "POLYGON":
+            self.geom = self._read_polygons(
+                file_obj,
+                geom_start,
+                geom_size,
+                coord_start,
+                coord_size,
+                scale,
+                header_entries[3],
+            )
+            if self._read_graphic_params:
+                params = _read_polygon_params(file_obj, *header_entries[_POLYGON_PARAM_SECTION])
+                # head_9 record i (0-based after the empty first record)
+                # belongs to polygon ID i + 1; select the active IDs exactly
+                # like the attribute rows in _read_polygons.
+                self.polygon_params = params.iloc[
+                    [pid - 1 for pid in self._polygon_active_ids if 1 <= pid <= len(params)]
+                ]
+
+        self._build_geodataframe()
+
+    def _read_polygons(
+        self,
+        file_obj: BinaryIO,
+        index_start: int,
+        index_size: int,
+        coord_start: int,
+        coord_size: int,
+        scale: float,
+        topo_entry: Tuple[int, int],
+    ) -> List[shapely.geometry.base.BaseGeometry]:
+        """Read polygon geometries."""
+        arcs = _read_polygon_arcs(
+            file_obj, index_start, index_size, coord_start, coord_size, scale
+        )
+        topo_start, topo_size = topo_entry
+        topology = _read_topology_table(file_obj, topo_start, topo_size)
+
+        builder = _PolygonTopologyBuilder(arcs, topology)
+
+        # Active polygon IDs are the non-zero values in columns 2 and 3.
+        active_ids = sorted({int(pid) for pid in topology[:, 2:4].flatten() if pid != 0})
+        self._polygon_active_ids = active_ids
+
+        # MapGIS polygon IDs are 1-based; the attribute table rows are 0-based.
+        self.data = self.data.iloc[[pid - 1 for pid in active_ids if 1 <= pid <= len(self.data)]]
+
+        geoms = [builder.build(pid) for pid in active_ids]
+        if self._make_valid:
+            geoms = [shapely.make_valid(g) if not g.is_valid else g for g in geoms]
+        return geoms
+
+    def _build_geodataframe(self) -> None:
+        """Assemble the final GeoDataFrame and bounding box."""
+        data = self.data
+        # Graphic parameters align 1:1 with their features (points and lines
+        # are never filtered; polygon params are filtered by the same active
+        # IDs as the attribute rows), so same-length frames join column-wise.
+        for params in (self.point_params, self.line_params, self.polygon_params):
+            if not params.empty and len(params) == len(data):
+                data = pd.concat(
+                    [data.reset_index(drop=True), params.reset_index(drop=True)],
+                    axis=1,
+                )
+        self.geodataframe = gpd.GeoDataFrame(data, crs=self.crs, geometry=self.geom)
+        if getattr(self, "_field_meta", None):
+            self.geodataframe.attrs["mapgis_field_meta"] = self._field_meta
+        if self.shapeType in ("POINT", "LINE", "POLYGON"):
+            # 原始段透传元数据：未修改几何时 Writer 逐字节复用，保证往返件
+            # 与原生同构（2026-10-18 实证：元数据块尺寸/弧段旋转均参与
+            # MapGIS 显示判定，自行重建无法复现其内部期望）
+            self.geodataframe.attrs["mapgis_section_passthrough"] = {
+                "sections": {
+                    str(i): raw
+                    for i, raw in self._raw_sections.items()
+                },
+                "tail": self._raw_tail,
+            }
+        if self.geom:
+            bounds = self.geodataframe.bounds
+            self.bbox = np.array([
+                bounds.minx.min(),
+                bounds.miny.min(),
+                bounds.maxx.max(),
+                bounds.maxy.max(),
+            ])
+        else:
+            self.bbox = np.array([0.0, 0.0, 0.0, 0.0])
+
+    def to_file(self, filepath: Any, **kwargs: Any) -> None:
+        """Write the GeoDataFrame to a file.
+
+        Any keyword arguments are forwarded to ``geopandas.GeoDataFrame.to_file``.
+        """
+        self.geodataframe.to_file(filepath, **kwargs)
+
+    def __len__(self) -> int:
+        return len(self.geom)
+
+    def __str__(self) -> str:
+        n = len(self)
+        plural = "s" if n != 1 else ""
+        return f"mapgis file Reader\n{n} feature{plural} (type {self.shapeType})"
+
+    def __repr__(self) -> str:
+        return f"Reader({self._filepath!r}, make_valid={self._make_valid!r})"
+
+    def __enter__(self) -> "Reader":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        pass

@@ -1,0 +1,113 @@
+{
+  "files": {
+    "synthetic_lines.wl": {
+      "attribute_fields": [
+        "ID",
+        "NAME",
+        "TYPE"
+      ],
+      "bbox": [
+        73.4,
+        39.4,
+        74.0,
+        39.8
+      ],
+      "crs": "GEOGCRS[\"unknown\",DATUM[\"World Geodetic System 1984\",ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ID[\"EPSG\",6326]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8901]],CS[ellipsoidal,2],AXIS[\"longitude\",east,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433,ID[\"EPSG\",9122]]],AXIS[\"latitude\",north,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433,ID[\"EPSG\",9122]]]]",
+      "feature_count": 3,
+      "geometry_family": "LINE",
+      "geometry_types": [
+        "LineString"
+      ],
+      "graphic_parameter_columns": [
+        "aux_color",
+        "aux_flag",
+        "aux_linetype",
+        "color",
+        "layer",
+        "linetype",
+        "transparent",
+        "width",
+        "x_coef",
+        "y_coef"
+      ],
+      "sha256": "67ab8ae921887e031ef65feb097d95d375a5d75ea743454f5f12b0213369d082"
+    },
+    "synthetic_points.wt": {
+      "attribute_fields": [
+        "ID",
+        "NAME",
+        "STRIKE",
+        "DIP_DIR",
+        "DIP",
+        "SURVEY_DATE"
+      ],
+      "bbox": [
+        73.5,
+        39.5,
+        74.0,
+        39.7
+      ],
+      "crs": "GEOGCRS[\"unknown\",DATUM[\"World Geodetic System 1984\",ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ID[\"EPSG\",6326]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8901]],CS[ellipsoidal,2],AXIS[\"longitude\",east,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433,ID[\"EPSG\",9122]]],AXIS[\"latitude\",north,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433,ID[\"EPSG\",9122]]]]",
+      "feature_count": 3,
+      "geometry_family": "POINT",
+      "geometry_types": [
+        "Point"
+      ],
+      "graphic_parameter_columns": [
+        "angle",
+        "color",
+        "font_en",
+        "font_style",
+        "font_zh",
+        "height",
+        "layer",
+        "pen_width",
+        "point_type",
+        "spacing",
+        "symbol_no",
+        "width"
+      ],
+      "sha256": "3b987412699231628310f654bf7d204d8489f6391d6423398cbfee3b653d617a"
+    },
+    "synthetic_polygons.wp": {
+      "attribute_fields": [
+        "ID",
+        "面积",
+        "周长",
+        "UNIT",
+        "NAME"
+      ],
+      "bbox": [
+        73.4,
+        39.4,
+        74.4,
+        39.7
+      ],
+      "crs": "GEOGCRS[\"unknown\",DATUM[\"World Geodetic System 1984\",ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ID[\"EPSG\",6326]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8901]],CS[ellipsoidal,2],AXIS[\"longitude\",east,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433,ID[\"EPSG\",9122]]],AXIS[\"latitude\",north,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433,ID[\"EPSG\",9122]]]]",
+      "feature_count": 4,
+      "geometry_family": "POLYGON",
+      "geometry_types": [
+        "MultiPolygon",
+        "Polygon"
+      ],
+      "graphic_parameter_columns": [
+        "class",
+        "field5",
+        "field6",
+        "field7",
+        "fill_color",
+        "layer",
+        "pattern",
+        "pattern_color",
+        "pattern_height",
+        "pattern_width"
+      ],
+      "sha256": "20d5ddca713615719d9743d5395f6869cf841ef954ba7e7e442f34e29a074a26"
+    }
+  },
+  "generator": "tests/fixtures/build_mapgis_fixtures.py",
+  "generator_software_version": "2.5.0",
+  "generator_source_description": "v2.5.0-75-gef3bdb7-dirty",
+  "provenance": "Synthetic geometries generated with pymapgis Writer. These are public regression fixtures, not official MapGIS exports and not independent native-export validation.",
+  "schema_version": 1
+}

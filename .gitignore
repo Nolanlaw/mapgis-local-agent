@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+work/
+*.pyc
+config.local.json
+mcp-config.local.json
+setup-state.local.json
+runtime/
+downloads/
+evidence/
+deliverables/
