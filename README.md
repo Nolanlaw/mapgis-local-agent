@@ -15,7 +15,7 @@
 
 ## 快速开始
 
-1. 在 [Releases](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest) 下载 `MapGIS-Agent-0.3.1-Windows-x64-Share.zip`，完整解压到可写目录。
+1. 在 [Releases](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest) 下载 `MapGIS-Agent-0.3.2-Windows-x64-Share.zip`，完整解压到可写目录。
 2. 双击 `01-Setup.cmd`，输入本机 MapGIS 安装路径。只使用文件工具时可直接回车。
 3. 双击 `02-SelfTest.cmd`，确认结果为 `PASS`。`03-Diagnostics.cmd` 可检查依赖和 MapGIS 版本。
 4. 在支持电脑操作的 Agent 宿主中打开解压后的文件夹，提供工程路径和任务。普通 MCP 客户端可以加载安装时生成的 `mcp-config.local.json`。

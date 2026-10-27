@@ -2,12 +2,21 @@
 import importlib.util
 import json
 from pathlib import Path
+import tomllib
 
 import pytest
 
 spec = importlib.util.spec_from_file_location('portable', Path(__file__).parents[1] / 'scripts/portable.py')
 portable = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(portable)
+
+
+def test_imported_version_matches_project_version():
+    import mapgis_agent
+
+    project_file = Path(__file__).parents[1] / 'pyproject.toml'
+    version = tomllib.loads(project_file.read_text(encoding='utf-8'))['project']['version']
+    assert mapgis_agent.__version__ == version
 
 
 def test_setup_rebinds_its_own_config_after_folder_moves_and_preserves_external_edits(tmp_path):

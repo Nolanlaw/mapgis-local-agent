@@ -12,7 +12,7 @@ GeoScan 仅作为公开兼容方案研究，未复制其实现，也不作为运
 未修改其实现，不链接进连接器。REA/Ghidra/JDK 沿用各自原许可证，配置及二进制不进入源码包。
 本机 EPS 验收转换复用官方 Ghostscript 10.08.0（GNU AGPLv3），只调用独立命令行程序。
 源码包不附带 Ghostscript 二进制，也不重新实现 PostScript 解析或渲染器。
-0.3.1离线分享包另附官方未修改的Ghostscript运行时及对应源码，GEOS对应源码也随包保留；
+离线分享包另附官方未修改的Ghostscript运行时及对应源码，GEOS对应源码也随包保留；
 Python使用Astral python-build-standalone的CPython 3.12.16，原始许可证及依赖许可证均随包保留，详见THIRD-PARTY.json。
 MapGIS 软件、许可程序、课程原件、私有测试输出及本机配置不随源码包分发。
 
