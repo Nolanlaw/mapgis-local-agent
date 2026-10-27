@@ -1,33 +1,56 @@
-# MapGIS 本机助手 0.3.1 · Windows 离线分享版
+# Windows 分享版使用说明
 
-本包包含独立Python3.12运行时、九个MapGIS文件/MCP工具、精确版本只读状态适配器、原生操作说明、Ghostscript及其源代码。解压后无需安装系统Python或下载Python依赖。适用于Windows10/11的x64电脑。请完整解压到可写文件夹后使用。
+分享包适用于 Windows 10/11 x64，自带 Python 和运行依赖。解压后不需要另装 Python。
 
-所有启动入口和生成的客户端配置均禁用用户Python包目录，运行时使用包内搜索路径。自行编写命令时请使用runtime/python/python.exe -s -B -X utf8，再接脚本与参数，以保持同样的环境隔离。
+## 安装与自检
 
-## 三步开始
+1. 将压缩包完整解压到可写目录。
+2. 双击 `01-Setup.cmd`，输入 MapGIS 安装根目录。也可以输入 `program` 目录或 `mdiedit6x.exe` 的完整路径；只使用文件工具时直接回车。
+3. 双击 `02-SelfTest.cmd`，确认结果为 `PASS`。该自检使用合成文件检查 MCP 服务、文件读写和恢复，不会启动 MapGIS。
+4. 双击 `03-Diagnostics.cmd` 查看运行环境和 MapGIS 版本匹配情况。
 
-1. 双击 01-Setup.cmd。输入自己电脑上现有的MapGIS安装根目录，或program目录、mdiedit6x.exe完整路径。暂时没有MapGIS时直接回车，可先使用文件工具。脚本只生成本文件夹内的config.local.json、mcp-config.local.json、setup-state.local.json，不修改系统环境、全局MCP、模型或许可。
-2. 双击 02-SelfTest.cmd，检查出现PASS；双击03-Diagnostics.cmd查看环境与版本匹配结果。自检会真实启动stdio服务，核对九工具，用合成线文件验证读写、请求对账、取消及逐字节恢复，然后清理其自有临时数据。
-3. 在有本地文件/终端及电脑操作能力的Agent宿主中打开本文件夹，先让Agent阅读AGENTS.md和docs/NATIVE.md，再直接给它工程路径和任务。支持mcpServers JSON配置的客户端也可使用安装时生成的mcp-config.local.json；其他客户端按自身格式填入相同command/args。
+安装后会在解压目录生成 `mcp-config.local.json` 和 `setup-state.local.json`；填写 MapGIS 路径时还会生成 `config.local.json`。移动文件夹后重新运行 `01-Setup.cmd`，以更新客户端路径。手动修改过的客户端配置会被保留，需要核对后再重新配置。
 
-文件夹移动后再运行01-Setup.cmd，会更新本包自己生成的路径。若配置文件被人工改动，程序会保留并报告，需先核对再重新配置。MCP命令使用MapGIS-MCP.cmd；命令行使用MapGIS-CLI.cmd capabilities等。双击MCP会等待客户端输入，这是stdio服务行为；日常使用交给Agent或客户端启动即可。
+## 在 Agent 中使用
 
-## 接收者需要自备
+在支持本地文件、终端和电脑操作的 Agent 宿主中打开解压目录，先让 Agent 阅读 `AGENTS.md` 和 `docs/NATIVE.md`，再提供工程路径与任务。例如：
 
-- MapGIS6.7与可用许可、原工程所用的符号/字体资源。许可要在MapGIS中实际确认。本包没有MapGIS安装程序、Dog工具或任何许可替代物。
-- 原生当前工程/选区/dirty读取严格匹配build051118四个模块的SHA256；03-Diagnostics的MATCH仅表示二进制版本匹配，许可与宿主电脑操作能力仍须可用。UNSUPPORTED_BUILD时文件工具仍可使用，实时原生功能需重新适配。
-- 原生界面操作需要宿主提供Sky电脑操作能力。一般stdio客户端提供文件工具；本包不包含聊天模型、Agent宿主或API密钥。
+> 查看当前 MapGIS 工程的图层和选中的区。
 
-## 已验证能力
+普通 MCP 客户端可以加载安装时生成的 `mcp-config.local.json`。桌面编辑和出图还需要宿主提供 Sky 电脑操作能力；分享包不包含 Agent 宿主或模型。
 
-当前MPJ/图层绑定；多选与未保存标志；WT/WL/WP读取与明确记录的属性/样式修改；MapGIS原生几何增删和属性保存重开工作流；新分支请求续接与受保护恢复；原生EPS/TIFF出图及EPS转PDF。当前软件的完整地质图图片复绘仍需具体图件实测，不承诺上传任意图片即可全自动重建。
+## 命令行
 
-文件工具物理编号与属性ID不同。原始数据应保留，编辑在副本中执行。恢复仅针对有基线/请求记录且通过冲突检查的字段，不能恢复崩溃前任意内存。新图件的坐标系、比例尺、图例及符号库需分别核对。原生输出先用Prepare-NativeOutput.ps1暂存到短ASCII路径，实际检查工程依赖和输出文件，再保存交付。
+在解压目录打开 PowerShell，运行：
 
-Ghostscript在runtime/ghostscript，原生EPS转PDF可由Agent调用其中bin/gswin64c.exe的pdfwrite和EPSCrop选项。此包内含相应原始源码压缩包和许可证；GEOS源码也随包保留。Python及各依赖许可在runtime/python/LICENSE.txt、依赖dist-info/licenses等位置，详见THIRD-PARTY.json。第三方库依各自许可证使用和修改。可编辑助手源码在src/、scripts/，原生格式上游源在vendor/mapgis2shp。
+```powershell
+.\MapGIS-CLI.cmd capabilities
+```
 
-本离线应用只带九工具实际需要的运行依赖，未附可选pyogrio/GDAL通用格式导出引擎；开发者需要通用格式互转时，可按完整requirements.lock.txt另行准备开发环境。
+`MapGIS-MCP.cmd` 是 stdio 服务入口，通常由 MCP 客户端启动。直接双击后它会等待客户端输入。
 
-## 范围和数据
+自行调用包内 Python 时，使用以下参数，避免加载用户目录中的 Python 包：
 
-分享包不含制作人的课程图件、照片、聊天、记忆、凭据、运行数据库、本机安装配置或逆向分析工程。新安装产生的work、evidence和deliverables属于接收者自己的任务数据，之后转发时应重新生成干净包，避免把个人配置和图件一起转发。压缩包内bundle-manifest.json记录原始负载的SHA256。
+```powershell
+.\runtime\python\python.exe -s -B -X utf8 .\scripts\mapgis_cli.py capabilities
+```
+
+## MapGIS 兼容性
+
+文件工具可以在没有 MapGIS 的情况下使用。原生编辑、保存和出图需要 MapGIS 6.7、有效许可，以及工程所用的字体和符号库。
+
+实时读取工程、选区和未保存状态，目前匹配 build 051118 的四个程序模块。`03-Diagnostics.cmd` 显示 `MATCH` 表示模块指纹匹配；`UNSUPPORTED_BUILD` 表示需要重新适配。许可和 Sky 宿主是否可用仍需分别确认。
+
+出图前使用 `scripts/Prepare-NativeOutput.ps1` 将工程及其显式依赖暂存到短 ASCII 路径，再在 MapGIS 中核对加载的图层和输出文件。步骤见 `docs/NATIVE.md`。
+
+## 数据与恢复
+
+保留原始文件，在副本上编辑。文件工具使用物理记录编号定位对象，属性字段中的 ID 可以重复。恢复操作需要基线和请求记录，并会检查目标字段是否有后续冲突；它不能恢复崩溃前任意未保存的内存内容。
+
+目前没有验证从任意地质图图片自动重建完整工程。制作新图时还需核对坐标系、比例尺、图例和符号库。
+
+## 第三方组件
+
+Ghostscript 位于 `runtime/ghostscript/`，可将原生 EPS 转换为 PDF。对应源码、GEOS 源码及许可证随包保留；组件清单见 `THIRD-PARTY.json`，原生格式库源码位于 `vendor/mapgis2shp/`。
+
+分享包没有附带可选的 pyogrio/GDAL 通用格式转换引擎。需要这些功能的开发者可按 `requirements.lock.txt` 准备开发环境。

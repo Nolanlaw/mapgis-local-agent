@@ -1,37 +1,68 @@
-# MapGIS 本机助手 0.3.1
+# MapGIS Local Agent
 
-MapGIS 6.7 的本机连接器：九个原生文件/MCP工具、精确版本的当前工程/图层/选区与未保存状态读取，以及由宿主Sky执行的原生编辑、保存、出图工作流。
+连接 AI 助手与 MapGIS 6.7 的本地工具。它提供 MCP 接口，用于查看工程状态、检查原生图层，并配合桌面操作完成编辑和出图。
 
-## 下载可直接解压的 Windows 分享版
+[下载 Windows 版](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest) · [使用说明](docs/SHARE.md) · [原生操作](docs/NATIVE.md)
 
-前往[0.3.1 Release](https://github.com/Nolanlaw/mapgis-local-agent/releases/tag/v0.3.1)，下载 **MapGIS-Agent-0.3.1-Windows-x64-Share.zip**。这是带独立Python和运行依赖的离线应用包。
+## 功能
 
-1. 完整解压到可写目录，运行01-Setup.cmd，填写自己的MapGIS安装路径；没有MapGIS时回车先用文件工具。
-2. 运行02-SelfTest.cmd，确认PASS；03-Diagnostics.cmd检查版本及依赖。
-3. 在有电脑操作能力的Agent宿主打开解压目录，阅读AGENTS.md和docs/NATIVE.md；一般MCP客户端可以使用生成的mcp-config.local.json。
+- 读取 `WT`、`WL`、`WP` 文件中的几何、属性和样式。
+- 在副本上修改属性或样式，记录请求，并恢复指定修改。
+- 查看运行中 MapGIS 的工程、图层、选区和未保存状态。
+- 配合支持 Sky 的 Agent，在 MapGIS 中完成几何编辑、保存及 EPS/TIFF 出图。
 
-GitHub自动生成的Source code ZIP只含开发源码，独立Python和第三方运行时位于上述Share.zip。分享包完整使用说明见[docs/SHARE.md](docs/SHARE.md)。仓库保持私有；下载者需要仓库读取权限，也可以直接转发下载后的干净Share.zip。
+文件中的对象使用**物理记录编号**定位；属性字段里的 ID 可以重复，不等同于记录编号。
 
-## 环境与能力边界
+## 快速开始
 
-- Windows10/11 x64；原生功能需用户自备MapGIS6.7、有效许可及字体/符号资源。
-- 当前实时适配严格匹配build051118的四个模块指纹；不支持的构建显式拒绝，不猜测当前工程或选择集。
-- Python负责WT/WL/WP读写、物理记录身份、请求续接/恢复和只读进程状态；原生几何编辑、保存和EPS/TIFF输出由现有宿主Sky执行。
-- 未附聊天模型、Sky宿主、MapGIS安装程序、许可工具或任何密钥。普通MCP客户端提供文件工具，不会自行获得桌面操作能力。
-- 完整地质图图片复绘需要具体图件验证；不承诺任意图片自动重建，或恢复崩溃前任意未保存内存。
+1. 在 [Releases](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest) 下载 `MapGIS-Agent-0.3.1-Windows-x64-Share.zip`，完整解压到可写目录。
+2. 双击 `01-Setup.cmd`，输入本机 MapGIS 安装路径。只使用文件工具时可直接回车。
+3. 双击 `02-SelfTest.cmd`，确认结果为 `PASS`。`03-Diagnostics.cmd` 可检查依赖和 MapGIS 版本。
+4. 在支持电脑操作的 Agent 宿主中打开解压后的文件夹，提供工程路径和任务。普通 MCP 客户端可以加载安装时生成的 `mcp-config.local.json`。
 
-## 开发源码
+分享包自带 Python 和运行依赖。GitHub 自动生成的 `Source code` 压缩包只包含开发源码。
 
-本仓库保留src/、scripts/、tests/、文档、依赖锁和固定版本的原生格式上游源码。
+## 使用示例
 
-使用已有Python3.12+运行scripts/Setup.ps1 -PythonPath '已有解释器的绝对路径'；需要原生绑定时另传-MapGISInstallation '包含program/mdiedit6x.exe的根目录'。脚本只在项目内建立.venv与客户端配置。
+打开 MapGIS 工程后，可以让 Agent 执行：
 
-测试入口：.venv/Scripts/python.exe -m pytest -q；Node环境运行node --test tests/native_session.test.mjs。原生操作说明中的runtime/python/python.exe用于Release分享包，源码开发环境对应.venv/Scripts/python.exe。
+> 查看当前工程有哪些图层，以及选中了哪些区。
 
-## 验证与来源
+也可以在解压目录打开 PowerShell，查看工具和环境信息：
 
-0.3.1的37项Python与14项Node回归通过；最终分享包8830个负载文件实际解压逐项校验，九工具及修改/取消/逐字节恢复通过；中文空格路径迁移、生成MCP配置、版本边界与离线PDF转换实际验证。详见[验证范围](docs/VALIDATION.md)。这是同一台电脑上的隔离验证，其他实体电脑完整原生流程未实测。
+```powershell
+.\MapGIS-CLI.cmd capabilities
+```
 
-格式实现复用[leecugb/mapgis2shp](https://github.com/leecugb/mapgis2shp)的固定提交2acf993e81a1d8e1984f110aff6725672ac09149，Apache-2.0；MCP使用官方Python SDK。第三方来源与许可见NOTICE.md、THIRD-PARTY.json及vendor许可证。Share.zip附Python、Ghostscript、GEOS及相关许可/所需对应源码。
+更详细的操作步骤见[使用说明](docs/SHARE.md)和[原生操作](docs/NATIVE.md)。
 
-仓库和Release均排除课程图件、本机配置、运行数据库、聊天/记忆、凭据、许可程序与逆向分析工程。接收者以后转发时使用原始Share.zip，避免把自己的工作目录和配置再次上传。
+## 环境要求
+
+- Windows 10/11 x64。文件工具可在没有 MapGIS 的情况下运行。
+- 原生编辑和出图需要 MapGIS 6.7、有效许可、工程使用的字体与符号库，以及提供 Sky 电脑操作能力的 Agent 宿主。
+- 实时状态读取目前匹配 MapGIS 6.7 build 051118 的四个程序模块。运行 `03-Diagnostics.cmd` 可查看是否匹配；其他构建需要重新适配。
+
+本机已验证多选、几何增删、保存重开和原生 EPS/TIFF 出图。其他实体电脑的完整原生流程，以及从任意地质图图片自动重建工程，尚未验证。详见[验证记录](https://github.com/Nolanlaw/mapgis-local-agent/blob/main/docs/VALIDATION.md)。
+
+## 从源码运行
+
+准备 Python 3.12 或更新版本，然后在项目目录运行：
+
+```powershell
+.\scripts\Setup.ps1 -PythonPath "C:\Python312\python.exe"
+```
+
+把示例路径替换成自己的 Python 路径。需要绑定 MapGIS 时，可追加 `-MapGISInstallation` 参数，指向包含 `program\mdiedit6x.exe` 的安装目录。
+
+运行测试：
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+node --test .\tests\native_session.test.mjs
+```
+
+## 依赖与许可
+
+原生格式读写复用 [mapgis2shp](https://github.com/leecugb/mapgis2shp)，MCP 服务使用 [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)。第三方来源与许可证见 [NOTICE.md](NOTICE.md) 和 `vendor/`。
+
+当前仓库为私有仓库。通过 GitHub 下载需要仓库读取权限；也可以直接转发原始分享包。
