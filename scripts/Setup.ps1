@@ -3,10 +3,24 @@ $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $PortablePython = Join-Path $ProjectRoot 'runtime\python\python.exe'
 if ((Test-Path -LiteralPath $PortablePython) -and -not $PythonPath) {
-    $PortableArguments = @('-s', '-B', '-X', 'utf8', (Join-Path $PSScriptRoot 'portable.py'), 'setup')
-    if ($MapGISInstallation) { $PortableArguments += @('--mapgis', $MapGISInstallation) }
-    & $PortablePython @PortableArguments
-    if ($LASTEXITCODE -ne 0) { throw 'Portable package setup failed; inspect the reported error.' }
+    $PortableArguments = @('-s', '-B', '-X', 'utf8', ('"' + (Join-Path $PSScriptRoot 'portable.py') + '"'), 'setup')
+    if ($MapGISInstallation) {
+        $NativeArgument = (Resolve-Path -LiteralPath $MapGISInstallation).Path
+        if (Test-Path -LiteralPath $NativeArgument -PathType Container) { $NativeArgument = $NativeArgument.TrimEnd('\') + '\.' }
+        $PortableArguments += @('--mapgis', ('"' + $NativeArgument + '"'))
+    }
+    # Windows PowerShell 5.1 can return without launching a native application
+    # in a host without a console. Start-Process provides a real process handle
+    # and exit status; keep both streams in this package's own work directory.
+    $SetupLogs = Join-Path $ProjectRoot 'work\setup'
+    New-Item -ItemType Directory -Path $SetupLogs -Force | Out-Null
+    $LaunchId = [Guid]::NewGuid().ToString('N')
+    $SetupOutput = Join-Path $SetupLogs ($LaunchId + '.stdout.txt')
+    $SetupError = Join-Path $SetupLogs ($LaunchId + '.stderr.txt')
+    $SetupProcess = Start-Process -FilePath $PortablePython -ArgumentList $PortableArguments -WindowStyle Hidden -Wait -PassThru -RedirectStandardOutput $SetupOutput -RedirectStandardError $SetupError
+    [Console]::Out.Write([System.IO.File]::ReadAllText($SetupOutput, [System.Text.Encoding]::UTF8))
+    [Console]::Error.Write([System.IO.File]::ReadAllText($SetupError, [System.Text.Encoding]::UTF8))
+    if ($SetupProcess.ExitCode -ne 0) { throw 'Portable package setup failed; inspect the reported error.' }
     return
 }
 $NativeConfigPath = Join-Path $ProjectRoot 'config.local.json'

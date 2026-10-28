@@ -1,0 +1,159 @@
+{
+  "id": "scan-geology",
+  "schema_version": 1,
+  "title": "扫描地质图到 MapGIS 6.7 可编辑工程",
+  "execution": "The agent combines existing stdio file tools with NativeSession and host-provided Sky. This file is task knowledge, not a blind click macro or a second UI driver.",
+  "profile": "MapGIS 6.7 build 051118; exact editor module hashes required for live memory observations",
+  "steps": [
+    {
+      "id": "source",
+      "tools": [
+        "mapgis_register_scan",
+        "mapgis_scan_window"
+      ],
+      "action": "区分原始扫描件、成品裁图和预览。登记原字节与尺寸，按窗口顺序解码，保留 pixel_to_source。原生 MSI 先在工作副本中导出通用影像，并保留源 MSI 的控制点。",
+      "checks": [
+        "源文件指纹未变",
+        "窗口偏移与像素边缘约定明确",
+        "不整幅分配多 GB 数组"
+      ]
+    },
+    {
+      "id": "georeference",
+      "tools": [
+        "mapgis_prepare_georeference"
+      ],
+      "action": "使用明确的 EPSG/椭球或带参考指纹的本地坐标框架。按分布选择拟合点和未参与拟合的检查点，给出单位及最大允许误差。畸变不符合仿射时换模型，不能把精确三点零残差当作精度证明。",
+      "checks": [
+        "检查点独立",
+        "源/预览/窗口坐标没有混用",
+        "未知地球基准和地面单位继续标为未知"
+      ]
+    },
+    {
+      "id": "native-raster",
+      "tools": [
+        "mapgis_write_georeferenced_window"
+      ],
+      "native_module": "raster",
+      "action": "TIFF 转 MSI 后，镶嵌融合 → 添加控制点文件，显式导入配套 .gcp。MapGIS 6.7 转换会丢失 GeoTIFF 控制点元数据。正常保存/关闭，在新进程重开并保存控制点文件，与计算值逐点核对。 需要实际重采样时，先进入镶嵌融合→校正预览，再检查校正参数并选择影像校正，另存全新 MSI；核对范围与重采样方式。新进程显式打开结果（此版本命令行文件参数未打开影像），读回尺寸。若转换 TIFF，先正常关闭当前 MSI 解除独占锁；数据输出先选择 TIF 格式再添加文件，目标目录是只读显示，应使用目录选择器。",
+      "checks": [
+        "实际 MSI 非空并可重开",
+        "新进程 GCP 导出核对",
+        "与矢量套合"
+      ],
+      "limit": "已实测一次多项式/最近邻样本，范围误差小于1e-5本地单位；1521像素在源图1像素邻域、每通道1/255容差内匹配。逐像素等同GDAL的采样约定未证明，地理基准及地面精度未知。添加.gcp会追加已有点，导入前核对数量。"
+    },
+    {
+      "id": "candidates",
+      "tools": [
+        "mapgis_extract_candidates"
+      ],
+      "action": "按明确的边界/断层/等高线/注记/保护线角色提取中心线，按显式 RGB 调色板提取区域。共享边界简化使用 GEOS coverage，记录实际距离误差。对道路、文字、花纹、细小地质体和未分类洞做源图复核。",
+      "checks": [
+        "候选均保留来源与 UNREVIEWED",
+        "不由颜色自动推断地层年龄",
+        "不删除开放断层或保护线",
+        "分块接边不能只看叠加截图"
+      ]
+    },
+    {
+      "id": "create",
+      "tools": [
+        "mapgis_prepare_creation",
+        "mapgis_apply_patch",
+        "mapgis_get_request"
+      ],
+      "action": "从地图坐标 GeoJSON 建立全新 WT/WL/WP。唯一逻辑 ID 映射到物理编号，允许重复属性 ID。原生区带共享弧段和分环索引；点带本机绘图坐标的包围盒。",
+      "checks": [
+        "原件不覆盖",
+        "几何、属性、样式及 GBK 注记独立读回",
+        "超时后先对账请求，不重复提交"
+      ]
+    },
+    {
+      "id": "topology",
+      "tools": [
+        "mapgis_prepare_vector_operation"
+      ],
+      "native_module": "editor",
+      "action": "按角色分离造区线，检查剪断、悬挂、微短线、节点、缝隙与重叠。topology.polygonize 使用 GEOS，并保留非造区线。原生拓扑重建可能新建洞区域、重编号及改色，执行前保留属性/逻辑身份映射。",
+      "checks": [
+        "共享边界一致",
+        "孔洞透明且原生区参数有弧段",
+        "重建后逐项核对身份与属性"
+      ]
+    },
+    {
+      "id": "cartography",
+      "native_module": "editor",
+      "action": "按经过核对的地层表设色与填充，输入符号、旋转、中文上下标和图例。用 palette_probe.py 生成程序化色卡，经原生 150×150mm、300dpi RGB TIFF 输出采样，并核对本机色库指纹、页面和独立颜色锚点。Colorlib.lib 的解析结果与本机 Pcolor.lib 实际配色不同，不能直接按它选择色号；当前样本黑色为 8。原生新符号须实际显示，参数读回正确仍可能因包围盒被剔除。点文件 @49 的所谓 pen_width 经原生输出对照无效，创建入口拒绝此字段；符号笔画宽度由实际原生符号库/输出决定。EPS 图面确认应查看实际路径和渲染像素，不能仅凭缩略预览断言漏画。",
+      "checks": [
+        "地层/花纹与图例对应",
+        "符号库在接收机可用",
+        "中文、上下标、角度在实际输出中可见"
+      ],
+      "limit": "自建符号库和自动地质解释需要各自样本验收，不能由此流程文件推断为已实现。"
+    },
+    {
+      "id": "project",
+      "native_module": "editor",
+      "action": "新建或打开工作工程，按影像、区、线、注记等实际叠放关系装入图层并刷新。灰屏初次可先右键复位窗口。完整路径和 PID/启动时间重新绑定；工程保存与图层保存分别核对。",
+      "checks": [
+        "verifyWorkflowProject 核对实际依赖集合及每文件指纹",
+        "原生未保存状态明确",
+        "同名工程用原生完整路径消歧"
+      ]
+    },
+    {
+      "id": "seams",
+      "native_module": "library",
+      "action": "先对同源、同调色板的全分辨率重叠窗口分别提取。以不重叠核心矩形指定归属，mapgis_merge_candidate_tiles 比较重叠颜色差异、裁去重复 halo、按类合并并检验共享覆盖；合并后统一配准。开放断层/保护线另行保留，不能加入造区候选后静默丢弃。原生图库接边模块是另一条需各自实测的路径。",
+      "checks": [
+        "接缝距离和重叠面积检查",
+        "跨块逻辑 ID 不冲突",
+        "原生合并后可独立编辑"
+      ],
+      "validation": "FILE_TESTED: full course raster in two independent windows, core seam disagreement 0 px2; halo disagreement 2326 px2 recorded. Geological class identity and native library UI are not established by this check.",
+      "tools": [
+        "mapgis_merge_candidate_tiles"
+      ]
+    },
+    {
+      "id": "output",
+      "native_module": "editor",
+      "action": "用 Prepare-NativeOutput.ps1 复制显式兄弟依赖到新的短 ASCII 联接。逐层核对原生加载路径。设置幅面、缩放和位移并保存 MPJ；PostScript输出 → AI格式EPS输出 → 文字变曲线输出；R光栅输出 → 生成Tiff图像。输出路径先确保不存在。",
+      "checks": [
+        "EPS 头、边界、EOF 与实际渲染",
+        "TIFF 尺寸/通道/像素与实际显示",
+        "PDF 标明为 EPS 经 Ghostscript 转换",
+        "纯矢量验收关闭扫描影像，不能用底图冒充新绘制成果"
+      ]
+    },
+    {
+      "id": "reopen",
+      "native_module": "editor",
+      "action": "正常结束本次编辑进程，在全新进程打开保存的完整 MPJ。读取真实物理对象参数、版面及依赖；独立比较几何、属性、样式和注记。",
+      "checks": [
+        "旧 PID 确认结束",
+        "新 PID 和启动时间已记录",
+        "保存内容与未保存内存严格区分"
+      ]
+    },
+    {
+      "id": "recovery",
+      "tools": [
+        "mapgis_get_request",
+        "mapgis_prepare_recovery",
+        "mapgis_apply_patch"
+      ],
+      "action": "对结果不明的请求先查账本和输出指纹；恢复只在新分支逆向本次字段，保留后来无关编辑。删除、重编号、几何变化或同字段后改必须显式冲突。",
+      "checks": [
+        "恢复文件实际读回",
+        "后来独立修改仍在",
+        "临时物在替代验收和写入者核对后清理"
+      ],
+      "limit": "不提供任意原生 Undo，也不宣称崩溃前未保存内存可以恢复。"
+    }
+  ]
+}

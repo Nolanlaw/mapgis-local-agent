@@ -1,0 +1,1133 @@
+[
+  {
+    "id": "project.state",
+    "name": "当前工程、图层、选区和未保存状态",
+    "module": "editor",
+    "validation": "TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_get_live_state"
+    },
+    "parameters": {
+      "pid": "Exact editor process ID; independently observed active window required"
+    },
+    "preconditions": [
+      "Supported build and code guards",
+      "Full MPJ path binding"
+    ],
+    "output_checks": [
+      "Full project and layer paths",
+      "Physical selection IDs and separate dirty flags"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topic": "工程管理"
+    }
+  },
+  {
+    "id": "file.inspect",
+    "name": "点线区几何、属性与参数读取",
+    "module": "files",
+    "validation": "TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_inspect_file"
+    },
+    "parameters": {
+      "file": "Absolute WT/WL/WP path",
+      "offset": "Zero-based active-row offset",
+      "limit": "Maximum rows"
+    },
+    "preconditions": [
+      "Saved native vector"
+    ],
+    "output_checks": [
+      "Fingerprint",
+      "Physical IDs differ from attribute ID"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topic": "文件管理"
+    }
+  },
+  {
+    "id": "file.patch",
+    "name": "属性与图形参数分支修改、恢复",
+    "module": "files",
+    "validation": "TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_patch"
+    },
+    "parameters": {
+      "file": "Owned work copy",
+      "expected_sha256": "Current fingerprint",
+      "record_ids": "Physical record numbers",
+      "style": "Explicit changed fields"
+    },
+    "preconditions": [
+      "No overwrite of original",
+      "Prepare before apply"
+    ],
+    "output_checks": [
+      "Untargeted bytes unchanged",
+      "Source and output fingerprint",
+      "Readback and conflict-aware recovery"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topic": "参数编辑"
+    }
+  },
+  {
+    "id": "project.new",
+    "name": "新建工程与添加图层",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "LOCAL_SAMPLE_TESTED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "path": "New owned MPJ path",
+      "layers": "Ordered full WT/WL/WP/MSI paths"
+    },
+    "preconditions": [
+      "Working directory and dependencies fixed"
+    ],
+    "output_checks": [
+      "Native project full path",
+      "Every layer path",
+      "Save and fresh-process reopen"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topic": "新建工程"
+    },
+    "validation_scope": "Native project created with new point/line/area/raster layers; saved page and five dependencies reopened from a new path in a fresh editor process.",
+    "workflow": "workflows/scan-geology.json"
+  },
+  {
+    "id": "scan.convert",
+    "name": "JPG/TIFF扫描图转换为MSI/RBM",
+    "module": "raster",
+    "executable": "msiProc60.exe",
+    "validation": "LOCAL_SAMPLE_TESTED",
+    "validation_scope": "Native RGB TIFF to MSI conversion and image reopen; coordinate metadata is not retained automatically",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "source": "Fingerprint and dimensions",
+      "output": "New owned raster path"
+    },
+    "preconditions": [
+      "Bounded memory plan",
+      "Preserve original scan"
+    ],
+    "output_checks": [
+      "Native reopen",
+      "Dimensions and pixel/frame mapping",
+      "Explicit GCP import for registered scans"
+    ],
+    "help": {
+      "file": "MsiProc.chm",
+      "topic": "图像格式转换"
+    }
+  },
+  {
+    "id": "scan.georeference",
+    "name": "扫描配准、控制点、镶嵌融合与几何校正",
+    "module": "raster",
+    "executable": "msiProc60.exe",
+    "validation": "PARTIAL",
+    "validation_scope": "Four GCPs saved/reopened/exported; native first-degree nearest resampling executed after correction preview, new MSI reopened in a fresh process and native TIFF exported. Output extent agrees within 1e-5 local units; 1521 sampled pixels agree within one source pixel and 1/255 per channel. Native sampling convention differs from GDAL centre sampling; geodetic accuracy and arbitrary distortions are not established.",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "gcps": "Source pixel and explicit map coordinates",
+      "crs": "Datum, projection, unit and axis order",
+      "model": "Explicit transformation",
+      "checkpoints": "Independent unused points"
+    },
+    "preconditions": [
+      "Source/preview transform known",
+      "Well-distributed GCPs"
+    ],
+    "output_checks": [
+      "Residuals and independent errors",
+      "Native calibrated raster readback"
+    ],
+    "help": {
+      "file": "MsiProc.chm",
+      "topic": "镶嵌融合与控制点"
+    },
+    "workflow": "workflows/scan-geology.json"
+  },
+  {
+    "id": "scan.auto_trace",
+    "name": "全自动矢量化、封闭单元矢量化",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "raster": "Owned binary/grayscale copy",
+      "range": "Explicit extent",
+      "threshold": "Gray/color and line-width parameters",
+      "target": "New line layer"
+    },
+    "preconditions": [
+      "Preserve untraced source",
+      "Separate geological classes"
+    ],
+    "output_checks": [
+      "Compare source pixels",
+      "Review crossings and annotations",
+      "Native WL readback"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topics": [
+        30,
+        35,
+        36
+      ]
+    }
+  },
+  {
+    "id": "scan.interactive_trace",
+    "name": "交互式矢量化识别跟踪、退点与补点",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "seed": "Observed pixel/map location",
+      "class": "Boundary/fault/contour",
+      "target": "New owned WL",
+      "stop_rule": "Junctions and uncertainty"
+    },
+    "preconditions": [
+      "Raster and vector aligned",
+      "Fresh view observation before canvas input"
+    ],
+    "output_checks": [
+      "Native vector readback",
+      "Trace matches source",
+      "Open faults remain open"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topics": [
+        35,
+        36
+      ]
+    }
+  },
+  {
+    "id": "edit.points",
+    "name": "点输入、移动、复制、删除及子图旋转",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "file": "Bound full WT path",
+      "records": "Explicit physical IDs",
+      "coordinates": "Explicit map frame",
+      "symbol": "Library and symbol number",
+      "angle": "Native angle units"
+    },
+    "preconditions": [
+      "Working copy and current selection verified"
+    ],
+    "output_checks": [
+      "Geometry and parameters readback",
+      "Save and reopen"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topic": "点编辑"
+    }
+  },
+  {
+    "id": "edit.lines",
+    "name": "线输入、节点移动、连接、剪断、平滑与抽稀",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "file": "Bound full WL path",
+      "records": "Physical IDs",
+      "tolerance": "Explicit map units",
+      "action": "One observed command"
+    },
+    "preconditions": [
+      "Source fingerprint and working branch"
+    ],
+    "output_checks": [
+      "Affected geometry",
+      "Untargeted geometry",
+      "Thin bodies retained"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topic": "线编辑"
+    }
+  },
+  {
+    "id": "topology.node",
+    "name": "自动剪断、重复点/微短线检查、节点平差",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "boundary_layer": "Polygon-forming lines only",
+      "search_radius": "Map-unit tolerance",
+      "exclusions": "Faults, open lines and thin bodies"
+    },
+    "preconditions": [
+      "Separate line roles",
+      "Tolerance derived from scale"
+    ],
+    "output_checks": [
+      "Intersections noded",
+      "No unintended gap closure",
+      "Protected open features retained"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topics": [
+        41,
+        42,
+        44,
+        47,
+        50
+      ]
+    }
+  },
+  {
+    "id": "topology.build_areas",
+    "name": "线转弧段、区拓扑重建、洞与子区",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "boundary_layer": "Clean closed boundary network",
+      "output": "New WP",
+      "labels": "Formation seed/attributes"
+    },
+    "preconditions": [
+      "Topology check",
+      "Open fault layer excluded"
+    ],
+    "output_checks": [
+      "Shared arcs",
+      "Holes and thin regions",
+      "No overlaps/gaps",
+      "Native WP reopen"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topics": [
+        42,
+        50,
+        51
+      ]
+    }
+  },
+  {
+    "id": "edit.areas",
+    "name": "区分割、合并、挖洞、复制删除与参数",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "file": "Bound WP",
+      "records": "Physical IDs",
+      "action": "Observed native command"
+    },
+    "preconditions": [
+      "Current selection and dirty state known"
+    ],
+    "output_checks": [
+      "Shared boundaries and holes",
+      "Only intended geometry changed",
+      "Save and fresh reopen"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topic": "区编辑"
+    }
+  },
+  {
+    "id": "attributes.query",
+    "name": "属性结构、条件查询、赋值与统计",
+    "module": "attributes",
+    "executable": "W60_Att.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "table": "Native attribute table",
+      "predicate": "Typed condition",
+      "fields": "Explicit target fields"
+    },
+    "preconditions": [
+      "Exact dataset and schema"
+    ],
+    "output_checks": [
+      "Matched physical records",
+      "Field type/encoding",
+      "Independent statistics"
+    ],
+    "help": {
+      "file": "Gis_att.hlp",
+      "topic": "属性管理"
+    }
+  },
+  {
+    "id": "style.classify",
+    "name": "地层分类设色与图案填充",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "LOCAL_SAMPLE_TESTED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "field": "Formation code",
+      "mapping": "Explicit class to native color/pattern",
+      "unmapped": "Report missing classes"
+    },
+    "preconditions": [
+      "Project color table and symbols available"
+    ],
+    "output_checks": [
+      "All classes accounted for",
+      "Only style changes",
+      "Legend matches map"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topic": "统改区参数"
+    },
+    "validation_scope": "1024 installed native color swatches calibrated through RGB TIFF and independent UI anchors. Color-only byte patches preserved geometry/schema/other styles; 344 draft map interior samples matched the native palette.",
+    "workflow": "workflows/scan-geology.json"
+  },
+  {
+    "id": "style.annotation",
+    "name": "中文注释、上下标与图例",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "LOCAL_SAMPLE_TESTED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "text": "Native #+/#-/#= notation",
+      "position": "Explicit map coordinates",
+      "font": "Installed native font",
+      "size": "Native units"
+    },
+    "preconditions": [
+      "System symbol library bound"
+    ],
+    "output_checks": [
+      "Text bytes and rendering",
+      "Superscript/subscript native reopen"
+    ],
+    "help": {
+      "file": "Mpedit60.hlp",
+      "topic": "注释编辑"
+    },
+    "validation_scope": "New GBK annotation including Chinese and super/subscript, rotated symbol sample, native EPS/TIFF and fresh record readback. Custom symbol-library authoring is a separate task.",
+    "workflow": "workflows/scan-geology.json"
+  },
+  {
+    "id": "style.library",
+    "name": "子图库、线型库、填充库及自建符号",
+    "module": "symbols",
+    "executable": "w60_bb.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "library": "Task-owned library copy",
+      "symbol": "Unused native number and geometry"
+    },
+    "preconditions": [
+      "Preserve installed original library"
+    ],
+    "output_checks": [
+      "Library save/reopen",
+      "Target symbol renders in editor"
+    ],
+    "help": {
+      "file": "Gisbb.hlp",
+      "topic": "系统库管理"
+    }
+  },
+  {
+    "id": "projection.transform",
+    "name": "投影变换、比例尺和坐标单位转换",
+    "module": "projection",
+    "executable": "w60_proj.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "source_crs": "Explicit datum/projection/axis/units",
+      "target_crs": "Explicit datum/projection/axis/units",
+      "output": "New dataset"
+    },
+    "preconditions": [
+      "No guessed datum or zone",
+      "Datum shift parameters when required"
+    ],
+    "output_checks": [
+      "Known checkpoints",
+      "Independent PROJ comparison",
+      "Native reopen"
+    ],
+    "help": {
+      "file": "W60_proj.hlp",
+      "topic": "投影变换"
+    }
+  },
+  {
+    "id": "projection.frame",
+    "name": "标准图框、经纬网和图幅号",
+    "module": "projection",
+    "executable": "w60_proj.exe",
+    "validation": "LOCAL_SAMPLE_TESTED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "scale": "Scale denominator",
+      "sheet": "Validated sheet number or bounds",
+      "crs": "Explicit projection"
+    },
+    "preconditions": [
+      "Extent, units and numbering scheme known"
+    ],
+    "output_checks": [
+      "Corner coordinates",
+      "Grid spacing",
+      "Native vector files"
+    ],
+    "help": {
+      "file": "W60_proj.hlp",
+      "topic": "标准图框"
+    },
+    "validation_scope": "One CGCS2000 ellipsoid Gauss 1:50000 frame. Native vectors and four corners independently compared to PROJ; max error 0.000034812 metres.",
+    "workflow": "workflows/projection.json"
+  },
+  {
+    "id": "correction.vector",
+    "name": "矢量误差校正与控制点",
+    "module": "correction",
+    "executable": "w60_chg.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "gcps": "Explicit source/target points",
+      "model": "Chosen native correction",
+      "output": "New branch"
+    },
+    "preconditions": [
+      "Independent checkpoints"
+    ],
+    "output_checks": [
+      "Residual/error distribution",
+      "Geometry validity and preserved classes"
+    ],
+    "help": {
+      "file": "W60_chg.hlp",
+      "topic": "误差校正"
+    }
+  },
+  {
+    "id": "library.seams",
+    "name": "图幅接边、拼接、地图库和影像库管理",
+    "module": "library",
+    "executable": "W60_Dbs.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "tiles": "Same CRS and full paths",
+      "seam_tolerance": "Explicit units",
+      "identity": "Stable feature IDs across tiles"
+    },
+    "preconditions": [
+      "Matched symbols and classification"
+    ],
+    "output_checks": [
+      "No duplicate seam features",
+      "No gaps or wrong joins",
+      "Moved project dependency check"
+    ],
+    "help": {
+      "file": "W60_dbs.hlp",
+      "topic": "图库管理"
+    }
+  },
+  {
+    "id": "analysis.overlay",
+    "name": "空间叠加、裁剪、相交与合并",
+    "module": "analysis",
+    "executable": "W60_Anly.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "inputs": "Native layers in common explicit CRS",
+      "operation": "Overlay type",
+      "output": "New owned dataset"
+    },
+    "preconditions": [
+      "Valid geometry and matching units"
+    ],
+    "output_checks": [
+      "Independent area/count invariants",
+      "Attribute lineage",
+      "Native readback"
+    ],
+    "help": {
+      "file": "W60_Anly.hlp",
+      "topic": "空间分析"
+    }
+  },
+  {
+    "id": "analysis.buffer",
+    "name": "点线区缓冲与空间检索",
+    "module": "analysis",
+    "executable": "W60_Anly.exe",
+    "validation": "PARTIAL",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "distance": "Positive distance in explicit projected units",
+      "end_cap": "Explicit choice",
+      "inputs": "Source features"
+    },
+    "preconditions": [
+      "Projected coordinate frame",
+      "Known native approximation tolerance"
+    ],
+    "output_checks": [
+      "Distance and area checks",
+      "Attribute lineage"
+    ],
+    "help": {
+      "file": "W60_Anly.hlp",
+      "topic": "缓冲区分析"
+    },
+    "validation_scope": "Native all-points vector buffer for one point geometrically tested (radius error <1.43e-13, relative area error6.68e-5). Native source attributes were empty; a separate guarded branch restored one-to-one lineage. Other buffer types unverified.",
+    "workflow": "workflows/analysis.json"
+  },
+  {
+    "id": "terrain.dtm",
+    "name": "DTM、网格插值、等高线、剖面与体积",
+    "module": "terrain",
+    "executable": "W60_DTM.exe",
+    "validation": "PARTIAL",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "elevation": "Numeric Z source and unit",
+      "cell_size": "Explicit resolution",
+      "method": "Native interpolation method",
+      "boundary": "Analysis extent"
+    },
+    "preconditions": [
+      "Valid elevation and vertical datum",
+      "Module licence"
+    ],
+    "output_checks": [
+      "Independent checkpoints",
+      "Grid extent/no-data",
+      "Profile and volume units"
+    ],
+    "help": {
+      "file": "W60_dtm.hlp",
+      "topic": "DTM分析"
+    },
+    "validation_scope": "Traditional TIN, 121-node grid, five contours and triangle-method area/volume tested on one procedural plane. Fast TIN crashed; profile and other algorithms unverified.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "network.analysis",
+    "name": "网络拓扑、最短路径与连通性",
+    "module": "network",
+    "executable": "Netanaly.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "network": "Noded native network",
+      "cost": "Nonnegative typed cost",
+      "endpoints": "Explicit node IDs",
+      "restrictions": "Direction and barriers"
+    },
+    "preconditions": [
+      "Native network topology",
+      "Module licence"
+    ],
+    "output_checks": [
+      "Connectivity and cost",
+      "Known reference path"
+    ],
+    "help": {
+      "file": "Gis_net.hlp",
+      "topic": "网络分析"
+    }
+  },
+  {
+    "id": "exchange.vector",
+    "name": "SHP、DXF等多元数据交换",
+    "module": "conversion",
+    "executable": "W60_Conv.exe",
+    "validation": "DISCOVERED",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "source": "Native or exchange path",
+      "format": "Explicit target format",
+      "encoding": "Explicit attribute encoding"
+    },
+    "preconditions": [
+      "CRS and symbol-loss policy known"
+    ],
+    "output_checks": [
+      "Geometry count/extents",
+      "Field types/encoding",
+      "Document representation losses"
+    ],
+    "help": {
+      "file": "w60_conv.hlp",
+      "topic": "数据转换"
+    }
+  },
+  {
+    "id": "output.eps_tiff",
+    "name": "原生工程输出 EPS、TIFF 和转存PDF",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "TESTED",
+    "validation_scope": "0.3.2 native project and expansion scan crop; EPS/TIFF rendered, three symbol paths and their actual pixels independently checked. New projects require their own output checks.",
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    },
+    "parameters": {
+      "project": "Saved MPJ and all explicit dependencies",
+      "short_alias": "New short ASCII junction",
+      "page": "Physical mm dimensions",
+      "dpi": "Pixel/memory budget"
+    },
+    "preconditions": [
+      "Live paths match staged dependencies",
+      "No unresolved dirty state"
+    ],
+    "output_checks": [
+      "Actual native EPS/TIFF",
+      "Page size and rendered symbols",
+      "Fresh-process reopen",
+      "EPS to PDF conversion recorded"
+    ],
+    "help": {
+      "file": "Mapout60.hlp",
+      "topic": "工程输出"
+    }
+  },
+  {
+    "id": "raster.register",
+    "name": "扫描件登记与大图尺寸读取",
+    "module": "files",
+    "validation": "FILE_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_register_scan"
+    },
+    "parameters": {
+      "source": "Absolute original JPG/PNG/TIFF path",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Readable original; no full-image decode"
+    ],
+    "output_checks": [
+      "Source SHA256 and size",
+      "Source pixel coordinate frame"
+    ]
+  },
+  {
+    "id": "raster.window",
+    "name": "扫描大图分块与缩略预览",
+    "module": "files",
+    "validation": "FILE_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_scan_window"
+    },
+    "parameters": {
+      "scan_id": "Registered scan",
+      "window": "[left, top, width, height] in original pixels",
+      "max_dimension": "Bounded output, at most 4096",
+      "request_id": "Stable window ID"
+    },
+    "preconditions": [
+      "Unchanged source bytes"
+    ],
+    "output_checks": [
+      "Pixel-to-source transform",
+      "Output dimensions and fingerprint"
+    ]
+  },
+  {
+    "id": "raster.affine",
+    "name": "扫描配准、仿射控制点与独立检查点",
+    "module": "files",
+    "validation": "FILE_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_georeference"
+    },
+    "parameters": {
+      "scan_id": "Registered source",
+      "crs": "Explicit Earth CRS or named local frame with reference SHA256",
+      "gcps": "Distributed source pixel to map pairs",
+      "checkpoints": "Unused independent points",
+      "max_error": "Declared CRS units",
+      "pixel_frame": "source or explicit preview-to-source transform",
+      "request_id": "Stable fit ID"
+    },
+    "preconditions": [
+      "Never guess datum, map unit or zone"
+    ],
+    "output_checks": [
+      "Nondegenerate fit",
+      "Independent checkpoint error",
+      "Acceptance is grid consistency, not surveyed ground accuracy"
+    ]
+  },
+  {
+    "id": "raster.geotiff",
+    "name": "配准结果导出 GeoTIFF 与 MapGIS 控制点文件",
+    "module": "files",
+    "validation": "FILE_TESTED_NATIVE_GCP_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_write_georeferenced_window"
+    },
+    "parameters": {
+      "scan_id": "Registered source",
+      "window_id": "Fingerprint-bound window",
+      "georeference_id": "Accepted fit",
+      "request_id": "New output ID"
+    },
+    "preconditions": [
+      "Matching scan fingerprints and accepted independent check"
+    ],
+    "output_checks": [
+      "RGB pixels unchanged",
+      "Four corner GCPs",
+      "Native MSI conversion requires explicit GCP import; GeoTIFF metadata alone is discarded"
+    ],
+    "validation_scope": "Fresh raster process exported four imported GCPs with max coordinate difference 5.4069211209e-7 on local course grid; no claim of native warp or surveyed accuracy"
+  },
+  {
+    "id": "raster.candidates",
+    "name": "扫描件颜色分区、线跟踪与符号候选提取",
+    "module": "files",
+    "validation": "FILE_TESTED_NATIVE_PARTIAL",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_extract_candidates"
+    },
+    "parameters": {
+      "scan_id": "Registered source",
+      "window_id": "Bounded window",
+      "config": "mode areas/lines/symbols; explicit palette or mask/role; accepted georeference for map coordinates; optional coverage_simplify_px; optional min_seed_area_px, seed_erosion_px and protected_classes (source review required)",
+      "request_id": "Stable extraction ID"
+    },
+    "preconditions": [
+      "At most 4096 pixels per side",
+      "Color classes are not inferred formations"
+    ],
+    "output_checks": [
+      "Source offsets preserved",
+      "Open line endpoints remain reviewable",
+      "Unknown pixels and measured simplification deviation",
+      "All candidates remain UNREVIEWED"
+    ]
+  },
+  {
+    "id": "vector.create",
+    "name": "新建原生点线区、中文注记和旋转子图",
+    "module": "files",
+    "validation": "FILE_TESTED_NATIVE_LOCAL_SAMPLE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_creation"
+    },
+    "parameters": {
+      "features": "Map-coordinate GeoJSON with unique string feature IDs; properties/style/text are separate",
+      "template": "name WT/WL/WP, explicit crs and positive map_scale",
+      "request_id": "New CREATE ID"
+    },
+    "preconditions": [
+      "Two-dimensional valid geometry",
+      "Native styles must survive exact readback",
+      "class/field5/field6/field7 are native region index bytes, not style"
+    ],
+    "output_checks": [
+      "Shared arcs, clockwise native region walks and holes",
+      "GBK text and native markup",
+      "Logical IDs versus physical records",
+      "Apply with mapgis_apply_patch; native save/reopen is a separate gate"
+    ],
+    "validation_scope": "New WT/WL/WP displayed and read in native editor, including shared regions/holes/GBK annotations and symbols. Full draft saved, output and reopened. Geological interpretation is UNREVIEWED.",
+    "workflow": "workflows/scan-geology.json"
+  },
+  {
+    "id": "vector.process",
+    "name": "拓扑造区、叠加裁剪、缓冲、融合、简化、投影与分类",
+    "module": "files",
+    "validation": "FILE_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_vector_operation"
+    },
+    "parameters": {
+      "operation_id": "topology.polygonize | overlay.clip | overlay.difference | geometry.buffer | geometry.simplify | geometry.dissolve | projection.transform | style.classify",
+      "features": "GeoJSON with stable IDs and explicit line roles",
+      "template": "New native filename, explicit CRS and scale",
+      "parameters": "Operation-specific mask/distance/tolerance/field/source_crs/mapping",
+      "request_id": "New branch ID"
+    },
+    "preconditions": [
+      "Known projected units for distances",
+      "Unknown local datum cannot be reprojected",
+      "Unmapped style classes are errors"
+    ],
+    "output_checks": [
+      "Open fault/contour/protected lines retained as excluded source features",
+      "Topology cuts, dangles and invalid rings",
+      "Attribute lineage and actual transform accuracy",
+      "Apply/get/cancel use the existing request ledger"
+    ]
+  },
+  {
+    "id": "raster.merge_tiles",
+    "name": "扫描分块接边、去重、颜色类合并与共享边界检查",
+    "module": "files",
+    "validation": "FILE_TESTED",
+    "validation_scope": "Independent overlapping windows, disjoint ownership, stale output rejection and full course seam band comparison; native merge-module UI remains separate",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_merge_candidate_tiles"
+    },
+    "parameters": {
+      "scan_id": "Same fingerprinted scan",
+      "tiles": "[{request_id,core:[left,top,width,height]}], full-resolution source pixels",
+      "georeference_id": "Optional accepted fit; applied once after merge",
+      "simplify_px": "Joint coverage simplification; measured error reported",
+      "request_id": "New immutable output ID"
+    },
+    "preconditions": [
+      "Source pixel area candidates, matching palette",
+      "Disjoint cores covering one rectangle",
+      "Input receipts/window hashes unchanged"
+    ],
+    "output_checks": [
+      "Overlap disagreement and one-pixel core seam disagreement",
+      "No duplicate halo area",
+      "Matched shared boundaries and UNREVIEWED geological interpretation"
+    ]
+  },
+  {
+    "id": "projection.point",
+    "name": "原生单点高斯投影变换",
+    "module": "projection",
+    "executable": "w60_proj.exe",
+    "validation": "LOCAL_SAMPLE_TESTED",
+    "validation_scope": "Three CGCS2000 ellipsoid geographic/Gauss points at CM117 compared to PROJ, including the central meridian; max error 0.000034812 metres.",
+    "workflow": "workflows/projection.json",
+    "parameters": {
+      "source_crs": "Explicit type/ellipsoid/units",
+      "target_crs": "Explicit Gauss meridian/units/scale/additional shifts",
+      "point": "Longitude and latitude in actual observed fields"
+    },
+    "output_checks": [
+      "Numeric native readback",
+      "Independent PROJ comparison",
+      "Built-in false easting distinguished from additional shift"
+    ],
+    "preconditions": [
+      "Known datum and coordinate units"
+    ],
+    "help": {
+      "file": "W60_proj.hlp",
+      "topic": "单点投影变换"
+    },
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    }
+  },
+  {
+    "id": "terrain.grid",
+    "name": "原生传统TIN和线性规则格网",
+    "module": "terrain",
+    "parameters": {
+      "elevation": "XYZ with explicit units",
+      "cell_size": "DX,DY in known units",
+      "extent": "Explicit rectangle",
+      "output": "New TIN and GRD paths"
+    },
+    "output_checks": [
+      "Point count and XY/Z range",
+      "Grid node coordinates and no-data",
+      "Independent elevation checkpoints"
+    ],
+    "validation_scope": "25-point plane, traditional TIN coefficient -0.001, 11x11 native grid, maximum plane discrepancy 0.",
+    "executable": "W60_DTM.exe",
+    "validation": "LOCAL_SAMPLE_TESTED",
+    "workflow": "workflows/terrain.json",
+    "preconditions": [
+      "Native module access checked in actual session",
+      "Explicit horizontal and vertical units"
+    ],
+    "help": {
+      "file": "W60_dtm.hlp",
+      "topic": "TIN/规则网/模型应用"
+    },
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    }
+  },
+  {
+    "id": "terrain.contours",
+    "name": "规则格网到原生等高线WL",
+    "module": "terrain",
+    "parameters": {
+      "grid": "Saved native GRD",
+      "levels": "Required levels plus verified terminal sentinel",
+      "smoothing": "Explicit choice",
+      "coordinate_policy": "Raw ground coordinates or explicit drawing transform"
+    },
+    "output_checks": [
+      "Every intended layer exists in saved WL",
+      "Native vector readback",
+      "Vertex elevation against original grid"
+    ],
+    "validation_scope": "Five levels 105/110/115/120/125 independently checked; native terminal configured level omitted, corrected by sentinel130.",
+    "executable": "W60_DTM.exe",
+    "validation": "LOCAL_SAMPLE_TESTED",
+    "workflow": "workflows/terrain.json",
+    "preconditions": [
+      "Native module access checked in actual session",
+      "Explicit horizontal and vertical units"
+    ],
+    "help": {
+      "file": "W60_dtm.hlp",
+      "topic": "TIN/规则网/模型应用"
+    },
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    }
+  },
+  {
+    "id": "terrain.volume",
+    "name": "原生地形表面积和基面以上方量",
+    "module": "terrain",
+    "parameters": {
+      "grid": "Valid elevation grid with XYZ same units",
+      "region": "Explicit region or whole extent",
+      "reference_height": "Known vertical datum/unit",
+      "density": "Explicit numeric density",
+      "method": "Triangle method in accepted sample"
+    },
+    "output_checks": [
+      "Complete native output text",
+      "Horizontal area, surface area, cut/fill volume distinguished",
+      "Independent analytic/numerical result"
+    ],
+    "validation_scope": "Plane 0..100 metres: horizontal10000m2, surface10246.9508m2, volume above100m150000m3.",
+    "executable": "W60_DTM.exe",
+    "validation": "LOCAL_SAMPLE_TESTED",
+    "workflow": "workflows/terrain.json",
+    "preconditions": [
+      "Native module access checked in actual session",
+      "Explicit horizontal and vertical units"
+    ],
+    "help": {
+      "file": "W60_dtm.hlp",
+      "topic": "TIN/规则网/模型应用"
+    },
+    "execution": {
+      "kind": "host_sky",
+      "requires_observation": true
+    }
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/keros68/geoscan",
+  "commit": "6a5aa66192f17fd1d1aeb602f410aebff4d8bc92",
+  "files": {
+    "src/geoscan/trace_lines.py": "40abbd2f0e2ea8040422b78a0959b3c130c8df3c137fefd7ad700f8e72161935",
+    "src/geoscan/candidates.py": "e3e292e8afbc1e3a4c20327015977b2c4916289d3f5b474ffb1ec919ec0450d8",
+    "src/geoscan/raster.py": "b19028b71dd3f4e7e5e47a3fe975ad74b1b37e59cddae25ba2c0a054c7845735",
+    "LICENSE": "a20f0a003c4e2839f2edccea580e0949c04009bb209669ae5c0a10009c5ef0b6"
+  }
+}

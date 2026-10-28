@@ -8,11 +8,77 @@ from mcp.server.fastmcp import FastMCP
 from .core import Bridge
 from .environment import capabilities
 from .native_state import live_state
+from .operations import find_operations, describe_operation
+from .native_help import search_native_help
+from .raster import RasterWorkspace, write_georeferenced_window
+from .creation import prepare_creation
+from .vector import prepare_vector_operation
+from .candidates import extract_candidates, merge_candidate_tiles
 
 
 def build_server(root: str | Path) -> FastMCP:
     bridge = Bridge(root)
+    raster = RasterWorkspace(root)
     server = FastMCP("MapGIS 6.7 本机原生文件工具")
+
+    @server.tool()
+    def mapgis_search_native_help(module: str, query: str = '', topic_id: str | None = None, limit: int = 10) -> dict:
+        """Search the recipient's indexed HLP/CHM by module/words; pass returned topic_id to read the full topic. Source hash checked every time. Instructions are documentation, not permission or execution proof; native UI stays with host Sky."""
+        return search_native_help(bridge.root, module, query, topic_id, limit)
+
+    @server.tool()
+    def mapgis_find_operations(query: str = "", module: str | None = None) -> dict:
+        """Find local operations by task words/module. DISCOVERED is not executable or tested; describe before choosing an execution path."""
+        return find_operations(bridge.root, query, module)
+
+    @server.tool()
+    def mapgis_describe_operation(operation_id: str) -> dict:
+        """Read parameters, preconditions, installed executable, native help and acceptance checks. Native UI requires the host's Sky and fresh observations."""
+        return describe_operation(bridge.root, operation_id)
+
+    @server.tool()
+    def mapgis_register_scan(source: str, request_id: str) -> dict:
+        """Register original raster bytes/dimensions without full-image decode. Source/preview/tile coordinates remain distinct."""
+        return raster.register_scan(source, request_id)
+
+    @server.tool()
+    def mapgis_scan_window(scan_id: str, window: list[int], request_id: str, max_dimension: int = 2048) -> dict:
+        """Render a bounded source-pixel window using libvips. Returns exact preview-to-source mapping; never disables Pillow large-image protections."""
+        return raster.render_window(scan_id, window, request_id, max_dimension)
+
+    @server.tool()
+    def mapgis_prepare_georeference(scan_id: str, crs: dict, gcps: list[dict], request_id: str,
+                                   checkpoints: list[dict] | None = None, max_error: float = 1.0,
+                                   pixel_frame: str = "source", pixel_to_source: list[float] | None = None) -> dict:
+        """Fit an affine with explicit datum/axis order and independent checkpoints. Small fitting residual alone cannot pass acceptance. Errors use declared CRS units."""
+        return raster.prepare_georeference(scan_id, crs, gcps, request_id, checkpoints, max_error, pixel_frame, pixel_to_source)
+
+    @server.tool()
+    def mapgis_write_georeferenced_window(scan_id: str, window_id: str, georeference_id: str, request_id: str) -> dict:
+        """Write bounded RGB GeoTIFF plus a MapGIS .gcp file from an accepted affine. Native TIFF-to-MSI drops the GeoTIFF GCP metadata: explicitly import .gcp, save and reopen, then check overlay. Local grids stay local; source pixels and fingerprints are preserved."""
+        return write_georeferenced_window(raster,scan_id,window_id,georeference_id,request_id)
+
+    @server.tool()
+    def mapgis_extract_candidates(scan_id: str, window_id: str, config: dict, request_id: str) -> dict:
+        """Extract reviewable line/area/symbol candidates from a fingerprinted bounded window. GeoScan centerlines/GDAL cell-edge polygons preserve source offsets; map coordinates require an accepted georeference. Explicit roles/RGB mask/palette, no inferred geological age, all candidates UNREVIEWED. Returns GeoJSON path and QA."""
+        return extract_candidates(raster,scan_id,window_id,config,request_id)
+
+    @server.tool()
+    def mapgis_merge_candidate_tiles(scan_id: str, tiles: list[dict], request_id: str,
+                                      georeference_id: str | None = None, simplify_px: float = 0) -> dict:
+        """Merge full-resolution area candidates using explicit disjoint core rectangles in original pixels. tiles: [{request_id, core:[left,top,width,height]}]. Compare overlapping windows, clip duplicate halos, union each explicit color class, validate matched coverage, optionally simplify jointly and georeference once. Requires same source and palette; all geology remains UNREVIEWED. Returns immutable GeoJSON path and measured seam disagreement."""
+        return merge_candidate_tiles(raster,scan_id,tiles,request_id,georeference_id,simplify_px)
+
+    @server.tool()
+    def mapgis_prepare_creation(features: dict, template: dict, request_id: str) -> dict:
+        """Prepare NEW WT/WL/WP from map-coordinate GeoJSON with unique feature IDs, explicit CRS/scale and native style. Shared arcs/holes use pinned mapgis2shp. Apply/get/cancel use the existing request ledger; native UI reopen is a separate gate."""
+        return prepare_creation(bridge, features, template, request_id)
+
+    @server.tool()
+    def mapgis_prepare_vector_operation(operation_id: str, features: dict, template: dict,
+                                        parameters: dict, request_id: str) -> dict:
+        """Prepare a NEW native branch using GEOS/PROJ: topology.polygonize, overlay.clip/difference, geometry.buffer/simplify/dissolve, projection.transform, style.classify. Explicit CRS/units and stable IDs; preserves open nonboundary features; reports QA. Existing request apply/get/cancel commits the result."""
+        return prepare_vector_operation(bridge,operation_id,features,template,parameters,request_id)
 
     @server.tool()
     def mapgis_get_capabilities() -> dict:
@@ -42,7 +108,7 @@ def build_server(root: str | Path) -> FastMCP:
 
     @server.tool()
     def mapgis_apply_patch(request_id: str) -> dict:
-        """Apply a prepared patch to a NEW output branch after source hash recheck. Idempotent; does not overwrite originals or live documents."""
+        """Apply a prepared PATCH or CREATE to a NEW output branch after source hash recheck. Idempotent; does not overwrite originals or live documents. Reconcile get_request after interruption before retrying."""
         return bridge.apply(request_id)
 
     @server.tool()

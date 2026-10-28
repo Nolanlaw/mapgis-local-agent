@@ -2,10 +2,30 @@
 from __future__ import annotations
 
 import platform
+from importlib import metadata
 from pathlib import Path
 import struct
 
 import psutil
+
+
+MODULES = {
+    "editor":("mdiedit6x.exe","Mpedit60.hlp"),
+    "raster":("msiProc60.exe","MsiProc.chm"),
+    "projection":("w60_proj.exe","W60_proj.hlp"),
+    "correction":("w60_chg.exe","W60_chg.hlp"),
+    "attributes":("W60_Att.exe","W60_att.hlp"),
+    "symbols":("w60_bb.exe","Gisbb.hlp"),
+    "library":("W60_Dbs.exe","W60_dbs.hlp"),
+    "analysis":("W60_Anly.exe","W60_Anly.hlp"),
+    "terrain":("W60_DTM.exe","W60_dtm.hlp"),
+    "terrain_3d":("DTM6x.exe","DTM.chm"),
+    "network":("Netanaly.exe","Netanaly.chm"),
+    "conversion":("W60_Conv.exe","w60_conv.hlp"),
+    "output":("mapout60.exe","Mapout60.hlp"),
+    "section":("section.exe","section.CHM"),
+    "image_library":("MsiDb60.exe","Msimgdb.hlp"),
+}
 
 
 def capabilities(root: Path) -> dict:
@@ -15,7 +35,7 @@ def capabilities(root: Path) -> dict:
     install = Path(config["mapgis_installation"]) if config.get("mapgis_installation") else None
     binaries = []
     if install:
-        for name in ("Face67.exe", "mdiedit6x.exe", "W60_Conv.exe", "section.exe"):
+        for name in ("Face67.exe",*(pair[0] for pair in MODULES.values())):
             path = install / "program" / name
             if path.exists():
                 data = path.read_bytes()
@@ -25,15 +45,31 @@ def capabilities(root: Path) -> dict:
     processes = []
     for process in psutil.process_iter(["pid", "name", "exe", "create_time"]):
         try:
-            if (process.info["name"] or "").lower() in ("mdiedit6x.exe", "face67.exe", "dogserver67.exe"):
+            if (process.info["name"] or "").lower() in {"face67.exe","dogserver67.exe",*(pair[0].lower() for pair in MODULES.values())}:
                 processes.append(process.info)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
+    modules={name:{"executable":pair[0],"help_file":pair[1],
+                  "installed":bool(install and (install/'program'/pair[0]).is_file()),
+                  "help_present":bool(install and (install/'program'/pair[1]).is_file()),
+                  "licence":"UNCHECKED","native_execution":"host Sky; inspect the actual module before input"}
+             for name,pair in MODULES.items()}
+    dependencies={}
+    for name in ("mapgis2shp","mcp","psutil","pyvips","pyvips-binary","opencv-python-headless","rasterio","shapely","pyproj"):
+        try:
+            dependencies[name]=metadata.version(name)
+        except metadata.PackageNotFoundError:
+            dependencies[name]=None
     return {"platform": platform.platform(), "installation": str(install) if install else None,
             "binaries": binaries, "processes": processes,
+            "modules":modules,"dependencies":dependencies,
             "implemented": ["native_file_inspection", "copy_without_overwriting_original", "explicit_record_attribute_style_preview",
                          "new_branch_apply", "request_reconciliation", "guarded_structural_recovery",
-                         "exact_build_readonly_project_selection_dirty_state"],
+                         "exact_build_readonly_project_selection_dirty_state",
+                         "operation_discovery_with_validation_scope","source_bound_local_help_search","bounded_scan_windows",
+                         "explicit_affine_and_independent_checks","geotiff_and_native_gcp_export",
+                         "reviewable_scan_candidates","new_native_vectors_and_gbk_annotation",
+                         "geos_vector_operations_and_proj_transforms"],
             "native_profile": "mapgis-6.7-051118-readonly-v1; verified module hashes and loaded-code guards required",
             "native_execution": "Host-provided Sky performs native edits, save/reopen and output. Python does not send UI commands.",
             "native_output": "Prepare-NativeOutput.ps1 stages explicit sibling dependencies through a short ASCII junction; native EPS/TIFF require live path binding and file validation.",
@@ -42,5 +78,6 @@ def capabilities(root: Path) -> dict:
             "licence": "A running helper is not proof that all modules are licensed.",
             "sdk": "No matching developer headers or supported current-document API found in inspected installation.",
             "transport": "stdio; no listening port or arbitrary code execution tool",
-            "source": "Pinned mapgis2shp 2.6.0 plus byte-preserving edits and exact-build read-only Win32 state",
+            "source": "Pinned mapgis2shp 2.6.0, GeoScan and Stratigraphic Amenity; GEOS/PROJ/GDAL/libvips/OpenCV; new-file region/text compatibility supplements and byte-preserving edits",
+            "coverage_limit": "Discovery and installed modules do not establish full MapGIS automation. Each native workflow, licence and output needs actual acceptance evidence.",
             "native_save_limit": "File tools create a separate branch; they do not write into live unsaved MapGIS memory."}

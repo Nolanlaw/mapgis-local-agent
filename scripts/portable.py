@@ -84,7 +84,8 @@ def profile(root: Path) -> dict:
 
 def doctor(root: Path) -> dict:
     imports = {}
-    for name in ('numpy', 'pandas', 'geopandas', 'shapely', 'pyproj', 'psutil', 'mcp', 'pymapgis', 'mapgis_agent'):
+    for name in ('numpy', 'pandas', 'geopandas', 'shapely', 'pyproj', 'psutil', 'mcp', 'pymapgis',
+                 'pyvips', 'cv2', 'rasterio', 'mapgis_agent'):
         module = importlib.import_module(name)
         imports[name] = str(Path(module.__file__).resolve())
     gs = root / 'runtime/ghostscript/bin/gswin64c.exe'
@@ -118,6 +119,11 @@ def main() -> None:
                 selected = input().strip() or None
             result = configure(ROOT, Path(sys.executable), selected)
             result['diagnostics'] = doctor(ROOT)
+            if result['mapgis']:
+                completed = subprocess.run([sys.executable, '-s', '-B', '-X', 'utf8',
+                    str(ROOT / 'scripts/index_native_help.py')], capture_output=True, text=True, encoding='utf8')
+                result['native_help_index'] = {'exit_code': completed.returncode,
+                    'results': completed.stdout.strip(), 'error': completed.stderr.strip()}
         else:
             result = doctor(ROOT)
         print(json.dumps(result, ensure_ascii=False, indent=2))

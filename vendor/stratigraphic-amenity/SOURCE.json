@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/EigenformAI/stratigraphic-amenity",
+  "commit": "a389c0a299c4ee1007b2438d88d96093a3fbb994",
+  "copied_unchanged": {
+    "georef/transform.py": "ef5f292359f1f393afda8bae7e67a56d03d61aaf300c52bc015b06bd551f2a2a",
+    "georef/crs.py": "33d5ba08f1af74f487485edb46c8345d5d857141c8644b42a092d4f553f49ec7",
+    "georef/errors.py": "07bf0ae9717c230f46601e6084f334eb0519347c37af40c565b67c946af42872",
+    "knowledge/bounds.py": "0b7ff0fb67497dc28b73135345328365eee05cfc4286db488a458e69852bfc25",
+    "knowledge/errors.py": "e7bd8a93e93524096fbd91577d617997f09b46c4a1e5e11b4b18f42d2422596d"
+  },
+  "package_initializers": "empty to avoid unrelated plugin startup"
+}

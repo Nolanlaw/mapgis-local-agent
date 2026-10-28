@@ -102,7 +102,7 @@ export class NativeSession {
     const state = parseNativeState(raw.accessibility?.tree);
     this.process = identity;
     if (this.project && (state.project_name?.toLowerCase() !== path.basename(this.project.path).toLowerCase() ||
-        (state.project_path_observed && key(state.project_path_observed) !== key(this.project.path)))) throw new Error('STALE_PROJECT: bind the current full native project path again');
+        (state.project_path_observed && key(await fs.realpath(state.project_path_observed)) !== key(this.project.path)))) throw new Error('STALE_PROJECT: bind the current full native project path again');
     const files = [...new Set(state.layers.map(x => key(x.file)))];
     const fingerprints = {};
     for (const file of files) fingerprints[file] = hash(await fs.readFile(file));
@@ -123,7 +123,7 @@ export class NativeSession {
     const state = bindLiveObservation({tree: raw.accessibility?.tree, live, identity, windowId: this.window.id});
     const after = await this.support('live', this.root, this.pid);
     if (live.token !== after.token) throw new Error('STALE_LIVE_STATE: native state changed across the Sky observation');
-    if (this.project && key(this.project.path) !== key(state.project.path)) throw new Error('STALE_PROJECT');
+    if (this.project && key(this.project.path) !== key(await fs.realpath(state.project.path))) throw new Error('STALE_PROJECT');
     this.process = identity;
     return state;
   }
@@ -160,7 +160,9 @@ export class NativeSession {
   async prepareStyle(requestId, fillColor) {
     if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(requestId)) throw new Error('Invalid request id');
     if (!this.project) throw new Error('Bind full native project path first');
-    if (!Number.isInteger(fillColor) || fillColor < 0 || fillColor > 255) throw new Error('fill_color must be 0..255');
+    // The installed 6.7 color picker and native TIFF calibration expose 1024
+    // entries. A color number is not an eight-bit RGB channel.
+    if (!Number.isInteger(fillColor) || fillColor < 0 || fillColor > 1023) throw new Error('fill_color must be 0..1023');
     const state = await this.capture();
     if (!state.selection) throw new Error('NO_NATIVE_SELECTION: open the selected area parameter dialog');
     const actual = await fs.realpath(state.selection.file);

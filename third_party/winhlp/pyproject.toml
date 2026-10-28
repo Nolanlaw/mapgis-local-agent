@@ -1,0 +1,51 @@
+[project]
+name = "winhlp"
+description = "Windows HLP file TUI and library"
+version = "0.4.3"
+authors = [
+    { name = "Gareth Davidson", email = "gaz@bitplane.net" }
+]
+readme = "README.md"
+requires-python = ">=3.13"
+
+dependencies = [
+    "pydantic",
+    "textual>=0.84",
+    "pillow-wmf>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://bitplane.net/dev/python/winhlp"
+Repository = "https://github.com/bitplane/winhlp"
+"Bug Tracker" = "https://github.com/bitplane/winhlp/issues"
+
+[project.scripts]
+winhlp = "winhlp.__main__:main"
+
+[project.optional-dependencies]
+html = [
+    "pillow"  # retained for compatibility; pillow-wmf already requires Pillow
+]
+dev = [
+    "pre-commit",
+    "pytest",
+    "coverage",
+    "pytest-cov",
+    "pytest-asyncio",
+    "build",
+    "twine",
+    "ruff",
+    "pillow",
+    "pydoc-markdown"
+]
+
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core >=3.2,<4"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.format]
+docstring-code-format = true

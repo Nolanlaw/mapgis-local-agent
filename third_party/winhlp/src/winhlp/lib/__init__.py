@@ -1,0 +1,27 @@
+"""
+winhlp.lib - Core library components
+
+Internal modules for parsing HLP file structures.
+"""
+
+from .hlp import HelpFile
+from .directory import Directory
+from .btree import BTree
+from .compression import lz77_decompress, phrase_decompress, hall_decompress
+from .exceptions import HLPError, InvalidHLPFileError, BTreeError
+from .document import HelpDocument, HelpNavigator, ResolvedTarget
+
+__all__ = [
+    "HelpFile",
+    "Directory",
+    "BTree",
+    "lz77_decompress",
+    "phrase_decompress",
+    "hall_decompress",
+    "HLPError",
+    "InvalidHLPFileError",
+    "BTreeError",
+    "HelpDocument",
+    "HelpNavigator",
+    "ResolvedTarget",
+]

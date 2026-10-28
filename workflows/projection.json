@@ -1,0 +1,34 @@
+{
+  "id": "projection",
+  "schema_version": 1,
+  "title": "MapGIS 6.7 标准图框与单点投影",
+  "execution": "Host Sky operates the observed native interface. These are task instructions, not fixed screen coordinates.",
+  "native_module": "projection",
+  "validation": "LOCAL_SAMPLE_TESTED",
+  "validation_scope": "One CGCS2000 ellipsoid / Gauss central meridian 117 degree sample: three native single points and a 1:50000 frame. Maximum independent PROJ discrepancy 0.000034812 metres; tolerance 0.0001 metres. File reprojection and datum changes are separate tasks.",
+  "inputs": [
+    "明确源/目标坐标类型、椭球/基准、中央经线、分带、单位和比例尺",
+    "图框比例尺、图幅号或西南角经纬度及图幅跨度",
+    "输出到不存在的短 ASCII 路径；保留原始数据"
+  ],
+  "steps": [
+    {
+      "id": "launch",
+      "action": "通过主菜单 实用服务→投影变换 启动。核对真实模块和标题。本机直接隐藏启动 w60_proj.exe 曾没有可用窗口；不能把进程存在当作启动验收。"
+    },
+    {
+      "id": "frame",
+      "action": "系列标准图框→椭球参数，显式选择并读回椭球数值，再选择相应比例尺。输入西南角经纬度和格网间距。明确图框平移、旋转、公里网和坐标标注选项，使用新前缀保存 WT/WL/WP。图框椭球设置与单点投影参数独立。",
+      "checks": ["实际文件存在且可读", "内图廓四角与独立投影计算一致", "按显式比例尺将绘图毫米换算为地面单位", "格网与图廓没有重复平移"]
+    },
+    {
+      "id": "point",
+      "action": "投影变换→单点投影变换，分别打开输入和输出投影参数，核对坐标类型、椭球、单位、比例尺、中央经线、附加位移和高程。按实际界面位置与内容确定经度/纬度输入框；此版本的 AX 标签可能颠倒。输入单点后执行计算，读取输出值。",
+      "checks": ["中央经线上的东坐标符合假东距", "至少另一个非中央经线点与 PROJ 核对", "本机高斯投影已内置 500000 米假东距，平移 X 是附加值", "本机负零高程 -0 会触发数值校验，零使用 0"]
+    },
+    {
+      "id": "close",
+      "action": "保留输入、输出指纹与实际参数，恢复本次改变的共享图框选项，正常关闭自有测试模块并确认结束。其他投影、基准转换和任意文件批量转换须各自验证。"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Temporary / sensitive files
+.pypirc
+*.tmp
+/tmp/
+
+# JWD pipeline code — not part of the published package (hatch-excluded from
+# sdist/wheel; geological semantics is out of mapgis2shp scope) and not
+# version-controlled here
+src/pymapgis/rendering/
+src/pymapgis/semantics/
+
+# MapGIS sample/test vector data (real geological survey data, not for distribution)
+*.WT
+*.WL
+*.WP
+*.WT~
+*.WL~
+*.WP~
+
+# Public synthetic regression fixtures are the only MapGIS binaries intended
+# for distribution. Root-level and other real survey files remain ignored.
+!tests/fixtures/mapgis/*.wt
+!tests/fixtures/mapgis/*.wl
+!tests/fixtures/mapgis/*.wp
+!tests/fixtures/mapgis/*.WT
+!tests/fixtures/mapgis/*.WL
+!tests/fixtures/mapgis/*.WP
+
+# MapGIS project / raster overlay files
+*.MPJ
+*.TIF.ovr
+
+# Rendered maps, debug images, and figure outputs
+*.png
+*.PNG
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.mbtiles
+
+# Exceptions: keep paper figures (publication assets)
+!paper/figures/*.png
+!paper/figures/*.pdf
+
+# Generated analysis artifacts (regenerated from scripts, not source)
+*_debug.png
+conversation_context_*.jsonl
+analysis_report.*
+classification_report.*
+deep_interpretation.*
+detailed_parsing.*
+systematic_classification.*
+parsed_content.*
+samples_summary.txt

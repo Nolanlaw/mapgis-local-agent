@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import {NativeSession, parseNativeState, bindLiveObservation} from '../scripts/native_session.mjs';
 
 const frame = 'Window: "MAPGIS 编辑子系统 - 实测.MPJ", App: mdiedit6x.exe.\n\t0 窗口 MAPGIS 编辑子系统 - 实测.MPJ Secondary Actions: Raise\n';
@@ -82,4 +85,38 @@ test('fresh reopen rejects the wrong native record and unsaved color', async () 
 
 test('fresh process and matching native record pass reopen', async () => {
   assert.equal((await reopenSession().verifyReopened('test', 'baseline')).state, 'reopened_verified');
+});
+
+test('live binding resolves a short junction and rejects later retargeting', async t => {
+  const temp=await fs.mkdtemp(path.join(os.tmpdir(),'mapgis-binding-'));
+  t.after(async()=>fs.rm(temp,{recursive:true,force:true}));
+  const first=path.join(temp,'first'),other=path.join(temp,'other'),alias=path.join(temp,'alias');
+  await fs.mkdir(first); await fs.mkdir(other);
+  await fs.writeFile(path.join(first,'实测.MPJ'),'first');
+  await fs.writeFile(path.join(other,'实测.MPJ'),'other');
+  await fs.symlink(first,alias,'junction');
+  const window={app:'process:'+identity.exe,id:9};
+  const session=new NativeSession({sky:{list_windows:async()=>[window],get_window_state:async()=>({accessibility:{tree:frame}})},window,root:temp,python:'',pid:123});
+  session.support=async command=>command==='identity'?{...identity,executable_sha256:'x'}:{...live,project_views:[{...live.project_views[0],project_path:path.join(alias,'实测.MPJ')}]};
+  session.receipt=async (_id,value)=>value;
+  await session.bindLiveProject();
+  assert.equal(session.project.path,await fs.realpath(path.join(first,'实测.MPJ')));
+  await fs.unlink(alias); await fs.symlink(other,alias,'junction');
+  await assert.rejects(session.captureLive(),/STALE_PROJECT/);
+});
+
+test('native style requests preserve calibrated color numbers above 255', async t => {
+  const temp=await fs.mkdtemp(path.join(os.tmpdir(),'mapgis-colors-'));
+  t.after(async()=>fs.rm(temp,{recursive:true,force:true}));
+  const folder=path.join(temp,'work'); await fs.mkdir(folder);
+  const file=path.join(folder,'colors.wp'); await fs.writeFile(file,'owned fixture');
+  const session=new NativeSession({sky:{},window:{},root:temp,python:'',pid:123});
+  session.project={path:path.join(folder,'colors.mpj')};
+  session.capture=async()=>({token:'stable',selection:{file,record_id:24}});
+  session.support=async()=>({path:file,sha256:'baseline'});
+  session.receipt=async(_id,value)=>value;
+  const prepared=await session.prepareStyle('color-563',563);
+  assert.equal(prepared.requested.fill_color,563);
+  assert.equal(prepared.state,'prepared');
+  await assert.rejects(session.prepareStyle('color-overflow',1024),/fill_color/);
 });

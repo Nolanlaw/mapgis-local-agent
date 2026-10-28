@@ -4,10 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mapgis-local-agent"
-version = "0.3.2"
+version = "0.4.0"
 description = "MapGIS 6.7 native files, exact-build live state and Sky desktop binding"
 requires-python = ">=3.12"
-dependencies = ["mapgis2shp==2.6.0", "mcp>=1.20,<2", "psutil>=6"]
+dependencies = [
+    "mapgis2shp==2.6.0", "mcp>=1.20,<2", "psutil>=6",
+    "pyvips==3.0.0", "pyvips-binary==8.18.7",
+    "opencv-python-headless==4.13.0.92", "rasterio==1.4.4",
+]
 
 [project.scripts]
 mapgis-agent = "mapgis_agent.cli:main"
@@ -15,6 +19,9 @@ mapgis-agent-mcp = "mapgis_agent.server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mapgis_agent"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"workflows" = "mapgis_agent/workflows"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

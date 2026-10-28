@@ -1,0 +1,33 @@
+{
+  "id": "analysis",
+  "schema_version": 1,
+  "title": "MapGIS 6.7 点缓冲与属性来源检查",
+  "execution": "Host Sky operates the native module; saved geometry and attributes are independently read by the file tools.",
+  "native_module": "analysis",
+  "validation": "LOCAL_SAMPLE_TESTED",
+  "validation_scope": "One procedural point, native all-points vector buffer with radius100 input units. 315 stored vertices, maximum vertex radius error1.43e-13; relative area difference from analytic circle6.68e-5. Other buffer types and general attribute transfer are separate tasks.",
+  "steps": [
+    {
+      "id": "source",
+      "action": "主菜单 空间分析→空间分析。文件→装点文件，读取新工作副本；用实际 MDI 完整路径确认输入。半径按原生图上距离解释，须依据输入文件的坐标与比例尺明确换算，不能默认是地面米。"
+    },
+    {
+      "id": "parameters",
+      "action": "空间分析→缓冲区分析→求全部点缓冲区。弹出的 Buffer分析参数设置 中显式勾选点、选择矢量法、固定半径并输入值。旧的“输入缓冲区半径”对话框与这里的半径值不同，不能只设置旧入口。读回实际数值与单选/复选状态。"
+    },
+    {
+      "id": "output",
+      "action": "输出到新的 WP 路径，确认原生结果窗口的完整路径。独立读取有效几何，核对半径、边界、面积与原始点指纹。圆形以多边形逼近，面积应按事先约定的误差检查。",
+      "checks": ["本样本圆心1000,1000，半径100", "坐标顶点距圆心100，面积与π×100²相对差小于1e-3", "源文件指纹不变"]
+    },
+    {
+      "id": "attributes",
+      "action": "逐字段检查结果来源。本机原生点缓冲结果的 ID0=0、名称为空，没有带回原点的 ID7和名称。不得宣称属性自动保留。单点单区且唯一空间覆盖证明通过后，可用已有属性补丁在新分支补回来源字段；多个源点重叠时必须记录多对多来源，不能随意挑第一个点。",
+      "checks": ["新分支几何 WKB 不变", "ID0和名称实际读回", "原生输出保留作对照", "物理记录号与来源属性分开"]
+    },
+    {
+      "id": "close",
+      "action": "核对实际保存文件，正常关闭自有模块，确认源指纹及结果仍可读。其他模块和其他缓冲方法单独验证。"
+    }
+  ]
+}

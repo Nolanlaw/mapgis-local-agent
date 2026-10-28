@@ -47,10 +47,22 @@
 
 保留原始文件，在副本上编辑。文件工具使用物理记录编号定位对象，属性字段中的 ID 可以重复。恢复操作需要基线和请求记录，并会检查目标字段是否有后续冲突；它不能恢复崩溃前任意未保存的内存内容。
 
-目前没有验证从任意地质图图片自动重建完整工程。制作新图时还需核对坐标系、比例尺、图例和符号库。
+扫描图流程可生成可编辑点线区草稿；地层、花纹、文字和符号的解释需要复核。可以明确使用本地演示坐标，不能把它当作真实地理精度。完整范围与已知问题见 `docs/CAPABILITIES.md`。
 
 ## 第三方组件
 
 Ghostscript 位于 `runtime/ghostscript/`，可将原生 EPS 转换为 PDF。对应源码、GEOS 源码及许可证随包保留；组件清单见 `THIRD-PARTY.json`，原生格式库源码位于 `vendor/mapgis2shp/`。
 
-分享包没有附带可选的 pyogrio/GDAL 通用格式转换引擎。需要这些功能的开发者可按 `requirements.lock.txt` 准备开发环境。
+分享包包含 Rasterio 使用的 GDAL 栅格运行时；没有附带可选的 pyogrio 通用矢量转换引擎。需要这些功能的开发者可按 `requirements.lock.txt` 准备开发环境。
+
+## 查找原生功能
+
+安装时填写 MapGIS 路径后，会从本机 HLP/CHM 建立帮助索引。Agent 可用 `mapgis_find_operations` 找到整理后的入口，再用 `mapgis_describe_operation` 读取参数和工作流；其他菜单可通过 `mapgis_search_native_help` 指定模块、关键词和主题编号检索。索引失效或缺失时，重新运行 `scripts/index_native_help.py`。目录状态、帮助说明与实际执行结果分别记录。
+
+例如：
+
+> 从这张扫描件建立一个本地演示坐标工程，生成点线区草稿；保留开放断层，检查接边，保存重开后导出 EPS 和 TIFF。
+
+> 查找 DTM 的格网与等值线操作，先用解析平面小样核对输出，再处理我的数据。
+
+新增原生库的源码、构建脚本、许可和替换说明见 `docs/THIRD-PARTY.md`。

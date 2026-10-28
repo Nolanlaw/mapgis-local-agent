@@ -1,0 +1,45 @@
+{
+  "id": "terrain",
+  "schema_version": 1,
+  "title": "MapGIS 6.7 高程点、TIN、规则格网与等值线",
+  "execution": "Host Sky operates observed controls. Rasterio/GDAL and the native vector reader independently inspect saved outputs; Python does not drive the desktop.",
+  "native_module": "terrain",
+  "validation": "LOCAL_SAMPLE_TESTED",
+  "validation_scope": "Procedural metre plane z=100+0.1*x+0.2*y over 0..100: 25 points, native traditional TIN, 121 grid nodes, five contours, triangle-method area and volume. Other models, profiles, constrained TIN and terrain analyses require their own samples.",
+  "inputs": [
+    "明确水平/垂直坐标和单位，坡度及表面积要求 XYZ 同单位",
+    "数值高程和无效值定义，已知边界及独立检查点",
+    "网格间距、插值方法、等值层、基准高程和密度",
+    "输出为全新路径；同一输入失败后先核对，不重复盲算"
+  ],
+  "steps": [
+    {
+      "id": "source",
+      "action": "主菜单 空间分析→DTM分析；文件→打开三角剖分文件可读取 DET/GRD/TIN 等。非规则 DET 文本以 NOTGRID 开始，后续每行 x,y,z。先用 Grd模型→浏览高程数据信息核对点数、XY范围、Z范围及规则/非规则类型。"
+    },
+    {
+      "id": "tin",
+      "action": "Tin模型→生成高程初始三角剖分，显式设置负判别系数（本样本 -0.001），读取结果后另存 TIN。实际检查保存后的文件名；此版本另存 TIN 曾截短长基名并重复添加扩展名。",
+      "limit": "本机快速生成三角剖分网对25点样本提示内存不足并退出。没有据此判断整机内存不足，也不关闭其他任务的进程。传统路径已通过相同数据；快速路径仍标为失败。"
+    },
+    {
+      "id": "grid",
+      "action": "Tin模型→三角网内插网格化，输入明确范围、DX、DY和全新输出路径。文件名框在本次格网输出中保留输入的完整名称，不自动补扩展名，须实际检查。以 GRD 重开，在独立 GDAL 读取器中检查范围、节点坐标、无效值和高程。",
+      "checks": ["样本0..100，DX=DY=10，11×11节点", "Surfer GSBG 是节点格网：用像素中心恢复节点，不能把GDAL外包边界误当节点范围", "独立解析平面121节点误差0"]
+    },
+    {
+      "id": "contours",
+      "action": "Grd模型→平面等值线图绘制。明确是否套区、光滑、制图注记、图幅变换和保留边界。要保留原始地面坐标时关闭制图注记，读回原始数据范围。设置目标层并更新当前分段。文件→另存数据于→线数据文件保存新的 WL。",
+      "checks": ["实际输出的每个层值和顶点高程", "本样本105..125步5漏掉末层125；以130作终止哨兵后写出105/110/115/120/125五条", "按实际输出核对层值，不能仅凭设置列表判定完成", "独立读取样本顶点高程最大误差约1e-9米"]
+    },
+    {
+      "id": "volume",
+      "action": "模型应用→蓄积量/表面积计算；明确选择区域或整个区域，设置基准高程、密度及算法。读取完整结果文本，区分水平面积、地表面积、搬去方量和添入方量。",
+      "checks": ["本样本基面100、密度1、三角剖分法", "水平面积10000平方米", "地表面积10000×sqrt(1+0.1²+0.2²)=10246.95076596平方米", "高于100米基面体积150000立方米", "真实数据不可借用程序化样本的单位和基准"]
+    },
+    {
+      "id": "save-close",
+      "action": "保存的格网由新进程重开后再次生成等值线；独立核对文件。关闭自有会话，保留实际失败与有效参数，不声称可以恢复崩溃前的任意未保存内存。"
+    }
+  ]
+}

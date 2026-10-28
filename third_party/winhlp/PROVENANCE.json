@@ -1,0 +1,6 @@
+{
+  "url": "https://github.com/bitplane/winhlp",
+  "commit": "cb2661ef85693799641cf7ab258e7a4074732568",
+  "licence": "GPL-2.0; separate unmodified parser tool, not imported by MCP server",
+  "scope": "src, README.md, LICENSE.md, pyproject.toml; API parser subset tested under Python 3.12; upstream full CLI requires Python 3.13"
+}

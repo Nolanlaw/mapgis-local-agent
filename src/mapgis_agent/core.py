@@ -112,6 +112,20 @@ def native_ids(reader: Reader) -> list[int]:
     return list(range(1, len(reader) + 1))
 
 
+def annotation_text(blob: bytes, entries: list, record_id: int) -> str | None:
+    position=entries[0][0]+record_id*93
+    if blob[position+31]!=0:
+        return None
+    length,offset=struct.unpack_from("<Hi",blob,position+1)
+    pool,size=entries[1]
+    if offset<0 or offset+length>size:
+        raise BridgeError("ANNOTATION_POOL_OUT_OF_BOUNDS")
+    try:
+        return blob[pool+offset:pool+offset+length].decode("gbk",errors="strict")
+    except UnicodeDecodeError as exc:
+        raise BridgeError("INVALID_GBK_ANNOTATION") from exc
+
+
 def layout_signature(blob: bytes) -> str:
     """Record locations and attribute descriptors for the byte-offset fast path."""
     start = struct.unpack_from("<i", blob, 12)[0]
@@ -154,6 +168,13 @@ class Bridge:
             raise BridgeError("Expected a native vector file")
         return path
 
+    def destination_path(self, value: str | Path) -> Path:
+        """Resolve a new task artifact without following a junction out of root."""
+        path = Path(value).resolve()
+        if not any(path.is_relative_to(self.root / d) for d in ("work", "deliverables")):
+            raise BridgeError("Writes require a project-owned destination")
+        return path
+
     @staticmethod
     def request_id(value: str) -> str:
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}", value):
@@ -164,7 +185,7 @@ class Bridge:
         if not 0 <= offset or not 1 <= limit <= 100:
             raise BridgeError("offset must be nonnegative; limit must be 1-100")
         path = Path(file).resolve(strict=True)
-        blob, reader, _ = read_native(path)
+        blob, reader, entries = read_native(path)
         ids = native_ids(reader)
         rows = []
         for row in range(offset, min(offset + limit, len(ids))):
@@ -176,6 +197,8 @@ class Bridge:
             rows.append({"record_id": ids[row], "attributes": attrs, "style": style,
                          "geometry_type": geometry.geom_type,
                          "valid": bool(geometry.is_valid), "bounds": list(geometry.bounds)})
+            if reader.shapeType=="POINT":
+                rows[-1]["text"]=annotation_text(blob,entries,ids[row])
         return {"path": str(path), "sha256": sha(blob), "bytes": len(blob),
                 "type": reader.shapeType, "count": len(reader),
                 "crs": reader.crs.to_wkt() if reader.crs else None,

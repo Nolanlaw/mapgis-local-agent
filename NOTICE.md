@@ -7,9 +7,17 @@
 没有修改上游生产源码；局部写入层在本项目中实现。
 
 MCP 协议使用官方 `modelcontextprotocol/python-sdk` 1.30.0（MIT），由锁定依赖安装。
-GeoScan 仅作为公开兼容方案研究，未复制其实现，也不作为运行依赖。
-本机帮助提取研究复用 winhlp 固定提交 cb2661ef85693799641cf7ab258e7a4074732568（GPL-2.0）；
-未修改其实现，不链接进连接器。REA/Ghidra/JDK 沿用各自原许可证，配置及二进制不进入源码包。
+扫描仿射数学复用 Stratigraphic Amenity 固定提交
+`a389c0a299c4ee1007b2438d88d96093a3fbb994` 的五个 MIT 源文件；
+中心线细化、路径跟踪与简化复用 GeoScan 固定提交
+`6a5aa66192f17fd1d1aeb602f410aebff4d8bc92` 的 MIT 实现。
+原始源码及许可证保存在 vendor/；运行副本在 src/mapgis_agent/_vendor/。
+分块解码使用 pyvips 3.0.0 / libvips 8.18.7，像素多边形使用 Rasterio/GDAL，
+共享边界简化、矢量计算和坐标转换使用已有 GEOS/PROJ；均保留上游许可与来源。
+本机帮助索引使用 winhlp 固定提交 cb2661ef85693799641cf7ab258e7a4074732568（GPL-2.0）；
+未修改的源码及许可证随包保存在 third_party/winhlp，由独立索引脚本调用，不链接进 MCP 服务。
+索引只读取接收者自己的安装，MapGIS 帮助正文及生成的索引不分发。
+REA/Ghidra/JDK 沿用各自原许可证，配置及二进制不进入源码包。
 本机 EPS 验收转换复用官方 Ghostscript 10.08.0（GNU AGPLv3），只调用独立命令行程序。
 源码包不附带 Ghostscript 二进制，也不重新实现 PostScript 解析或渲染器。
 离线分享包另附官方未修改的Ghostscript运行时及对应源码，GEOS对应源码也随包保留；
