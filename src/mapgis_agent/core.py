@@ -77,6 +77,13 @@ def _filter_deleted_rows(blob: bytes, reader: Reader, sections: list[tuple[int, 
     if length < 1 or table_start + count * length > attr_start + attr_size:
         raise BridgeError("Invalid native active-record table")
     physical = list(reader._polygon_active_ids) if reader.shapeType == "POLYGON" else list(range(1, len(reader.geom) + 1))
+    geometry_flags = None
+    native_count_matches = False
+    if reader.shapeType != "POLYGON":
+        size = 93 if reader.shapeType == "POINT" else 57
+        geometry_flags = [blob[sections[0][0] + rid * size] for rid in physical]
+        native_count_matches = (all(flag in (0, 1) for flag in geometry_flags)
+                                and sum(geometry_flags) == struct.unpack_from("<I", blob, 260)[0])
     keep = []
     for row, record_id in enumerate(physical):
         if record_id >= count:
@@ -85,10 +92,15 @@ def _filter_deleted_rows(blob: bytes, reader: Reader, sections: list[tuple[int, 
         if flag not in (0, 1):
             raise BridgeError("Unknown native attribute active flag")
         if reader.shapeType != "POLYGON":
-            size = 93 if reader.shapeType == "POINT" else 57
-            geometry_flag = blob[sections[0][0] + record_id * size]
+            geometry_flag = geometry_flags[row]
             if geometry_flag != flag:
-                raise BridgeError("INCONSISTENT_ACTIVE_FLAGS: geometry and attributes disagree")
+                # BAS60 may retain the attribute payload of a deleted physical
+                # slot. Native GetPnt returns -1 and the active-count header
+                # excludes it. An active geometry with missing attributes, an
+                # unknown flag or a contradictory count is still rejected.
+                if not (geometry_flag == 0 and flag == 1 and native_count_matches):
+                    raise BridgeError("INCONSISTENT_ACTIVE_FLAGS: geometry and attributes disagree")
+            flag = geometry_flag
         if flag:
             keep.append(row)
     reader._bridge_physical_ids = [physical[row] for row in keep]
@@ -383,6 +395,8 @@ class Bridge:
             receipt = self._receipt(row)
             if row["state"] == "CANCELLED":
                 raise BridgeError("This request was cancelled")
+            if row["state"] not in ("PREPARED", "APPLIED"):
+                raise BridgeError("Request is not prepared; reconcile its native execution first")
             output = Path(receipt["output"])
             if output.exists():
                 if sha(output.read_bytes()) != sha(row["after_blob"]):
@@ -393,6 +407,9 @@ class Bridge:
                 raise BridgeError("OUTPUT_MISSING: previously applied output was removed; use a new request")
             if sha(Path(row["source"]).read_bytes()) != sha(row["before_blob"]):
                 raise BridgeError("STALE_SOURCE: source changed after preview")
+            if receipt.get("kind") == "NATIVE_PLOT":
+                if any(sha(Path(item["file"]).read_bytes()) != item["sha256"] for item in receipt["sources"]):
+                    raise BridgeError("STALE_SOURCE: plot layer changed after preview")
             output.parent.parent.mkdir(parents=True, exist_ok=True)
             if output.parent.exists():
                 raise BridgeError("INCOMPLETE_OUTPUT: inspect the existing request directory")
@@ -401,7 +418,11 @@ class Bridge:
                 stream.write(row["after_blob"])
                 stream.flush()
                 os.fsync(stream.fileno())
-            read_native(output)
+            if receipt.get("kind") == "NATIVE_PLOT":
+                from .native_plot import validate_eps
+                validate_eps(output, receipt["view"]["paper_mm"])
+            else:
+                read_native(output)
             if sha(output.read_bytes()) != sha(row["after_blob"]):
                 raise BridgeError("Output readback failed")
             db.execute("UPDATE commands SET state='APPLIED' WHERE id=?", (request_id,))
@@ -419,6 +440,30 @@ class Bridge:
             db.execute("UPDATE commands SET state='CANCELLED' WHERE id=?", (request_id,))
         return {"id": request_id, "state": "CANCELLED"}
 
+    def verify_output(self, request_id: str, file: str) -> dict:
+        """Compare a native-saved file against this request's immutable candidate."""
+        from .comparison import compare_native_files
+
+        self.request_id(request_id)
+        with self.connect() as db:
+            row = db.execute("SELECT * FROM commands WHERE id=?", (request_id,)).fetchone()
+            if row is None or row["state"] != "APPLIED":
+                raise BridgeError("Verification requires a previously applied request")
+            receipt = self._receipt(row)
+            candidate = row["after_blob"]
+        actual = Path(file).resolve(strict=True)
+        with tempfile.TemporaryDirectory(prefix="verify-request-", dir=self.root / "work") as folder:
+            baseline = Path(folder) / Path(receipt["output"]).name
+            baseline.write_bytes(candidate)
+            comparison = compare_native_files(str(baseline), str(actual))
+        # The baseline is the persisted BLOB; its temporary path is not a resource.
+        comparison["before"]["path"] = None
+        return {"id": request_id, "kind": receipt.get("kind", "PATCH"), "file": str(actual),
+                "candidate_sha256": sha(candidate), "candidate_source": "persisted request candidate",
+                "matches_candidate_records": comparison["records_equal"] and not comparison["metadata_changes"],
+                "comparison": comparison, "native_reopen": "NOT_VERIFIED",
+                "scope": "saved disk records, text, graphic parameters and coordinate header; native session requires separate binding"}
+
     def recover(self, applied_request: str, later_file: str, expected_sha256: str, request_id: str) -> dict:
         later_path = self.owned_path(later_file)
         request_id = self.request_id(request_id)
@@ -434,13 +479,28 @@ class Bridge:
             original = db.execute("SELECT * FROM commands WHERE id=?", (applied_request,)).fetchone()
             if original is None or original["state"] != "APPLIED":
                 raise BridgeError("Recovery requires a previously applied request")
+            if json.loads(original["receipt"]).get("kind") == "NATIVE_PLOT":
+                raise BridgeError("Plot output is a new artifact; its input files were preserved")
             later, later_reader, later_entries = read_native(later_path)
             if sha(later) != expected_sha256:
                 raise BridgeError("STALE_SOURCE: later file changed")
             recovered = bytearray(later)
             changes = json.loads(original["changes"])
+            pristine_native_snapshot = (json.loads(original["receipt"]).get("kind") == "NATIVE"
+                                        and not changes and original["before_blob"] != original["after_blob"])
+            if pristine_native_snapshot:
+                if later != original["after_blob"]:
+                    raise BridgeError("NATIVE_RECOVERY_CONFLICT: structural rollback requires the unchanged saved candidate")
+                changes = [{"offset": 0, "before": original["before_blob"].hex(),
+                            "after": original["after_blob"].hex(), "record_id": None,
+                            "group": "native", "field": "pristine_saved_snapshot"}]
             structural = layout_signature(later) != layout_signature(original["after_blob"])
+            if json.loads(original["receipt"]).get("kind") == "NATIVE" and (
+                    structural or (not changes and original["before_blob"] != original["after_blob"])):
+                raise BridgeError("NATIVE_RECOVERY_REQUIRES_SAME_LAYOUT: use the preserved source snapshot")
             if structural:
+                if json.loads(original["receipt"]).get("kind") == "DELETE":
+                    raise BridgeError("DELETE_RECOVERY_REQUIRES_SAME_LAYOUT: native compaction or rebuilding changed the slots")
                 changes = self._relocate_recovery(original["after_blob"], later, later_reader,
                                                    later_entries, changes, later_path.suffix)
             inverse = []
@@ -455,7 +515,8 @@ class Bridge:
                        "source_sha256": sha(later), "candidate_sha256": sha(recovered),
                        "output": str(self.root / "deliverables" / "recoveries" / request_id / later_path.name),
                        "changes": inverse, "retained_later_independent_bytes": True,
-                       "recovery_mapping": "unique_unchanged_physical_record" if structural else "same_layout_byte_spans",
+                       "recovery_mapping": ("pristine_native_snapshot" if pristine_native_snapshot else
+                                            "unique_unchanged_physical_record" if structural else "same_layout_byte_spans"),
                        "native_reopen": "NOT_VERIFIED"}
             db.execute("INSERT INTO commands VALUES (?,?,?,?,?,?,?,?)",
                        (request_id, payload_hash, "PREPARED", str(later_path), later, bytes(recovered),

@@ -1,9 +1,10 @@
-param([string]$PythonPath, [string]$MapGISInstallation)
+param([string]$PythonPath, [string]$MapGISInstallation, [switch]$EnableNativeLegacyHost)
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $PortablePython = Join-Path $ProjectRoot 'runtime\python\python.exe'
 if ((Test-Path -LiteralPath $PortablePython) -and -not $PythonPath) {
     $PortableArguments = @('-s', '-B', '-X', 'utf8', ('"' + (Join-Path $PSScriptRoot 'portable.py') + '"'), 'setup')
+    if ($EnableNativeLegacyHost) { $PortableArguments += '--enable-native-legacy-host' }
     if ($MapGISInstallation) {
         $NativeArgument = (Resolve-Path -LiteralPath $MapGISInstallation).Path
         if (Test-Path -LiteralPath $NativeArgument -PathType Container) { $NativeArgument = $NativeArgument.TrimEnd('\') + '\.' }
@@ -24,6 +25,9 @@ if ((Test-Path -LiteralPath $PortablePython) -and -not $PythonPath) {
     return
 }
 $NativeConfigPath = Join-Path $ProjectRoot 'config.local.json'
+if ($EnableNativeLegacyHost -and -not $MapGISInstallation -and -not (Test-Path -LiteralPath $NativeConfigPath)) {
+    throw 'Specify MapGISInstallation before enabling the isolated legacy native host.'
+}
 if ($MapGISInstallation) {
     $NativeInstallation = (Resolve-Path -LiteralPath $MapGISInstallation).Path
     if (-not (Test-Path -LiteralPath (Join-Path $NativeInstallation 'program\mdiedit6x.exe') -PathType Leaf)) {
@@ -68,6 +72,11 @@ $McpPath = Join-Path $ProjectRoot 'mcp-config.local.json'
 if ($MapGISInstallation -and -not (Test-Path -LiteralPath $NativeConfigPath)) {
     $NativeConfig = @{ mapgis_installation = $NativeInstallation } | ConvertTo-Json
     [System.IO.File]::WriteAllText($NativeConfigPath, $NativeConfig, [System.Text.UTF8Encoding]::new($false))
+}
+if ($EnableNativeLegacyHost) {
+    $LegacyConfig = Get-Content -LiteralPath $NativeConfigPath -Raw | ConvertFrom-Json
+    $LegacyConfig | Add-Member -NotePropertyName native_backend_legacy_dep_compatibility -NotePropertyValue $true -Force
+    [System.IO.File]::WriteAllText($NativeConfigPath, ($LegacyConfig | ConvertTo-Json -Depth 20), [System.Text.UTF8Encoding]::new($false))
 }
 & $EnvironmentPython -X utf8 (Join-Path $ProjectRoot 'scripts\mapgis_cli.py') capabilities
 if ($LASTEXITCODE -ne 0) { throw 'local capabilities check failed' }

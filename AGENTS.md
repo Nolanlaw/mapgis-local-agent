@@ -10,6 +10,16 @@
   as local and do not claim geodetic accuracy. Review scan-derived geology and
   classifications against the source before treating a draft as a finished map.
 - Saved WT/WL/WP file operations use the existing Python stdio/CLI server.
+- With explicit native_backend_legacy_dep_compatibility opt-in, prefer the isolated
+  x86 backend for native_file_info, resave, point.move and native EPS composition.
+  It uses no desktop input. Read docs/NATIVE.md for frame/ABI/runtime constraints.
+  Never change Windows DEP or patch MapGIS binaries. Other editor workflows still
+  require the documented host binding; saved-file operations do not edit unsaved memory.
+- Native plot layers are ordered bottom to top. Obtain raw native_bounds with
+  native_file_info, confirm compatible coordinate frames, choose paper_mm, then
+  prepare_native_plot and apply_patch. Keep the native EPS and independent preview.
+  New WP files should use prepare_creation, which supplies the native arc index;
+  a third-party reader accepting a file is insufficient proof of native plotting.
 - In the portable share package, use runtime/python/python.exe and run
   scripts/portable.py setup once (again after moving the folder). The developer
   checkout uses .venv/Scripts/python.exe. Never assume a sender's absolute path.

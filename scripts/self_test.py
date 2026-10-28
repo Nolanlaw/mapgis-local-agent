@@ -38,8 +38,11 @@ async def run() -> dict:
                 expected |= {'mapgis_find_operations', 'mapgis_describe_operation',
                     'mapgis_register_scan', 'mapgis_scan_window', 'mapgis_prepare_georeference',
                     'mapgis_write_georeferenced_window', 'mapgis_extract_candidates', 'mapgis_merge_candidate_tiles',
-                    'mapgis_prepare_creation', 'mapgis_prepare_vector_operation', 'mapgis_search_native_help'}
-                assert len(names) == 20 and set(names) == expected
+                    'mapgis_prepare_creation', 'mapgis_prepare_vector_operation', 'mapgis_search_native_help',
+                    'mapgis_prepare_delete', 'mapgis_read_features', 'mapgis_prepare_file_operation',
+                    'mapgis_compare_files', 'mapgis_verify_request_output',
+                    'mapgis_native_file_info', 'mapgis_prepare_native_operation', 'mapgis_prepare_native_plot', 'mapgis_reconcile_native_request'}
+                assert len(names) == len(expected) and set(names) == expected
 
                 async def call(name, **arguments):
                     nonlocal count
@@ -59,6 +62,18 @@ async def run() -> dict:
                 applied = await call('mapgis_apply_patch', request_id='edit')
                 reread = await call('mapgis_inspect_file', file=applied['output'])
                 assert reread['rows'][0]['style']['color'] == 2
+                page = await call('mapgis_read_features', file=copied['path'],
+                    expected_sha256=inspected['sha256'], offset=0, limit=1)
+                assert page['returned'] == 1 and page['next_offset'] == 1
+                assert page['collection']['features'][0]['id'] == '1'
+                assert page['collection']['features'][0]['geometry']['coordinates'] == [[0.0,0.0],[10.0,10.0]]
+                assert page['collection']['features'][0]['properties']['ID'] == 7
+                diff = await call('mapgis_compare_files', before=copied['path'], after=applied['output'])
+                assert diff['counts']['changed'] == 1 and diff['changed_ids'] == [1]
+                verification = await call('mapgis_verify_request_output', request_id='edit', file=applied['output'])
+                assert verification['matches_candidate_records']
+                mismatch = await call('mapgis_verify_request_output', request_id='edit', file=copied['path'])
+                assert not mismatch['matches_candidate_records']
                 duplicate = await call('mapgis_apply_patch', request_id='edit')
                 assert duplicate['reconciled_existing_output']
                 await call('mapgis_get_request', request_id='edit')
@@ -66,11 +81,28 @@ async def run() -> dict:
                     expected_sha256=reread['sha256'], request_id='recover')
                 recovered = await call('mapgis_apply_patch', request_id='recover')
                 assert Path(recovered['output']).read_bytes() == baseline
+                await call('mapgis_prepare_delete', file=copied['path'], expected_sha256=inspected['sha256'],
+                    record_ids=[1], request_id='delete')
+                deleted = await call('mapgis_apply_patch', request_id='delete')
+                deletion_read = await call('mapgis_read_features', file=deleted['output'],
+                    expected_sha256=hashlib.sha256(Path(deleted['output']).read_bytes()).hexdigest())
+                assert [f['id'] for f in deletion_read['collection']['features']] == ['2']
+                import struct
+                assert struct.unpack_from('<I', Path(deleted['output']).read_bytes(), 260)[0] == 1
+                removed = await call('mapgis_compare_files', before=copied['path'], after=deleted['output'])
+                assert removed['removed_ids'] == [1] and removed['counts']['changed'] == 0
+                await call('mapgis_prepare_recovery', applied_request='delete', later_file=deleted['output'],
+                    expected_sha256=hashlib.sha256(Path(deleted['output']).read_bytes()).hexdigest(), request_id='undelete')
+                undeleted = await call('mapgis_apply_patch', request_id='undelete')
+                assert Path(undeleted['output']).read_bytes() == baseline
                 await call('mapgis_prepare_patch', file=copied['path'], expected_sha256=inspected['sha256'],
                     record_ids=[1], request_id='cancel', style={'color': 3})
                 await call('mapgis_cancel_request', request_id='cancel')
                 catalog = await call('mapgis_find_operations')
                 assert catalog['count'] >= 34
+                file_detail = await call('mapgis_describe_operation', operation_id='vector.process_file')
+                assert file_detail['execution_status'] == 'MCP_TOOL_AVAILABLE'
+                assert 'expected_sha256' in file_detail['input_schema']['properties']
                 detail = await call('mapgis_describe_operation', operation_id='scan.interactive_trace')
                 assert detail['executable_by_mcp'] is False
                 for operation, workflow in [('projection.point','projection'),
@@ -136,12 +168,22 @@ async def run() -> dict:
                 buffered = await call('mapgis_apply_patch',request_id='buffer')
                 from pymapgis import Reader
                 assert Reader(buffered['output']).geom[0].area > Reader(created['output']).geom[0].area
+                await call('mapgis_prepare_file_operation', operation_id='geometry.buffer', file=created['output'],
+                    expected_sha256=reread['sha256'], record_ids=[1],
+                    template={'name':'file-buffer.wp','crs':crs,'map_scale':50000},
+                    parameters={'distance':2}, request_id='file-buffer')
+                file_buffered = await call('mapgis_apply_patch', request_id='file-buffer')
+                actual_buffer = Reader(file_buffered['output']).geom[0]
+                expected_buffer = Reader(created['output']).geom[0].buffer(2)
+                assert actual_buffer.equals_exact(expected_buffer, 1e-9, normalize=True)
+                assert file_buffered['qa']['native_source']['physical_record_ids'] == [1]
                 invalid = await session.call_tool('mapgis_get_live_state', {'pid': 0})
                 assert invalid.isError
                 assert source.read_bytes() == baseline
     return {'status': 'PASS', 'stdio_tools': len(names), 'successful_calls': count, 'expected_live_error': True,
         'scan_affine_geotiff_candidates_native_creation_buffer': 'PASS',
         'independent_tile_merge_no_duplicate_area': 'PASS',
+        'native_features_processing_comparison_delete_recovery_and_saved_verification': 'PASS',
         'synthetic_records': 2, 'source_preserved': True, 'recovery_byte_identical': True,
         'temporary_files_removed': True, 'desktop_ui_test': 'not performed by this self-test'}
 

@@ -41,7 +41,7 @@ def public_sources(portable: bool = False) -> dict[str, Path]:
     selected['docs/NATIVE.md'] = ROOT/'docs/NATIVE-PORTABLE.md'
     for name in ('SHARE.md', 'THIRD-PARTY.md', 'CAPABILITIES.md', 'SOURCES.md', 'VALIDATION.md'):
         selected['docs/'+name] = ROOT/'docs'/name
-    for folder in ('src', 'tests', 'vendor/mapgis2shp', 'vendor/geoscan',
+    for folder in ('src', 'native', 'tests', 'vendor/mapgis2shp', 'vendor/geoscan',
                    'vendor/stratigraphic-amenity', 'third_party/winhlp', 'workflows', 'packaging'):
         for file in (ROOT/folder).rglob('*'):
             parts = file.relative_to(ROOT).parts
@@ -51,7 +51,7 @@ def public_sources(portable: bool = False) -> dict[str, Path]:
                 selected[file.relative_to(ROOT).as_posix()] = file
     for name in ('launch_mcp.py', 'mapgis_cli.py', 'native_support.py', 'native_session.mjs',
                  'native_workflows.mjs', 'palette_probe.py', 'package.py', 'package_share.py',
-                 'index_native_help.py', 'Prepare-NativeOutput.ps1', 'Setup.ps1', 'portable.py', 'self_test.py'):
+                 'index_native_help.py', 'Prepare-NativeOutput.ps1', 'Setup.ps1', 'portable.py', 'self_test.py', 'self_test_native.py'):
         selected['scripts/'+name] = ROOT/'scripts'/name
     return selected
 
@@ -90,7 +90,7 @@ def copy_base_runtime(stage: Path, bundle: Path) -> None:
 
 def build(stage: Path, python_archive: Path | None, ghostscript: Path | None,
           source_archives: Path | None, base_bundle: Path | None = None,
-          extra_sources: Path | None = None) -> dict:
+          extra_sources: Path | None = None, extra_bundle: Path | None = None) -> dict:
     stage.mkdir(parents=True, exist_ok=False)
     if base_bundle:
         copy_base_runtime(stage, base_bundle)
@@ -136,13 +136,24 @@ def build(stage: Path, python_archive: Path | None, ghostscript: Path | None,
         for name in SOURCE_SHA:
             ordinary_copy(source_archives / name, stage / 'third_party/sources' / name)
     extra = json.loads((ROOT/'packaging/native-sources.json').read_text(encoding='utf8'))
-    if not extra_sources:
-        raise ValueError('The current libvips runtime requires --extra-sources')
-    for item in extra:
-        source = extra_sources/item['file']
-        if sha(source) != item['sha256']:
-            raise ValueError('Extra source mismatch: ' + item['file'])
-        ordinary_copy(source, stage/'third_party/sources'/item['file'])
+    if extra_bundle:
+        if sha(extra_bundle) != 'a77776d1f8bb66343716548f45f3c919bdf6f618c6bf08679b305756b0644203':
+            raise ValueError('Changed extra-source bundle; accepted 0.4.0 archive required')
+        with zipfile.ZipFile(extra_bundle) as previous:
+            for item in extra:
+                data=previous.read('MapGIS-Agent/third_party/sources/'+item['file'])
+                if hashlib.sha256(data).hexdigest()!=item['sha256']:
+                    raise ValueError('Extra source mismatch: '+item['file'])
+                target=stage/'third_party/sources'/item['file']
+                with target.open('xb') as stream:stream.write(data)
+    else:
+        if not extra_sources:
+            raise ValueError('The current libvips runtime requires extra sources')
+        for item in extra:
+            source=extra_sources/item['file']
+            if sha(source)!=item['sha256']:
+                raise ValueError('Extra source mismatch: '+item['file'])
+            ordinary_copy(source,stage/'third_party/sources'/item['file'])
     components = sorted([{'name': d.metadata['Name'], 'version': d.version}
                          for d in metadata.distributions()
                          if d.metadata['Name'].lower() not in ('pyogrio', 'mapgis-local-agent')],
@@ -152,7 +163,7 @@ def build(stage: Path, python_archive: Path | None, ghostscript: Path | None,
         'packages': components, 'ghostscript': {'version': '10.08.0', 'source_included': True},
         'geos': {'version': '3.14.1', 'source_included': True},
         'libvips': {'version': '8.18.7', 'source_included': True, 'build_recipes_and_native_dependencies': extra},
-        'runtime_scope': '20 MapGIS tools; Rasterio/GDAL raster reader, libvips and a separate GPL-2.0 help-indexing tool included; optional pyogrio vector conversion excluded',
+        'runtime_scope': '29 MapGIS tools; isolated exact-build x86 native worker; Rasterio/GDAL raster reader, libvips and a separate GPL-2.0 help-indexing tool included; optional pyogrio vector conversion excluded',
         'sources': SOURCE_SHA,
         'base_bundle_sha256': BASE_BUNDLE_SHA if base_bundle else None,
         'licences': 'See docs/THIRD-PARTY.md, dependency dist-info/licenses and included source archives.'}
@@ -207,13 +218,15 @@ def main() -> None:
     runtime_input.add_argument('--base-bundle', type=Path)
     parser.add_argument('--ghostscript', type=Path)
     parser.add_argument('--source-archives', type=Path)
-    parser.add_argument('--extra-sources', type=Path, required=True)
+    extra_input = parser.add_mutually_exclusive_group(required=True)
+    extra_input.add_argument('--extra-sources', type=Path)
+    extra_input.add_argument('--extra-sources-bundle', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
     manifest = build(args.stage.resolve(), args.python_archive, args.ghostscript,
-                     args.source_archives, args.base_bundle, args.extra_sources)
+                     args.source_archives, args.base_bundle, args.extra_sources, args.extra_sources_bundle)
     with zipfile.ZipFile(args.output, 'x', zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
         for file in sorted(args.stage.rglob('*')):
             if file.is_file():

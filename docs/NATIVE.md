@@ -1,3 +1,28 @@
+## 后台原生调用（0.5.0）
+
+保存到磁盘的点线区可以直接作为 Agent 工具使用，不占鼠标，也不需要打开编辑窗口。后台是本包自己的 32 位进程，调用本机 MapGIS 6.7 的 BAS60、mapdsp60 和 winout60。支持原生读取、另存、多点坐标移动、点线删除和多图层 EPS。它处理保存文件的副本；运行中编辑器尚未保存的内容仍走下方的桌面绑定流程。
+
+旧版 BAS60 会执行动态生成的代码。后台宿主因此需要旧版 DEP 兼容构建，只降低这个独立子进程的 DEP 保护。Windows 设置、MapGIS 文件和其他应用均不改。接收者自行接受该取舍后，在包目录运行：
+
+```powershell
+./runtime/python/python.exe -s -B -X utf8 scripts/portable.py setup --mapgis D:/MapGIS67 --enable-native-legacy-host
+./runtime/python/python.exe -s -B -X utf8 scripts/self_test_native.py
+```
+
+已有安装绑定时可省略 --mapgis。后台功能默认关闭，普通文件工具不需要此开关。另一个构建或缺少许可会返回错误，不能靠修改 DLL、关闭系统 DEP 或换成屏幕截图完成验收。
+
+调用顺序：
+
+1. 用 inspect_file 获取磁盘指纹；编辑先用 make_work_copy。
+2. 用 native_file_info 实际打开文件，读原生有效计数和 native_bounds。编号使用物理槽位，record_upper_bound 是不含上界的编号范围。
+3. prepare_native_operation 的 operation 可为 resave、point.move 或 feature.delete（WT/WL，参数 {record_ids:[1,3]}）；移动参数为 {updates:[{record_id:1,x:12.5,y:13.75}]}。候选经过独立 Reader 比较和另一原生进程重开，再用 apply_patch 写入新分支。
+4. 出图用 prepare_native_plot。layers 是从底到顶的 [{file,expected_sha256}]；view 提供 native_bounds、paper_mm 和 coordinate_frame="native"。先核对图层的坐标框架。工具保持比例、居中并生成真正的原生 EPS；Ghostscript 独立解释文件并拒绝空白或残缺输出。通过后 apply_patch 交付 map.eps。
+5. 查询 get_request 处理重复 ID。RUNNING、FAILED 和冲突不能直接重放。中断后调用 reconcile_native_request，它检查自有子进程身份、持久回执和实际候选；文件重新进行独立比较与原生重开，EPS重新解释检查。缺少完整候选时保持失败，不再次编辑。保留输入副本和请求记录；同布局编辑可恢复本次字节修改；原生另存改变结构时，只有候选未发生后续修改才能从持久基线完整恢复。冲突时保留后来修改并返回错误。
+
+新建 WP 请用 prepare_creation，它补充原生绘制需要的弧段索引。第三方 Reader 能读出的 WP，未必能由原生绘制器正确画出；后台会检查实际几何调用结果。保留原生 EPS 和工具返回的预览，地质解释与配准精度单独复核。
+
+后台仅适配已验证的固定 DLL 指纹。其他编辑类型、原生栅格校正、TIN、网络和专业模块并未因此获得后台接口；其已有桌面流程继续保留。
+
 # 分享版原生操作入口
 
 Agent先阅读所在宿主的Computer Use规范，取得真实Sky对象。Python解释器使用本包runtime/python/python.exe；文件入口为scripts/mapgis_cli.py，stdio入口为scripts/launch_mcp.py，根目录始终取当前解压位置。

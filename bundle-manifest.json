@@ -1,0 +1,834 @@
+{
+  ".gitignore": {
+    "bytes": 154,
+    "sha256": "f85b911c12f8c7a6c5d152776d6b15a628ec2221454c3de642846995ff62d269"
+  },
+  "AGENTS.md": {
+    "bytes": 3890,
+    "sha256": "0f08c9172fc0811f6ebc02a883cd63043f66248b1e50affba52ada09d6fc5d60"
+  },
+  "NOTICE.md": {
+    "bytes": 2172,
+    "sha256": "0d1a609f9c6ee09fba535f9d724ff49a238f4b9ae785db5269cf0ba564b9f0ef"
+  },
+  "README.md": {
+    "bytes": 4797,
+    "sha256": "566ed508974b8c1eb3b4e4d9d2b12c26cda7d20774cf79f65b6c2ad3d690c71e"
+  },
+  "docs/CAPABILITIES.md": {
+    "bytes": 6152,
+    "sha256": "f0fc0494860359010797bdee3b7205fc5f90da6e6ceb3ea584d9c357da238afa"
+  },
+  "docs/NATIVE.md": {
+    "bytes": 6647,
+    "sha256": "764353febb3939cc8395e66a4131eac2e3f3c571958075dd5b9ae7d3b1be66e5"
+  },
+  "docs/SHARE.md": {
+    "bytes": 5344,
+    "sha256": "cbe36e52172b1b8ef469cebf0b434196c422e606f5d93bf97e70706843487c64"
+  },
+  "docs/SOURCES.md": {
+    "bytes": 5014,
+    "sha256": "19bf0d8a601b3003d0cd529881eb55cac6519c23ea387c8675db0c1a45e2ed8e"
+  },
+  "docs/THIRD-PARTY.md": {
+    "bytes": 2955,
+    "sha256": "9d5070be38ac63fd8f73974cfd4941330a85c75940e3091ba15fc90251286804"
+  },
+  "docs/VALIDATION.md": {
+    "bytes": 4382,
+    "sha256": "c7d64b3c76b394a0547c88027ec7164e688d57083fde24f94e28cf20623272e1"
+  },
+  "native/MapgisNativeWorker.cpp": {
+    "bytes": 12646,
+    "sha256": "9bc87a475f1bc1ad044263218a049de06ce7d1523d6024e7ebfd58ca4acfc78c"
+  },
+  "native/build_manifest.py": {
+    "bytes": 719,
+    "sha256": "5e3a54dfd3a3ea2267d929bc1c43f514c42061ac0661467a5c390b779c7dddb0"
+  },
+  "native/build_worker.cmd": {
+    "bytes": 428,
+    "sha256": "cb3e9a775919594d27ac1e70618e3a7dd41cc2603c9c01038876adc40923f057"
+  },
+  "packaging/LIBVIPS-NOTICES.md": {
+    "bytes": 4295,
+    "sha256": "fc09152fd0c8b1cf0f5aa15c23afd59cf15632ac079b689d01c58e3fa762b54e"
+  },
+  "packaging/libvips-versions.json": {
+    "bytes": 596,
+    "sha256": "e2611d5d854815a8b33c8a3d2ec649511a9596ccf16844e8eae7cf81e79881c4"
+  },
+  "packaging/native-sources.json": {
+    "bytes": 4467,
+    "sha256": "c3b0dc8cff1052698a5b3db3b054f3e6b0bb0e41590d925098f4816da6c06df7"
+  },
+  "pyproject.toml": {
+    "bytes": 742,
+    "sha256": "96692229bd0b08e359721d386d1d1ac1cb7ac08f02ea4a665ba4cdd42bfdd5bb"
+  },
+  "requirements.lock.txt": {
+    "bytes": 953,
+    "sha256": "08452cecdd911c6ede90ae8174bdd94e5a57c0a27c00cc985a650b0ecbb0c485"
+  },
+  "scripts/Prepare-NativeOutput.ps1": {
+    "bytes": 4141,
+    "sha256": "f5abbd13013be67e88b9eece539011fc22689b4b71815d0a1033036e9b7b000b"
+  },
+  "scripts/Setup.ps1": {
+    "bytes": 5634,
+    "sha256": "60544c957f0eee7c036b52efd6008a3a69c69b1b3448d0588e5f28f2acefad4c"
+  },
+  "scripts/index_native_help.py": {
+    "bytes": 5962,
+    "sha256": "345c388a591d09f74b647a9831e568de3099e3fc97ceeb35e8d2e9b079cb870c"
+  },
+  "scripts/launch_mcp.py": {
+    "bytes": 355,
+    "sha256": "941eeafe4dbaaf08db506632412ca517b164173d48fcd20cf9f3f506f3a81931"
+  },
+  "scripts/mapgis_cli.py": {
+    "bytes": 270,
+    "sha256": "f07d0b11560cdb1df87a6444ed1723945e8d395af67a111a577dc9a56882977e"
+  },
+  "scripts/native_session.mjs": {
+    "bytes": 18073,
+    "sha256": "4a59ae380f7d7ee37c040ffe02017d7fe7e35929b503cffcfbfb892775200ce7"
+  },
+  "scripts/native_support.py": {
+    "bytes": 5858,
+    "sha256": "e8bfc6a8ddfb5b79459ad3ddebd9b087b2e848c2f44d43d36902dcb7aa65b30c"
+  },
+  "scripts/native_workflows.mjs": {
+    "bytes": 2197,
+    "sha256": "0b261f2c690615aa025ce74b363d74b880b97b65e2047a5f8dd9cae96ce31623"
+  },
+  "scripts/package.py": {
+    "bytes": 5169,
+    "sha256": "c4987f1b244a6ef5a7a00704c32a3285b0280b5f141716dd134870c18a056c64"
+  },
+  "scripts/package_share.py": {
+    "bytes": 13759,
+    "sha256": "85f65130c298651fc9ca985587e3fbce11f164e9670270806657d49359b6af89"
+  },
+  "scripts/palette_probe.py": {
+    "bytes": 4449,
+    "sha256": "1063118a55b1ecb357770cdb40fd68dbafba3a3993e0f793d1ef39de0b466360"
+  },
+  "scripts/portable.py": {
+    "bytes": 7169,
+    "sha256": "1506fcd878872d2b3fc6a236a74a457112d27f04bf608b225ce449c655c42e6f"
+  },
+  "scripts/self_test.py": {
+    "bytes": 13933,
+    "sha256": "d453fcdf974a620b7be5ed31b1af99853cd3c462df0adc5442987c512dc899ba"
+  },
+  "scripts/self_test_native.py": {
+    "bytes": 13072,
+    "sha256": "3d0feba0b334467d7ceb96d404721be76fac636946c5d52305f30cb5f81a21f3"
+  },
+  "src/mapgis_agent/__init__.py": {
+    "bytes": 105,
+    "sha256": "6db5bcd2ff69080c8b3dd53b29ccb7d4b90f31b9faec0ef502a1018036392bc3"
+  },
+  "src/mapgis_agent/_vendor/__init__.py": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "src/mapgis_agent/_vendor/geoscan_trace.py": {
+    "bytes": 10904,
+    "sha256": "c0516738fe89d23c2689db79205d731956dc8e562dafc2601c3de79e9b7d9d44"
+  },
+  "src/mapgis_agent/_vendor/stratigraphic_amenity/__init__.py": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "src/mapgis_agent/_vendor/stratigraphic_amenity/georef/__init__.py": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "src/mapgis_agent/_vendor/stratigraphic_amenity/georef/crs.py": {
+    "bytes": 2973,
+    "sha256": "33d5ba08f1af74f487485edb46c8345d5d857141c8644b42a092d4f553f49ec7"
+  },
+  "src/mapgis_agent/_vendor/stratigraphic_amenity/georef/errors.py": {
+    "bytes": 402,
+    "sha256": "07bf0ae9717c230f46601e6084f334eb0519347c37af40c565b67c946af42872"
+  },
+  "src/mapgis_agent/_vendor/stratigraphic_amenity/georef/transform.py": {
+    "bytes": 11655,
+    "sha256": "ef5f292359f1f393afda8bae7e67a56d03d61aaf300c52bc015b06bd551f2a2a"
+  },
+  "src/mapgis_agent/_vendor/stratigraphic_amenity/knowledge/__init__.py": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "src/mapgis_agent/_vendor/stratigraphic_amenity/knowledge/bounds.py": {
+    "bytes": 2830,
+    "sha256": "0b7ff0fb67497dc28b73135345328365eee05cfc4286db488a458e69852bfc25"
+  },
+  "src/mapgis_agent/_vendor/stratigraphic_amenity/knowledge/errors.py": {
+    "bytes": 1284,
+    "sha256": "e7bd8a93e93524096fbd91577d617997f09b46c4a1e5e11b4b18f42d2422596d"
+  },
+  "src/mapgis_agent/bin/MapgisNativeWorker.exe": {
+    "bytes": 264192,
+    "sha256": "b50b09402f1d0c1a0fbddc626efa21db26e08c32b75f6de19e4e632ae5246f2c"
+  },
+  "src/mapgis_agent/bin/native-worker.json": {
+    "bytes": 452,
+    "sha256": "a37eccc8c9512c139e568601c255ef0dfbf96edbadbeb469162d52dbf5f43a84"
+  },
+  "src/mapgis_agent/candidates.py": {
+    "bytes": 20580,
+    "sha256": "a0377900d7d637bd213dd058e9368e5b663ad77a7abd46e8b485a7104d5c5bbe"
+  },
+  "src/mapgis_agent/cli.py": {
+    "bytes": 2168,
+    "sha256": "2fb4bfce7020c64be72704af06b78bb19a6b9ad1aa580a473ed40241c334727f"
+  },
+  "src/mapgis_agent/comparison.py": {
+    "bytes": 11337,
+    "sha256": "c9fa25bb0bb7cb9ec1460e54cf49ab0b45564d8535671ba511413074a434279e"
+  },
+  "src/mapgis_agent/core.py": {
+    "bytes": 35649,
+    "sha256": "d95e7d63b7aba88a065d230f0dfa59810906cdd0bcfecc4ad9b988d36adee81d"
+  },
+  "src/mapgis_agent/creation.py": {
+    "bytes": 17420,
+    "sha256": "eee3c93f3bee7c3c1190a798da04b70a0659f9516c8a8936f75e4f5a04e8872e"
+  },
+  "src/mapgis_agent/deletion.py": {
+    "bytes": 5380,
+    "sha256": "5050e623b42048cc8c9f13846c2d04896daed93c61297f0be2b09569a397e193"
+  },
+  "src/mapgis_agent/environment.py": {
+    "bytes": 6153,
+    "sha256": "1e908a1b64ce2823faf908d4c9aa0778251202335d1a72ff6f5ee31c4edefe02"
+  },
+  "src/mapgis_agent/features.py": {
+    "bytes": 4921,
+    "sha256": "53f5f6692a0813dbdb6e22a614cd4c54cf3efe5e5524048b2ca60c5304853667"
+  },
+  "src/mapgis_agent/native_backend.py": {
+    "bytes": 22324,
+    "sha256": "494e07e1bbf1a03144652a82b27f27a4d8809842558e012cee95868315828a62"
+  },
+  "src/mapgis_agent/native_help.py": {
+    "bytes": 2812,
+    "sha256": "28d0b3a4640e56f2b3f4e8d07593f5ffedbc13d97b29cf296fdca158fd1643cc"
+  },
+  "src/mapgis_agent/native_plot.py": {
+    "bytes": 8811,
+    "sha256": "af3c156c8ec4aec6f45971e4f38593c8e77c39f9739bccd373f3cd95d9310aa8"
+  },
+  "src/mapgis_agent/native_state.py": {
+    "bytes": 15201,
+    "sha256": "1bb765b0926c28712a4caf84b0c800bcbf0aef4b7b7327c0fbbd8b1a4cae4a17"
+  },
+  "src/mapgis_agent/operations.json": {
+    "bytes": 43928,
+    "sha256": "9c191eee01f1e83c38a8af51b65826122dc0a6bdd9c6b33a1cf56735e4ac9687"
+  },
+  "src/mapgis_agent/operations.py": {
+    "bytes": 2978,
+    "sha256": "190aafdcbbe087c2e4c98158eb43378595bc97248ee3cfbcc7c8d5a4a37570fa"
+  },
+  "src/mapgis_agent/raster.py": {
+    "bytes": 16806,
+    "sha256": "888d525f5ec3d365dfefbb1dc989a652d1918d010de4a128cab616512854e28a"
+  },
+  "src/mapgis_agent/server.py": {
+    "bytes": 15558,
+    "sha256": "d2e785f0a81c43a7a286abcc3a65560610387d343434a464a59f2f2a328b7964"
+  },
+  "src/mapgis_agent/vector.py": {
+    "bytes": 8680,
+    "sha256": "beec498b9804b0974277ea0e766fe33d0702a0adaa8a540b4467685281fb7608"
+  },
+  "tests/conftest.py": {
+    "bytes": 106,
+    "sha256": "5cad7dd53759d2144e5328d62e2dde0598a182a66b03092f980089408f035f09"
+  },
+  "tests/native_file_request.test.mjs": {
+    "bytes": 3984,
+    "sha256": "6442c522560f97c3dce5fe85766618095c60a55342455921f8472a6238f110f0"
+  },
+  "tests/native_session.test.mjs": {
+    "bytes": 8162,
+    "sha256": "2b16d30589299450cf360ddd312e44a73ac2413ba598b95676ef375115b306ed"
+  },
+  "tests/native_workflows.test.mjs": {
+    "bytes": 2563,
+    "sha256": "4c91f71459f8a74ba72c61f37620caf80f3422a4917ead13084a13479fd99c67"
+  },
+  "tests/test_bridge.py": {
+    "bytes": 9334,
+    "sha256": "ec2d019d9f35acf3131f94c8909c4246ecf8e555417a299808267cd2b6c21348"
+  },
+  "tests/test_candidate_seeds.py": {
+    "bytes": 1729,
+    "sha256": "9c693cc5b273de09e8c3f2592df5b453484593839fc3d11e8b1d1353525bfc44"
+  },
+  "tests/test_candidate_tiles.py": {
+    "bytes": 2594,
+    "sha256": "d7be92717c6577ec6cb008584df54812c9590cea3d3a6923fc9cd5112e206c37"
+  },
+  "tests/test_candidates.py": {
+    "bytes": 6448,
+    "sha256": "a818d163e83fadd6210521eaf085cc63af94072e808b860fc3288a81a882c6b4"
+  },
+  "tests/test_comparison.py": {
+    "bytes": 13814,
+    "sha256": "85ce8082516e08bdb56d66df3fa0387cb96b3a61a659261a659205adb8a6e1d9"
+  },
+  "tests/test_deletion.py": {
+    "bytes": 8204,
+    "sha256": "ddf8900a276c0f423872df648a55c9fcd96dd046ef09c43de8b4d8c6f63e1adf"
+  },
+  "tests/test_georeference.py": {
+    "bytes": 3738,
+    "sha256": "4594f88be93d59d441638d5bc2a107875ad2c86241218df7d618a28976e25cb0"
+  },
+  "tests/test_georeferenced_raster.py": {
+    "bytes": 1963,
+    "sha256": "ec3cd205729824f508d0ae5e8074f86bcc8e1e6698a141db01bc438f57d52dcd"
+  },
+  "tests/test_help_indexer.py": {
+    "bytes": 1356,
+    "sha256": "2f43dedee43cd9c99d8060cca327ae2edb48ec1559ba6fe8bc5b25a3f7711993"
+  },
+  "tests/test_live_state.py": {
+    "bytes": 6123,
+    "sha256": "a9b6ea1b58c59fcda091cdc98a00405fc8c841308b35cfd49fe5df5b8bfc8d4b"
+  },
+  "tests/test_local_frame.py": {
+    "bytes": 2260,
+    "sha256": "1029fd4e6f2680715b83f24967d0eae27ed9b75f978ab7ad6439d9d136ef8f56"
+  },
+  "tests/test_native_backend.py": {
+    "bytes": 4719,
+    "sha256": "e066802b6f861df7b5d4b70c19036758b7fd5f79068926eb4025c214d21eb362"
+  },
+  "tests/test_native_creation.py": {
+    "bytes": 10777,
+    "sha256": "62af1abc1f9767bad184e19dfd6e4f77db2e985ae660c68dfc86b8db86f95047"
+  },
+  "tests/test_native_features.py": {
+    "bytes": 3636,
+    "sha256": "4d9af3fb68ea73c7a3dc02ffad10331aa4cd3285054c467573a8dfd90ee32007"
+  },
+  "tests/test_native_help.py": {
+    "bytes": 1942,
+    "sha256": "7786c3a8004e656527e617998b6b0e7d18488b6ee0b180dd68957a90ee656cf6"
+  },
+  "tests/test_native_output.py": {
+    "bytes": 2601,
+    "sha256": "e6e171deddbcd60fc6f80e3aec9381c8d296d9f78c3e39e6cbbdd7c19e3dcb10"
+  },
+  "tests/test_native_plot.py": {
+    "bytes": 1041,
+    "sha256": "cbbae697574bf44901d47ab772c6d305f306a51c57dcb7a25604fb00f9d512fd"
+  },
+  "tests/test_native_state.py": {
+    "bytes": 1833,
+    "sha256": "8673bcad6f8e53e0cbf7a3aed7a0c559015017a5a5578cab2ffc4bd264592706"
+  },
+  "tests/test_native_support.py": {
+    "bytes": 1619,
+    "sha256": "4597f8869c35c39d16fd39d0c7cef6038916ebe2f684c588da0afcff63e84e41"
+  },
+  "tests/test_operations.py": {
+    "bytes": 2315,
+    "sha256": "bdeee9a8820b2218a20b7a7793ba0d5dba96079844fc99bbf378f34a10541dc9"
+  },
+  "tests/test_packaging.py": {
+    "bytes": 2550,
+    "sha256": "000db034aa808d4a7d61b3f8b2cf6c0ef222be4e52c2917972534978cde4a00e"
+  },
+  "tests/test_palette_probe.py": {
+    "bytes": 1907,
+    "sha256": "beb912a3d03f1fde8ad1e7935f6ab68dae19e80c89986f7d648282234b4891a0"
+  },
+  "tests/test_portable.py": {
+    "bytes": 3335,
+    "sha256": "910ef48c8df8286f1df6272149780f5ab745dbe92cfe5714dff528c57b13418a"
+  },
+  "tests/test_tool_entry.py": {
+    "bytes": 2230,
+    "sha256": "e3dbfdc22f8bddba153c370f2bf5c5baf482a61f3899352e94eb72caf1e8ff99"
+  },
+  "tests/test_vector_operations.py": {
+    "bytes": 3467,
+    "sha256": "7fd07e9d7f5991b3f56749d32458f2b44934c201ba979f92bc4614c380ea2397"
+  },
+  "third_party/winhlp/LICENSE.md": {
+    "bytes": 18118,
+    "sha256": "d9c83f2a1e72d7acc40a0fabe94d58824441e56b7c433d0f84fc3fbecc0bc396"
+  },
+  "third_party/winhlp/PROVENANCE.json": {
+    "bytes": 332,
+    "sha256": "d4245af2be4444bad4d8e01102e73d4fec170c6065fa0a2421252822282e5ed2"
+  },
+  "third_party/winhlp/README.md": {
+    "bytes": 3731,
+    "sha256": "07512db4ed9a9d97eaf0168031207665c7a9155b437e11b421acbd5890ba384a"
+  },
+  "third_party/winhlp/pyproject.toml": {
+    "bytes": 1064,
+    "sha256": "f89bf3f626b64e97303d67f504573e854817acda371c14c0a3399bc8dbb3259e"
+  },
+  "third_party/winhlp/src/winhlp/__init__.py": {
+    "bytes": 622,
+    "sha256": "f267cc97f78917bc63e2416dfdb32035834d17c7ef806db947f7c559459e63cb"
+  },
+  "third_party/winhlp/src/winhlp/__main__.py": {
+    "bytes": 3222,
+    "sha256": "cf69243c462b23719096d7e4133fc83a0a54302cd60a06a152a289d6ca45b6a1"
+  },
+  "third_party/winhlp/src/winhlp/lib/__init__.py": {
+    "bytes": 673,
+    "sha256": "edcb03e4a642f9544fd7a255ecd1bf6a371dbb687b3db6f7c6a37e2bbf39e9df"
+  },
+  "third_party/winhlp/src/winhlp/lib/ann.py": {
+    "bytes": 8767,
+    "sha256": "3ee00fa499e099a96e25097edce7336670221632a801e631c256d18bdb8e897a"
+  },
+  "third_party/winhlp/src/winhlp/lib/btree.py": {
+    "bytes": 11959,
+    "sha256": "1daa605f8afb5497b2b8900f925dd436d163137cfdc1a2d8da8f11be822b4761"
+  },
+  "third_party/winhlp/src/winhlp/lib/cnt.py": {
+    "bytes": 4179,
+    "sha256": "57dcb14f6cccfdd1e453b5ba74a568ee00f2b1236c4105b0793a2bf9b2f83cb3"
+  },
+  "third_party/winhlp/src/winhlp/lib/compression.py": {
+    "bytes": 9199,
+    "sha256": "3262c32ced73b55c8d61c39ea0d9f7e730bd3ba30d2157160b30d9833edc6037"
+  },
+  "third_party/winhlp/src/winhlp/lib/directory.py": {
+    "bytes": 4603,
+    "sha256": "e4073080b56e00f5008e7998ec8c68e4b555b36170bdbf4b10c2fa7f44b5ffce"
+  },
+  "third_party/winhlp/src/winhlp/lib/document.py": {
+    "bytes": 28909,
+    "sha256": "084d2daff6df4673ceb76ff70c5f4e8628e24054262418a8905a13d76b842e74"
+  },
+  "third_party/winhlp/src/winhlp/lib/exceptions.py": {
+    "bytes": 367,
+    "sha256": "e80f5a6493ee6a813f0f0f1fe1a0fd014abd304d0cbf0663ec8dc8b11ad6d9e7"
+  },
+  "third_party/winhlp/src/winhlp/lib/hlp.py": {
+    "bytes": 53881,
+    "sha256": "372dae2b2b68cedb63813e1587fd1713d96faa7bcbeb3dfc28f151575807b0e8"
+  },
+  "third_party/winhlp/src/winhlp/lib/html.py": {
+    "bytes": 19700,
+    "sha256": "c2d1f602ea334cbfaea7a67f4376e79f1804b943fff2f8bc53b8fef71b3130bf"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/__init__.py": {
+    "bytes": 443,
+    "sha256": "4bd0e69fca9b0f061b1b6e47f6debdf9357a9b1a31c30764943071b2b73e6f44"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/base.py": {
+    "bytes": 222,
+    "sha256": "b176f5495f648b07e39c39644bbf71fc56e7a79902e0dc6b07af3c48dab33186"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/bitmap.py": {
+    "bytes": 19407,
+    "sha256": "ce83317be2636531975d9e99e444e6208c528b8de590b379b3350c970f8f7b61"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/catalog.py": {
+    "bytes": 2849,
+    "sha256": "33bb9688d96183b667e13b177c0f437e3f5830a84429686fae5c5e9fa06c7036"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/cfn.py": {
+    "bytes": 6071,
+    "sha256": "94f31b5c027c5f5999683b97df47486e97bf2b80f7ec0f62b55bb88a56bdcd30"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/chartab.py": {
+    "bytes": 8826,
+    "sha256": "dcc9113dbd9f2a725d727ada1cd2fe023ae4b0dbb5342d81fb4e80174ba22742"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/context.py": {
+    "bytes": 27004,
+    "sha256": "302689904afd64f8bb7e907200efa13cd70e6cd0a2a5d67b29d6efb94d87046a"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/ctxomap.py": {
+    "bytes": 1802,
+    "sha256": "0479e4647fbbe5fa7a56b0bdc07804d7cc835d7dd241ed77ad41038254914fed"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/font.py": {
+    "bytes": 37039,
+    "sha256": "b319ef0a1c78ecbb4f2279f185a59d28e0103a1cefd25ed72c6f88870d8943e7"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/gid.py": {
+    "bytes": 6414,
+    "sha256": "a1e9b95e0c71603f0cc62e48eb5287a57c45a19045ac6a7d73d7f2153db9855e"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/gmacros.py": {
+    "bytes": 4125,
+    "sha256": "2355f8d8085a0e53292bbef2f7ed535169368a60f50743b591c627b4f320c727"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/grp.py": {
+    "bytes": 8046,
+    "sha256": "4364257f2e13bd0a1896e6c896c4c53721851445a034e3341714f89f66da2612"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/petra.py": {
+    "bytes": 3843,
+    "sha256": "b45783995c8a97c4800222fa606dd72f8c468b8c84d4b5b1fd1a3eb79204ce2e"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/phrase.py": {
+    "bytes": 5386,
+    "sha256": "c68591d343ba8c3f7bbb775564e603745919b672f64cca6bf8902e62fa81c97f"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/phrimage.py": {
+    "bytes": 7451,
+    "sha256": "e9c3be59224989f39672ecc8c338e5516c9bdf3e0b227a2fb510a6d57c0bf395"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/phrindex.py": {
+    "bytes": 11199,
+    "sha256": "71957274f0774995cf7fc39d551adf791b3211d00f963758f95e7fdd075ecdd2"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/rose.py": {
+    "bytes": 10380,
+    "sha256": "9c6d8684f913bf941c6e7c45cede7bd7f23720502ffffeef472f091688709800"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/system.py": {
+    "bytes": 30348,
+    "sha256": "e15c87e7a0b9bdcd50169057343c673cfdc17c3a3eedb27811b1c70e37f3fd11"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/tomap.py": {
+    "bytes": 3400,
+    "sha256": "a73d513ea2fcccf7b0ca48f5455da7f680027e9acae163009249b4d9f8d9a4f1"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/topic.py": {
+    "bytes": 74984,
+    "sha256": "66efd69bf10aa4a1fedf6cc263d7963712d0b79cd25537c5fddfc0ce0ef55665"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/topicid.py": {
+    "bytes": 7648,
+    "sha256": "c45e3d2ff1ed578a57ac87345e63b2b565eeb86d064771bc0108e9d0e8820b0e"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/ttlbtree.py": {
+    "bytes": 8228,
+    "sha256": "61068b022e57e1d7ecf8e25ed36c6b0f3bdc9cb5c668652762743a1ce7d283a3"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/viola.py": {
+    "bytes": 2365,
+    "sha256": "706412456956d4b1c7e78a66dcbf8b878d031c2dc512961243dddd474d062bea"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/xwbtree.py": {
+    "bytes": 11995,
+    "sha256": "3dd762ff4d8c6cb100de0769b99bb709b3fc58177b5e97177a47a63a906d7b90"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/xwdata.py": {
+    "bytes": 6017,
+    "sha256": "e26a0658f9ad81009e87f5339dd83013beb50a80b97c2a7ef8309a1c4ba073be"
+  },
+  "third_party/winhlp/src/winhlp/lib/internal_files/xwmap.py": {
+    "bytes": 7507,
+    "sha256": "23b809113a1c7924c20e41d4865c9218af043dcc7fba074ebf9c069ca9852011"
+  },
+  "third_party/winhlp/src/winhlp/lib/layout.py": {
+    "bytes": 1320,
+    "sha256": "d7d22ebcf497ffda10abd52f9e63a0fa17d653a133218834b542e2120dbe61a6"
+  },
+  "third_party/winhlp/src/winhlp/lib/macros.py": {
+    "bytes": 2578,
+    "sha256": "21adcc58015dde829c903084c0c39b70de5ea6d1b765446ce9d1b2033e2a4b26"
+  },
+  "third_party/winhlp/src/winhlp/lib/picture.py": {
+    "bytes": 9849,
+    "sha256": "61ddd9349a2955130383b1c7f5cccb572237989270fe1039f687d72486828129"
+  },
+  "third_party/winhlp/src/winhlp/lib/raster.py": {
+    "bytes": 7163,
+    "sha256": "35edec282ad876468c523dae759bc974c16ff0295bcaf0d43b333e21a7be1f14"
+  },
+  "third_party/winhlp/src/winhlp/lib/terminal_layout.py": {
+    "bytes": 3529,
+    "sha256": "e942f4e70b5d6928e239b7fd6a024e4790547e94430bcfa1ba1829829808741b"
+  },
+  "third_party/winhlp/src/winhlp/lib/text_utils.py": {
+    "bytes": 2026,
+    "sha256": "d096021f4b2ff512381620942306b3d6d7245e54c05ac0187e4399de876637a3"
+  },
+  "third_party/winhlp/src/winhlp/lib/user_state.py": {
+    "bytes": 4520,
+    "sha256": "51f089033e88fb6d47cb5b4d34bc7b59d2f1834f78dd9a53141eb2384878b7c7"
+  },
+  "third_party/winhlp/src/winhlp/tui.py": {
+    "bytes": 82089,
+    "sha256": "cd48f76527b7fde13abfe898d8c055c5b3b1f9ef207ae13ebde140f906f681d5"
+  },
+  "vendor/geoscan/LICENSE": {
+    "bytes": 1062,
+    "sha256": "a20f0a003c4e2839f2edccea580e0949c04009bb209669ae5c0a10009c5ef0b6"
+  },
+  "vendor/geoscan/SOURCE.json": {
+    "bytes": 521,
+    "sha256": "4105597238aa9e16cc1e09624630a9259b8c78ef66a4ca5cef264a374112a388"
+  },
+  "vendor/geoscan/trace_lines.py": {
+    "bytes": 13198,
+    "sha256": "40abbd2f0e2ea8040422b78a0959b3c130c8df3c137fefd7ad700f8e72161935"
+  },
+  "vendor/mapgis2shp/.gitattributes": {
+    "bytes": 213,
+    "sha256": "fd3cb62ad511b3b261e47eb261f6b1e0b408a60f57ec68c999cc2b22b418c4cf"
+  },
+  "vendor/mapgis2shp/.github/workflows/test-and-build.yml": {
+    "bytes": 2046,
+    "sha256": "a4156f469b2fd92d44795e363f8594a87cbab482afdfa29fdac08aedff028107"
+  },
+  "vendor/mapgis2shp/.gitignore": {
+    "bytes": 1547,
+    "sha256": "c0581bfc4746bccd4e9388f0beb6e6efe74908a3dbb6a47c68c8266ba28b9c91"
+  },
+  "vendor/mapgis2shp/CITATION.cff": {
+    "bytes": 3270,
+    "sha256": "a6ae77fc8bbdee6f48de11d846e291854bbd1eac4c6877546a57c986602441d0"
+  },
+  "vendor/mapgis2shp/CLAUDE.md": {
+    "bytes": 7993,
+    "sha256": "4aca037ea512f91e199420bc24ff24a2136602dc191ac8fa602ec84e37cdb6a0"
+  },
+  "vendor/mapgis2shp/CODE_OF_CONDUCT.md": {
+    "bytes": 6450,
+    "sha256": "c51033399f677f7ca02cacc1fbe7bceec5c3ed1f1eb10cc5f12b08f1fc3c656d"
+  },
+  "vendor/mapgis2shp/CONTEXT.md": {
+    "bytes": 17681,
+    "sha256": "82f4fcebb45aade276c54b4ff1443085449743d34a2197c838181f8a1ecb9251"
+  },
+  "vendor/mapgis2shp/CONTRIBUTING.md": {
+    "bytes": 9827,
+    "sha256": "e2803b5c6280d70cbcd8a14e3e2d8b377f93913b16c333feeaf0b9babd1f4c52"
+  },
+  "vendor/mapgis2shp/LICENSE": {
+    "bytes": 10764,
+    "sha256": "ca7b3579da1f3ff1f3853917ca89544039f8171bb7ba73fc20d556235e2a7aa0"
+  },
+  "vendor/mapgis2shp/MANIFEST.in": {
+    "bytes": 524,
+    "sha256": "2adf9c0aaa299d6cc460b57c05bcd4921ae8d4c6fe0c889eea26ae250b0f638b"
+  },
+  "vendor/mapgis2shp/README.md": {
+    "bytes": 38931,
+    "sha256": "7fc5c10e140087797aadedc96b5ccc18a9dbf04e3a4258511077f67578558643"
+  },
+  "vendor/mapgis2shp/_audit_plaintext_pairs.py": {
+    "bytes": 11871,
+    "sha256": "d77512db26a62c1603f5af6339a90a9fd2850b159c290d088bb9cfcbb1f2009f"
+  },
+  "vendor/mapgis2shp/_jws12_render.py": {
+    "bytes": 25864,
+    "sha256": "93cfa4dbb479fd705bc1ce839adb0ac7587d444be835f022415b75aef2ddb4a1"
+  },
+  "vendor/mapgis2shp/_make_write_test_files.py": {
+    "bytes": 7873,
+    "sha256": "a5884590a782952d020af934592a0581b2424edb9643adc37a8fe94264cd13f5"
+  },
+  "vendor/mapgis2shp/_render_slib_symbol.py": {
+    "bytes": 3228,
+    "sha256": "c58211a6e3b2bf50950408fe61d86c92fa884960e8f95bcd6751c1d8206e4104"
+  },
+  "vendor/mapgis2shp/docs/MapGIS_Vector_Format.md": {
+    "bytes": 21119,
+    "sha256": "82f71429e8f2501838b98db15cae18f0c98cfb11fc3c23e844bfdc461530b2ae"
+  },
+  "vendor/mapgis2shp/docs/fillgrph_parsing_logic.md": {
+    "bytes": 3962,
+    "sha256": "5c96ec046dff254e10038bf58082a5fc1dbf4527c0bcaf42536c90699a6fbed8"
+  },
+  "vendor/mapgis2shp/docs/github_issue_graphic_library_tail.md": {
+    "bytes": 3021,
+    "sha256": "26640d49fa63d3f8614fda2d712c023d18551d34e2cea8d571f1d44efc32df69"
+  },
+  "vendor/mapgis2shp/docs/license_provenance.md": {
+    "bytes": 3816,
+    "sha256": "0968e2be9c64dbb31dc0420587490e56a511e764781b36eadf2ccc181ec7e75b"
+  },
+  "vendor/mapgis2shp/docs/linesty_parsing_logic.md": {
+    "bytes": 8530,
+    "sha256": "faef65b53643fcf76209fb8275e7c875313f97696723e5d4aa4d39491dddaae1"
+  },
+  "vendor/mapgis2shp/docs/linestyle_parsing_plan.md": {
+    "bytes": 4009,
+    "sha256": "a83f1a768722b86b04711b05b68cc09e732fc914718c5664e77d93b5f8c07183"
+  },
+  "vendor/mapgis2shp/docs/linestyle_structure_profile.json": {
+    "bytes": 81215,
+    "sha256": "c20b4b5ddde5e561f20095fa10bb642922b623720a9d4b0b590911fff76f2d2d"
+  },
+  "vendor/mapgis2shp/docs/mapgis_file_structure_knowledge.md": {
+    "bytes": 14595,
+    "sha256": "8254a000c4f0dcaca0da1637cd597187db05ba9368464a9c1d2c6527124885d2"
+  },
+  "vendor/mapgis2shp/docs/osgeo_application_checklist.md": {
+    "bytes": 8524,
+    "sha256": "ccbc4b96df21edd14069568f3caea8b35f0bf599a553a50923d1d74611af5d9e"
+  },
+  "vendor/mapgis2shp/docs/osgeo_community_project.md": {
+    "bytes": 4075,
+    "sha256": "8aeb7072b54739d40df1c657230a0eb0d7212a17527c36502e44aad8219f255e"
+  },
+  "vendor/mapgis2shp/docs/plaintext_pairs_audit.md": {
+    "bytes": 2117,
+    "sha256": "ba60e67ced79ec6ca3407b0fbe3c801bb33ace3025afebe0fbed39d95fa995e0"
+  },
+  "vendor/mapgis2shp/docs/sld_export.md": {
+    "bytes": 5996,
+    "sha256": "1afd0a41f9c205247d352515088e6f5f7b502c28ec5d662c0d1114dd30656945"
+  },
+  "vendor/mapgis2shp/examples/README.md": {
+    "bytes": 925,
+    "sha256": "e5ab4b2b740c0499de51672cb76ee970639ca09bebd440c3b9498a592cbdc0ec"
+  },
+  "vendor/mapgis2shp/examples/geological_workflow.py": {
+    "bytes": 2391,
+    "sha256": "d18e8dbf4e4ced9e9fe26cc39ef308071dfacfb8550bef8a67ea3938616bf81f"
+  },
+  "vendor/mapgis2shp/publish.sh": {
+    "bytes": 3041,
+    "sha256": "1255df4f7451114d5b26937e88adcccb9d3f1b447a61a758c32513d2bc96720c"
+  },
+  "vendor/mapgis2shp/pymapgis_baseline.json": {
+    "bytes": 60208,
+    "sha256": "ede1d4be5af13d8e59e62a09d43ae1270907a3b2395a68610226377d8c7bebf8"
+  },
+  "vendor/mapgis2shp/pyproject.toml": {
+    "bytes": 2289,
+    "sha256": "4767340dad4053d168608d3704f843546ef731a6339370be821e6f076df0700c"
+  },
+  "vendor/mapgis2shp/src/pymapgis/__init__.py": {
+    "bytes": 1509,
+    "sha256": "94a1566b8554ba584bd6d4a36e6c0edb7c2131b7f442f16e92ec829aa44411d9"
+  },
+  "vendor/mapgis2shp/src/pymapgis/__main__.py": {
+    "bytes": 171,
+    "sha256": "f6c1a64306c9cdc0dabc546cd896fbc8466c9056fd0946adf791531c36454081"
+  },
+  "vendor/mapgis2shp/src/pymapgis/_version.py": {
+    "bytes": 97,
+    "sha256": "0d9a9437a1d38b543c7c3de73837b701d4a125a130e0d422009aa6e20d55c9b3"
+  },
+  "vendor/mapgis2shp/src/pymapgis/cli.py": {
+    "bytes": 9082,
+    "sha256": "47c799f8edd0f4466b9798e4f64c64ae5eb4e75fe9d19b351650a20f4a2c0d7c"
+  },
+  "vendor/mapgis2shp/src/pymapgis/colorlib.py": {
+    "bytes": 2465,
+    "sha256": "4addca0cf681e56e37a971c9f4514d2dc9f28fd91cab9242acd4adce4f93ebb7"
+  },
+  "vendor/mapgis2shp/src/pymapgis/fillgrph.py": {
+    "bytes": 9202,
+    "sha256": "171a370eec210c096dd7afddc45b16e1b82f5e092017cc715bdb9048beff218d"
+  },
+  "vendor/mapgis2shp/src/pymapgis/linesty.py": {
+    "bytes": 73738,
+    "sha256": "4fbba46c44db2f2feddd52daef6f80209e8977ad0854d3ab49c2d7103d92bd0d"
+  },
+  "vendor/mapgis2shp/src/pymapgis/linesty_adjudicated.py": {
+    "bytes": 13311,
+    "sha256": "03581db221e7f9bea7621774d652d49c2e707caaa1c1b9a24b646d85c9db56e4"
+  },
+  "vendor/mapgis2shp/src/pymapgis/reader.py": {
+    "bytes": 60407,
+    "sha256": "12a5b09c7410523af8a5032c2531e6fe52119f2305243019c40bc3e9164c27a7"
+  },
+  "vendor/mapgis2shp/src/pymapgis/slib.py": {
+    "bytes": 32570,
+    "sha256": "e03bbdc6ca8aa2ad36e4102ad36015e0ad1627ccc865880db83c3cd43e783b18"
+  },
+  "vendor/mapgis2shp/src/pymapgis/writer.py": {
+    "bytes": 74386,
+    "sha256": "7f283e74aa87683350de3c95e1ea3c085b6d61b25a2f3c906a17110f39d92da2"
+  },
+  "vendor/mapgis2shp/tests/conftest.py": {
+    "bytes": 1223,
+    "sha256": "ec66a62faeff43f0f87f62d586f9d514bbe8d60ad6d976122a6c8e50e72fe42f"
+  },
+  "vendor/mapgis2shp/tests/fixtures/README.md": {
+    "bytes": 3213,
+    "sha256": "62e4053287b7a49c886bc1453c8d7bd4a7a9f941a01f70646c2d83c2f565a972"
+  },
+  "vendor/mapgis2shp/tests/fixtures/build_mapgis_fixtures.py": {
+    "bytes": 5932,
+    "sha256": "42c51d5fa1f6bf4a96246b41e7e4128521844b25a389aa98baaf3d7738f5cb36"
+  },
+  "vendor/mapgis2shp/tests/fixtures/fixture_manifest.json": {
+    "bytes": 3800,
+    "sha256": "089faf826d777598a1f9b0eb38454a53bb0b16fb2bd2ee08017301419945cc10"
+  },
+  "vendor/mapgis2shp/tests/fixtures/mapgis/synthetic_lines.wl": {
+    "bytes": 2435,
+    "sha256": "67ab8ae921887e031ef65feb097d95d375a5d75ea743454f5f12b0213369d082"
+  },
+  "vendor/mapgis2shp/tests/fixtures/mapgis/synthetic_points.wt": {
+    "bytes": 2083,
+    "sha256": "3b987412699231628310f654bf7d204d8489f6391d6423398cbfee3b653d617a"
+  },
+  "vendor/mapgis2shp/tests/fixtures/mapgis/synthetic_polygons.wp": {
+    "bytes": 4047,
+    "sha256": "20d5ddca713615719d9743d5395f6869cf841ef954ba7e7e442f34e29a074a26"
+  },
+  "vendor/mapgis2shp/tests/inspect_dist.py": {
+    "bytes": 2933,
+    "sha256": "568e7d90c3c48dcb396e0c95e9f3ac169eb4ad8b2dcb787dcaa337b2727ee49e"
+  },
+  "vendor/mapgis2shp/tests/test_cli.py": {
+    "bytes": 5999,
+    "sha256": "510f5acef8f1594bca059002e287710e3bfc90dcb62b434db1feadb8b5b3d42b"
+  },
+  "vendor/mapgis2shp/tests/test_public_fixtures.py": {
+    "bytes": 4293,
+    "sha256": "ae1c421ba5b8b2067db478d7aae8b5c73604d9b26f74670c9f16b450c3766445"
+  },
+  "vendor/mapgis2shp/tests/test_pure.py": {
+    "bytes": 99716,
+    "sha256": "793d2ea516c54ba3300558dd7b7bbfdb4abdd52d741841890dba5a2ffd94d4d7"
+  },
+  "vendor/mapgis2shp/tests/test_reader.py": {
+    "bytes": 15192,
+    "sha256": "18f6d20605dd7f238c60bf365c74e65d3fc4c9b92a05761e19fd3c384cc63ab7"
+  },
+  "vendor/mapgis2shp/tests/test_render_polygon_draw_idle.py": {
+    "bytes": 3523,
+    "sha256": "f472dc306611364872c7401cf39d49717452c952abf6270a186542b79abb1248"
+  },
+  "vendor/mapgis2shp/tests/test_writer.py": {
+    "bytes": 28403,
+    "sha256": "a958b8cdbcc9ecb2bebeaab68e4d55a8d3eeceebc27fa75b215e128bc0f34a73"
+  },
+  "vendor/mapgis2shp/verify_pymapgis.py": {
+    "bytes": 9203,
+    "sha256": "d44f538a0c1eba478d6c526f664e1de27018a1a4b68fccc47ba537f7a6cb6b89"
+  },
+  "vendor/stratigraphic-amenity/LICENSE": {
+    "bytes": 1115,
+    "sha256": "31d11b299b8f047dfa23559d804f58af633edfc1a93145306a45a9a946f71cf5"
+  },
+  "vendor/stratigraphic-amenity/SOURCE.json": {
+    "bytes": 704,
+    "sha256": "b6cd6211f3ec9c6f2056dda161381584447026aaa54bd7ce0eb1a604f8725920"
+  },
+  "workflows/analysis.json": {
+    "bytes": 2427,
+    "sha256": "8d18fb76d3bbe926974cd5ed9da86bf54d76c96150ab7bc985ca88db86c22e1d"
+  },
+  "workflows/projection.json": {
+    "bytes": 2494,
+    "sha256": "0ae8afec0af5f56a8a621bec586fcab4a6154d070a2edc98f0b3907aefd429e8"
+  },
+  "workflows/scan-geology.json": {
+    "bytes": 8641,
+    "sha256": "4b7a3fef4607a55bb455d63aab30451015310b32ec264080019b07091efa8c07"
+  },
+  "workflows/terrain.json": {
+    "bytes": 3762,
+    "sha256": "a7d628523dc87daf8f8cfc9b09bd05e340cc4fe24abcbab043e4069c95a07ad2"
+  }
+}

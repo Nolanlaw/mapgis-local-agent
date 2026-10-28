@@ -24,7 +24,8 @@
 在解压目录打开 PowerShell，运行：
 
 ```powershell
-.\MapGIS-CLI.cmd capabilities
+./runtime/python/python.exe -s -B -X utf8 scripts/portable.py setup --enable-native-legacy-host
+./runtime/python/python.exe -s -B -X utf8 scripts/self_test_native.py
 ```
 
 `MapGIS-MCP.cmd` 是 stdio 服务入口，通常由 MCP 客户端启动。直接双击后它会等待客户端输入。
@@ -42,6 +43,21 @@
 实时读取工程、选区和未保存状态，目前匹配 build 051118 的四个程序模块。`03-Diagnostics.cmd` 显示 `MATCH` 表示模块指纹匹配；`UNSUPPORTED_BUILD` 表示需要重新适配。许可和 Sky 宿主是否可用仍需分别确认。
 
 出图前使用 `scripts/Prepare-NativeOutput.ps1` 将工程及其显式依赖暂存到短 ASCII 路径，再在 MapGIS 中核对加载的图层和输出文件。步骤见 `docs/NATIVE.md`。
+
+## 后台原生模式
+
+0.5.0 可直接调用本机原生组件处理保存文件并生成 EPS，不需要电脑操作宿主。默认关闭；本包的独立 x86 子进程使用旧版 DEP 兼容构建，接收者接受该进程的保护取舍后运行：
+
+```powershell
+.
+untimepythonpython.exe -s -B -X utf8 scriptsportable.py setup --enable-native-legacy-host
+.
+untimepythonpython.exe -s -B -X utf8 scriptsself_test_native.py
+```
+
+先完成安装路径绑定。自检会调用实际 MapGIS 组件，用合成点线区验证读取、移动、删除、另存、新进程重开、恢复和原生 EPS。它不操作桌面，不修改 MapGIS 或 Windows 设置。只用普通文件工具时无需启用。
+
+Agent 可通过 mapgis_native_file_info、mapgis_prepare_native_operation 和 mapgis_prepare_native_plot 使用此通道。参数和限制见[原生操作](NATIVE.md)。运行中编辑器未保存的内容及其他模块仍使用原来的宿主入口。
 
 ## 数据与恢复
 

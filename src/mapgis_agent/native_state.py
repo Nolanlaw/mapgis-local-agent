@@ -91,10 +91,10 @@ def read_project_view(read, address: int) -> dict:
 
 
 def read_workspaces(read, bas_base: int) -> dict[int, dict]:
-    """BAS60 ordinal 93 resolves this list; ordinal 87 reads flag 0xEB7 bit 0."""
+    """BAS60 93/87: list and dirty flag; 175/176/177: live entity counts."""
     def once():
         head = struct.unpack('<I', read(bas_base + 0x8D928, 4))[0]
-        node, seen, rows = head, set(), {}
+        node, seen, rows, count_data = head, set(), {}, {}
         while node:
             if node in seen or len(seen) >= 4096:
                 raise NativeStateError('Invalid native workspace chain')
@@ -105,7 +105,41 @@ def read_workspaces(read, bas_base: int) -> dict[int, dict]:
             if area <= 0 or area in rows:
                 raise NativeStateError('Invalid or duplicated native workspace handle')
             rows[area] = {'address': hex(node), 'native_flags': flags, 'modified': bool(flags & 1)}
+            references, owner = struct.unpack('<ih', read(node + 0xC, 6))
+            external = struct.unpack('<I', read(node + 0x143, 4))[0]
+            layout = read(node + 0xACD, 29)
+            count_data[area] = (owner if references > 0 and owner > 0 else None, external, layout)
             node = following
+        for area, row in rows.items():
+            owner, visited = area, set()
+            while count_data[owner][0] is not None:
+                if owner in visited or count_data[owner][0] not in count_data:
+                    raise NativeStateError('Invalid native workspace count alias')
+                visited.add(owner)
+                owner = count_data[owner][0]
+            _, external, layout = count_data[owner]
+            row.update(count_source_area=owner, counts=None)
+            if external:
+                row['counts_status'] = 'EXTERNAL_STORAGE'
+                continue
+            kind = layout[0]
+            if kind not in (0, 1, 2):
+                row['counts_status'] = 'UNSUPPORTED_WORKSPACE_TYPE'
+                continue
+            counts = {}
+            entities = [('POINT' if kind == 1 else 'ARC' if kind == 2 else 'LINE', 5)]
+            if kind == 2:
+                entities.append(('REGION', 21))
+            for entity, offset in entities:
+                active, slots = struct.unpack_from('<ii', layout, offset)
+                if active == slots == 0:
+                    break  # Allocated workspace whose file data is not initialised.
+                if not 0 <= active < slots:
+                    raise NativeStateError('Invalid native workspace entity counts')
+                counts[entity] = {'active': active, 'max_physical_id': slots - 1}
+            else:
+                row['counts'] = counts
+            row['counts_status'] = 'OBSERVED' if row['counts'] is not None else 'NOT_INITIALISED'
         if struct.unpack('<I', read(bas_base + 0x8D928, 4))[0] != head:
             raise NativeStateError('Workspace list changed during snapshot')
         return rows
@@ -245,6 +279,7 @@ def live_state(root: str | Path, pid: int) -> dict:
             raise NativeStateError('Native process or workspace changed during snapshot')
         result = {'profile': 'mapgis-6.7-051118-readonly-v1', 'pid': pid, 'create_time': started,
                   'executable': str(expected), 'modules': modules, 'project_views': views,
+                  'workspaces': workspaces,
                   'rejected': rejected, 'active_view': None,
                   'active_view_status': 'requires independent Sky window observation',
                   'access_rights': 'PROCESS_QUERY_INFORMATION | PROCESS_VM_READ',

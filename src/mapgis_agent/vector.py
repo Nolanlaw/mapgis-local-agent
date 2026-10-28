@@ -32,7 +32,7 @@ def prepare_vector_operation(bridge: Bridge, operation_id: str, features: dict, 
     geometries = [shape(feature["geometry"]) for feature in source]
     if any(g.is_empty or not g.is_valid or not all(math.isfinite(n) for n in g.bounds) for g in geometries):
         raise BridgeError("INVALID_GEOMETRY: repair explicitly before operation")
-    qa = {"source_feature_ids":[f["id"] for f in source],"source_count":len(source),
+    qa = {**template.get("qa",{}),"source_feature_ids":[f["id"] for f in source],"source_count":len(source),
           "units":crs.axis_info[0].unit_name if crs else template["crs"]["unit"],"backend":"GEOS/PROJ; native UI execution is a separate path"}
     if operation_id in {"geometry.buffer","geometry.simplify"} and crs is None and qa["units"] == "unknown":
         raise BridgeError("KNOWN_DISTANCE_UNIT_REQUIRED: local grid unit is unknown")

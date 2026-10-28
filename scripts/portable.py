@@ -40,7 +40,7 @@ def installation(value: str) -> Path:
     return path
 
 
-def configure(root: Path, python: Path, mapgis: str | None = None) -> dict:
+def configure(root: Path, python: Path, mapgis: str | None = None, native_legacy: bool = False) -> dict:
     """Generate only our local client config; preserve independently edited files."""
     config_file, state_file = root / 'mcp-config.local.json', root / 'setup-state.local.json'
     state = load(state_file)
@@ -56,13 +56,20 @@ def configure(root: Path, python: Path, mapgis: str | None = None) -> dict:
             raise ValueError('Existing MapGIS binding points elsewhere; preserve it and resolve before rebinding')
     entry = {'mcpServers': {'mapgis_local': {'command': str(python.resolve()),
         'args': ['-s', '-B', '-X', 'utf8', str(root / 'scripts/launch_mcp.py'), '--root', str(root)]}}}
-    if chosen and not native.get('mapgis_installation'):
-        write_json(native_file, {**native, 'mapgis_installation': str(chosen)})
+    if native_legacy and not (chosen or native.get('mapgis_installation')):
+        raise ValueError('An existing licensed MapGIS installation is required for the legacy native host')
+    if chosen:
+        native['mapgis_installation'] = str(chosen)
+    if native_legacy:
+        native['native_backend_legacy_dep_compatibility'] = True
+    if chosen or native_legacy:
+        write_json(native_file, native)
     write_json(config_file, entry)
     write_json(state_file, {'generated_mcp_sha256': hashlib.sha256(config_file.read_bytes()).hexdigest(),
         'root': str(root), 'runtime': str(python.resolve())})
     return {'status': 'CONFIGURED', 'client_configuration': str(config_file),
         'mapgis': str(chosen) if chosen else native.get('mapgis_installation'),
+        'native_legacy_host_enabled': native.get('native_backend_legacy_dep_compatibility') is True,
         'next': 'Open this package folder in a computer-use-capable agent host; or load the generated stdio config in your MCP client.'}
 
 
@@ -110,6 +117,8 @@ def main() -> None:
     parser.add_argument('action', choices=('setup', 'doctor'))
     parser.add_argument('--mapgis')
     parser.add_argument('--interactive', action='store_true')
+    parser.add_argument('--enable-native-legacy-host', action='store_true',
+                        help='Accept DEP compatibility for this package-owned x86 child only; Windows and MapGIS binaries stay unchanged')
     args = parser.parse_args()
     try:
         if args.action == 'setup':
@@ -117,7 +126,7 @@ def main() -> None:
             if args.interactive and not selected and not (ROOT / 'config.local.json').exists():
                 print('MapGIS 6.7 installation folder (Enter = file tools only):', flush=True)
                 selected = input().strip() or None
-            result = configure(ROOT, Path(sys.executable), selected)
+            result = configure(ROOT, Path(sys.executable), selected, args.enable_native_legacy_host)
             result['diagnostics'] = doctor(ROOT)
             if result['mapgis']:
                 completed = subprocess.run([sys.executable, '-s', '-B', '-X', 'utf8',

@@ -108,3 +108,39 @@ def test_workspace_modified_is_bit_zero_not_any_nonzero_flag():
     state = read_workspaces(memory, 0xA000)
     assert state[5]['modified'] is False
     assert state[7]['modified'] is True
+
+
+def test_workspace_counts_distinguish_deleted_slots_and_polygon_arcs():
+    memory = Memory()
+    memory.blocks[0xA000 + 0x8D928] = struct.pack('<I', 0x7000)
+    for address, area, kind, following in [(0x7000, 5, 1, 0x9000), (0x9000, 7, 2, 0)]:
+        node = bytearray(0xEB8)
+        struct.pack_into('<h', node, 0, area)
+        struct.pack_into('<I', node, 8, following)
+        node[0xACD] = kind
+        struct.pack_into('<ii', node, 0xAD2, 2 if kind == 1 else 12, 5 if kind == 1 else 17)
+        struct.pack_into('<ii', node, 0xAE2, 3, 5)
+        memory.blocks[address] = node
+    state = read_workspaces(memory, 0xA000)
+    assert state[5]['counts'] == {'POINT': {'active': 2, 'max_physical_id': 4}}
+    assert state[7]['counts'] == {'ARC': {'active': 12, 'max_physical_id': 16},
+                                'REGION': {'active': 3, 'max_physical_id': 4}}
+
+
+def test_workspace_counts_resolve_alias_and_do_not_guess_external_storage():
+    memory = Memory()
+    memory.blocks[0xA000 + 0x8D928] = struct.pack('<I', 0x7000)
+    for address, area, following in [(0x7000, 5, 0x9000), (0x9000, 7, 0)]:
+        node = bytearray(0xEB8)
+        struct.pack_into('<h', node, 0, area)
+        struct.pack_into('<I', node, 8, following)
+        node[0xACD] = 1
+        struct.pack_into('<ii', node, 0xAD2, 2, 5)
+        memory.blocks[address] = node
+    struct.pack_into('<ih', memory.blocks[0x7000], 0xC, 1, 7)
+    state = read_workspaces(memory, 0xA000)
+    assert state[5]['counts'] == state[7]['counts']
+    assert state[5]['count_source_area'] == 7
+    struct.pack_into('<I', memory.blocks[0x9000], 0x143, 1)
+    state = read_workspaces(memory, 0xA000)
+    assert state[5]['counts'] is None and state[5]['counts_status'] == 'EXTERNAL_STORAGE'

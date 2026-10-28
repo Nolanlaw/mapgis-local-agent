@@ -6,6 +6,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 from .core import Bridge
+from .deletion import prepare_deletion
 from .environment import capabilities
 from .native_state import live_state
 from .operations import find_operations, describe_operation
@@ -14,12 +15,37 @@ from .raster import RasterWorkspace, write_georeferenced_window
 from .creation import prepare_creation
 from .vector import prepare_vector_operation
 from .candidates import extract_candidates, merge_candidate_tiles
+from .features import read_features, prepare_file_operation
+from .comparison import compare_native_files
+from .native_backend import native_file_info, prepare_native_operation, reconcile_native_request
+from .native_plot import prepare_native_plot
 
 
 def build_server(root: str | Path) -> FastMCP:
     bridge = Bridge(root)
     raster = RasterWorkspace(root)
     server = FastMCP("MapGIS 6.7 本机原生文件工具")
+
+    @server.tool()
+    def mapgis_reconcile_native_request(request_id: str) -> dict:
+        """Reconcile RUNNING/FAILED native file or plot requests after interruption without repeating the edit. Verifies the recorded child PID/start/executable, durable completion receipt, source snapshots and actual candidate. File candidates get an independent comparison and fresh native reopen; plots get page/layer checks and independent rendering. Incomplete candidates remain FAILED. Then use apply_patch for PREPARED results."""
+        return reconcile_native_request(bridge, request_id)
+
+    @server.tool()
+    def mapgis_prepare_native_plot(layers: list[dict], view: dict, request_id: str) -> dict:
+        """Compose actual native EPS without desktop input. layers ordered bottom to top: [{file,expected_sha256}], 1..100 saved WT/WL/WP. view={native_bounds:[xmin,ymin,xmax,ymax],paper_mm:[width,height],coordinate_frame:'native'}; obtain raw native bounds with native_file_info, ensure all layers share the intended coordinate frame. Preserves aspect ratio, centers on the physical page, uses installed MapGIS symbols/fonts and verified winout60/mapdsp60. Independent Ghostscript preview rejects blank/truncated output. PREPARED candidates use existing apply_patch/get_request/cancel_request; originals stay unchanged. Geological content still needs source review."""
+        return prepare_native_plot(bridge, layers, view, request_id)
+
+    @server.tool()
+    def mapgis_native_file_info(file: str, expected_sha256: str) -> dict:
+        """Open a saved WT/WL/WP through BAS60 in a fresh isolated x86 process, without desktop input. Requires exact build, installed licence and explicit isolated legacy DEP compatibility opt-in. Cross-checks native active count against the independent Reader. Never reads live unsaved editor memory."""
+        return native_file_info(bridge.root, file, expected_sha256)
+
+    @server.tool()
+    def mapgis_prepare_native_operation(operation: str, file: str, expected_sha256: str,
+                                       parameters: dict, request_id: str) -> dict:
+        """Prepare a new branch through actual BAS60 calls without mouse/UI. operation=resave with {}; point.move with {updates:[{record_id:1,x:12.5,y:13.75}]}; or feature.delete with {record_ids:[1,3]} for WT/WL. Requires an owned work copy and explicit legacy x86 compatibility opt-in. Verifies saved geometry/attributes/style and opens it in another native process before PREPARED. apply_patch/get_request/cancel_request use the existing ledger. RUNNING or FAILED is never blindly replayed. Other native APIs are not exposed."""
+        return prepare_native_operation(bridge, operation, file, expected_sha256, parameters, request_id)
 
     @server.tool()
     def mapgis_search_native_help(module: str, query: str = '', topic_id: str | None = None, limit: int = 10) -> dict:
@@ -32,9 +58,16 @@ def build_server(root: str | Path) -> FastMCP:
         return find_operations(bridge.root, query, module)
 
     @server.tool()
-    def mapgis_describe_operation(operation_id: str) -> dict:
+    async def mapgis_describe_operation(operation_id: str) -> dict:
         """Read parameters, preconditions, installed executable, native help and acceptance checks. Native UI requires the host's Sky and fresh observations."""
-        return describe_operation(bridge.root, operation_id)
+        result = describe_operation(bridge.root, operation_id)
+        if result["executable_by_mcp"]:
+            tools = {tool.name: tool for tool in await server.list_tools()}
+            result["input_schema"] = tools[result["execution"]["tool"]].inputSchema
+            result["execution_status"] = "MCP_TOOL_AVAILABLE"
+        else:
+            result["execution_status"] = "HOST_OBSERVATION_REQUIRED"
+        return result
 
     @server.tool()
     def mapgis_register_scan(source: str, request_id: str) -> dict:
@@ -96,6 +129,20 @@ def build_server(root: str | Path) -> FastMCP:
         return bridge.inspect(file, offset, limit)
 
     @server.tool()
+    def mapgis_read_features(file: str, expected_sha256: str, record_ids: list[int] | None = None,
+                             offset: int = 0, limit: int = 100) -> dict:
+        """Read saved WT/WL/WP as paged GeoJSON with separate native styles/text. IDs are physical slots, attribute ID may repeat. Require the current file fingerprint; coordinates need explicit CRS/unit confirmation. For whole-file processing use prepare_file_operation without sending every vertex through the model."""
+        return read_features(file, expected_sha256, record_ids, offset, limit)
+
+    @server.tool()
+    def mapgis_prepare_file_operation(operation_id: str, file: str, expected_sha256: str,
+                                      template: dict, parameters: dict, request_id: str,
+                                      record_ids: list[int] | None = None) -> dict:
+        """Run existing GEOS/PROJ operations directly on a saved native file or explicit physical IDs. Same operations as prepare_vector_operation. Declare CRS/units and new WT/WL/WP name in template. Optional role_by_record maps string physical IDs to boundary/fault/contour/annotation/protected for polygonize. Produces a new derived branch with provenance and mapping; auxiliary native sections are not copied. Apply/get/cancel use the existing ledger; does not edit live unsaved memory."""
+        return prepare_file_operation(bridge, operation_id, file, expected_sha256,
+                                      template, parameters, request_id, record_ids)
+
+    @server.tool()
     def mapgis_make_work_copy(source: str, request_id: str) -> dict:
         """Copy a native vector into a new owned workspace, preserving original bytes. Repeated ID reconciles the same copy."""
         return bridge.copy(source, request_id)
@@ -107,14 +154,29 @@ def build_server(root: str | Path) -> FastMCP:
         return bridge.prepare(file, expected_sha256, record_ids, request_id, attributes, style)
 
     @server.tool()
+    def mapgis_prepare_delete(file: str, expected_sha256: str, record_ids: list[int], request_id: str) -> dict:
+        """Prepare deletion of explicit active physical IDs in an owned WT/WL copy. Attribute ID is not identity. Keeps other bytes, native pools/styles and slot numbering; produces a NEW branch through apply_patch. No live unsaved-memory edits. WP requires native topology editing. Same-layout recovery can restore this request's flags; native reopen remains a separate check."""
+        return prepare_deletion(bridge, file, expected_sha256, record_ids, request_id)
+
+    @server.tool()
     def mapgis_apply_patch(request_id: str) -> dict:
-        """Apply a prepared PATCH or CREATE to a NEW output branch after source hash recheck. Idempotent; does not overwrite originals or live documents. Reconcile get_request after interruption before retrying."""
+        """Apply a prepared PATCH, CREATE or DELETE to a NEW output branch after source hash recheck. Idempotent; does not overwrite originals or live documents. Reconcile get_request after interruption before retrying."""
         return bridge.apply(request_id)
 
     @server.tool()
     def mapgis_get_request(request_id: str) -> dict:
         """Inspect the persisted request and output hash. Reconcile this state after interruption before retrying."""
         return bridge.status(request_id)
+
+    @server.tool()
+    def mapgis_compare_files(before: str, after: str, limit: int = 100) -> dict:
+        """Read-only saved WT/WL/WP comparison by physical slots: geometry, attributes, graphic parameters, annotation text and coordinate header. Returns complete counts and bounded details; limit=0 gives counts. Renumbering is not semantic identity. Does not certify native UI or reopen."""
+        return compare_native_files(before, after, limit)
+
+    @server.tool()
+    def mapgis_verify_request_output(request_id: str, file: str) -> dict:
+        """Compare a saved file with an applied request's frozen candidate. Accepts native bookkeeping changes when records/text/styles/coordinate header match. Reports matches_candidate_records; never rewrites request status or labels an unobserved native reopen as verified. Use after native Save with independent live project/dirty checks."""
+        return bridge.verify_output(request_id, file)
 
     @server.tool()
     def mapgis_cancel_request(request_id: str) -> dict:

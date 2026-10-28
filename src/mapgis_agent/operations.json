@@ -80,6 +80,133 @@
     }
   },
   {
+    "id": "file.features",
+    "name": "分页读取原生几何、属性、样式和注记",
+    "module": "files",
+    "validation": "FILE_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_read_features"
+    },
+    "parameters": {
+      "file": "Saved WT/WL/WP",
+      "expected_sha256": "Current fingerprint",
+      "record_ids": "Optional active physical IDs",
+      "offset": "Active-row offset",
+      "limit": "1..100"
+    },
+    "preconditions": [
+      "Read the saved file fingerprint first"
+    ],
+    "output_checks": [
+      "GeoJSON coordinates and separate properties/style/text",
+      "Physical IDs may differ from attribute ID",
+      "File read does not prove native save/reopen"
+    ]
+  },
+  {
+    "id": "file.delete",
+    "name": "按物理编号批量删除点线及同布局恢复",
+    "module": "files",
+    "validation": "FILE_TESTED_NATIVE_PARTIAL",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_delete"
+    },
+    "parameters": {
+      "file": "Owned saved WT/WL",
+      "expected_sha256": "Current fingerprint",
+      "record_ids": "Unique active physical IDs",
+      "request_id": "Stable DELETE request ID"
+    },
+    "preconditions": [
+      "Prepare before apply; never overwrite source",
+      "Active count must agree with record flags"
+    ],
+    "output_checks": [
+      "Tombstone flags and native active count",
+      "Untargeted records and maximum physical ID preserved",
+      "Recover only against the same layout and unchanged journal bytes"
+    ],
+    "validation_scope": "WT native save and fresh-process active-count readback tested on one four-slot sample. WL native acceptance is recorded separately; WP deletion is unsupported."
+  },
+  {
+    "id": "vector.process_file",
+    "name": "从已保存的原生点线区直接执行矢量处理",
+    "module": "files",
+    "validation": "FILE_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_file_operation"
+    },
+    "parameters": {
+      "operation_id": "Existing vector.process operation",
+      "file": "Saved WT/WL/WP",
+      "expected_sha256": "Current fingerprint",
+      "record_ids": "Optional explicit physical IDs",
+      "template": "New native name, explicit CRS and scale",
+      "parameters": "Operation options; optional role_by_record for line roles",
+      "request_id": "New branch ID"
+    },
+    "preconditions": [
+      "Explicit source units and coordinate context",
+      "Never substitute unsaved MapGIS memory"
+    ],
+    "output_checks": [
+      "Source fingerprint and physical IDs retained in QA",
+      "Source unchanged; new derived file",
+      "Auxiliary native sections are not copied",
+      "Native save/reopen is a separate gate"
+    ]
+  },
+  {
+    "id": "file.compare",
+    "name": "比较原生文件的几何、属性、样式和注记",
+    "module": "files",
+    "validation": "FILE_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_compare_files"
+    },
+    "parameters": {
+      "before": "Saved baseline WT/WL/WP",
+      "after": "Saved result of the same native type",
+      "limit": "0..1000; zero returns counts only"
+    },
+    "preconditions": [
+      "Comparison identity is physical record slots"
+    ],
+    "output_checks": [
+      "Added, removed and changed records",
+      "Annotation text and coordinate metadata",
+      "Bounded detail and ID arrays",
+      "Renumbering is not semantic feature matching"
+    ]
+  },
+  {
+    "id": "file.verify_request",
+    "name": "对照持久化请求校验实际保存结果",
+    "module": "files",
+    "validation": "FILE_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_verify_request_output"
+    },
+    "parameters": {
+      "request_id": "Applied request in this project ledger",
+      "file": "Actual saved native file"
+    },
+    "preconditions": [
+      "Persisted applied candidate exists"
+    ],
+    "output_checks": [
+      "Candidate records and coordinate metadata match",
+      "Native bookkeeping byte differences remain visible",
+      "No request state rewritten",
+      "NativeSession.verifyFileRequest separately checks the loaded clean layer and fresh process"
+    ]
+  },
+  {
     "id": "project.new",
     "name": "新建工程与添加图层",
     "module": "editor",
@@ -1129,5 +1256,195 @@
       "kind": "host_sky",
       "requires_observation": true
     }
+  },
+  {
+    "id": "native.info",
+    "name": "后台原生读取和计数",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_native_file_info"
+    },
+    "parameters": {
+      "file": "Saved WT/WL/WP",
+      "expected_sha256": "Current source fingerprint"
+    },
+    "preconditions": [
+      "Verified BAS60 SHA256 and existing licence",
+      "Explicit isolated x86 legacy DEP compatibility opt-in",
+      "Saved owned snapshot; no unsaved editor mutation"
+    ],
+    "output_checks": [
+      "Native child completes without UI",
+      "Independent geometry, attributes, text and style comparison",
+      "Fresh native process reopen and active count"
+    ],
+    "help": {
+      "module": "editor",
+      "query": "工作区 文件 保存"
+    },
+    "scope": "Only listed operations; other native APIs remain unverified"
+  },
+  {
+    "id": "native.resave",
+    "name": "后台原生另存和重开",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation"
+    },
+    "parameters": {
+      "operation": "resave",
+      "parameters": {},
+      "file": "Owned WT/WL/WP",
+      "expected_sha256": "Current fingerprint",
+      "request_id": "Unique ID"
+    },
+    "preconditions": [
+      "Verified BAS60 SHA256 and existing licence",
+      "Explicit isolated x86 legacy DEP compatibility opt-in",
+      "Saved owned snapshot; no unsaved editor mutation"
+    ],
+    "output_checks": [
+      "Native child completes without UI",
+      "Independent geometry, attributes, text and style comparison",
+      "Fresh native process reopen and active count"
+    ],
+    "help": {
+      "module": "editor",
+      "query": "工作区 文件 保存"
+    },
+    "scope": "Only listed operations; other native APIs remain unverified"
+  },
+  {
+    "id": "native.point.move",
+    "name": "后台原生点坐标编辑",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation"
+    },
+    "parameters": {
+      "operation": "point.move",
+      "parameters": {
+        "updates": [
+          {
+            "record_id": 1,
+            "x": 12.5,
+            "y": 13.75
+          }
+        ]
+      },
+      "file": "Owned WT",
+      "expected_sha256": "Current fingerprint",
+      "request_id": "Unique ID"
+    },
+    "preconditions": [
+      "Verified BAS60 SHA256 and existing licence",
+      "Explicit isolated x86 legacy DEP compatibility opt-in",
+      "Saved owned snapshot; no unsaved editor mutation"
+    ],
+    "output_checks": [
+      "Native child completes without UI",
+      "Independent geometry, attributes, text and style comparison",
+      "Fresh native process reopen and active count"
+    ],
+    "help": {
+      "module": "editor",
+      "query": "工作区 文件 保存"
+    },
+    "scope": "Only listed operations; other native APIs remain unverified"
+  },
+  {
+    "id": "native.plot",
+    "name": "后台原生多图层 EPS 出图",
+    "module": "output",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_plot"
+    },
+    "parameters": {
+      "layers": "Ordered [{file,expected_sha256}]",
+      "view": {
+        "native_bounds": "[xmin,ymin,xmax,ymax] from native_file_info",
+        "paper_mm": "[width,height]",
+        "coordinate_frame": "native"
+      },
+      "request_id": "Unique ID"
+    },
+    "preconditions": [
+      "Exact BAS60/mapdsp60/winout60 build",
+      "Explicit isolated legacy x86 DEP compatibility opt-in",
+      "All layer native coordinate frames are compatible",
+      "Installed symbols, fonts and licence"
+    ],
+    "output_checks": [
+      "Native EPS header, EOF and physical page",
+      "Independent Ghostscript rendering and nonblank pixels",
+      "Source fingerprints unchanged"
+    ],
+    "scope": "Native EPS composition only; geological interpretation remains subject to source review"
+  },
+  {
+    "id": "native.feature.delete",
+    "name": "后台原生点线删除",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation"
+    },
+    "parameters": {
+      "operation": "feature.delete",
+      "parameters": {
+        "record_ids": [
+          1,
+          3
+        ]
+      },
+      "file": "Owned WT/WL",
+      "expected_sha256": "Current fingerprint",
+      "request_id": "Unique ID"
+    },
+    "preconditions": [
+      "Exact BAS60 build and valid licence",
+      "Explicit isolated legacy x86 compatibility opt-in",
+      "Unique active physical IDs; WP topology deletion excluded"
+    ],
+    "output_checks": [
+      "Native deletion, save and fresh-process reopen",
+      "Remaining records unchanged",
+      "Native active count matches geometry flags",
+      "Recovery from unchanged candidate is byte-identical"
+    ],
+    "scope": "Saved WT/WL only; native storage may retain deleted attribute payload"
+  },
+  {
+    "id": "native.reconcile",
+    "name": "中断后核对原生请求",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_reconcile_native_request"
+    },
+    "parameters": {
+      "request_id": "Existing native request ID"
+    },
+    "preconditions": [
+      "Persisted request and owned stage",
+      "Exact child PID/start/executable if still running",
+      "Durable complete native receipt and unchanged inputs"
+    ],
+    "output_checks": [
+      "No edit replay",
+      "Candidate comparison and fresh native reopen or independent EPS interpretation",
+      "Incomplete candidates remain FAILED"
+    ],
+    "scope": "Native file and plot requests only"
   }
 ]

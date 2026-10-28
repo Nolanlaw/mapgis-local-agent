@@ -59,7 +59,10 @@ async def main():
                               "mapgis_find_operations", "mapgis_describe_operation", "mapgis_search_native_help",
                               "mapgis_register_scan", "mapgis_scan_window", "mapgis_prepare_georeference",
                               "mapgis_write_georeferenced_window", "mapgis_extract_candidates",
-                              "mapgis_merge_candidate_tiles", "mapgis_prepare_creation", "mapgis_prepare_vector_operation"}
+                              "mapgis_merge_candidate_tiles", "mapgis_prepare_creation", "mapgis_prepare_vector_operation",
+                              "mapgis_prepare_delete", "mapgis_read_features", "mapgis_prepare_file_operation",
+                              "mapgis_compare_files", "mapgis_verify_request_output",
+                              "mapgis_native_file_info", "mapgis_prepare_native_operation", "mapgis_prepare_native_plot", "mapgis_reconcile_native_request"}
             if len(tools) != len(expected_tools) or set(tools) != expected_tools:
                 raise RuntimeError("Restored server tool inventory mismatch")
             response = await session.call_tool("mapgis_get_capabilities", {})

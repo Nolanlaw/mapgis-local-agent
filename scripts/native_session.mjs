@@ -147,14 +147,61 @@ export class NativeSession {
     return this.captureLive();
   }
 
-  async receipt(id, value) {
+  async receipt(id, value, group = 'requests') {
     if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(id)) throw new Error('Invalid request id');
-    const folder = path.join(this.root, 'evidence/native-session/requests');
+    if (!['requests', 'file-requests', 'file-reopens'].includes(group)) throw new Error('Invalid receipt group');
+    const folder = path.join(this.root, 'evidence/native-session', group);
     await fs.mkdir(folder, {recursive: true});
     const target = path.join(folder, id + '.json');
     await fs.writeFile(target + '.tmp', JSON.stringify(value, null, 2));
     await fs.rename(target + '.tmp', target);
     return value;
+  }
+
+  async verifyFileRequest(requestId, {file = null, reopened = false} = {}) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(requestId)) throw new Error('Invalid request id');
+    if (!this.project) throw new Error('BIND_LIVE_PROJECT_FIRST');
+    let saved;
+    if (reopened) {
+      try {
+        saved = JSON.parse(await fs.readFile(path.join(this.root, 'evidence/native-session/file-requests', requestId + '.json'), 'utf8'));
+      } catch (error) {
+        if (error.code === 'ENOENT') throw new Error('SAVED_FILE_VERIFICATION_REQUIRED');
+        throw error;
+      }
+    }
+    const native = await this.captureLive();
+    const request = await this.support('request', this.root, requestId);
+    if (!['APPLIED', 'OUTPUT_CHANGED'].includes(request.state)) throw new Error('APPLIED_FILE_REQUEST_REQUIRED');
+    const actual = await fs.realpath(file || request.output);
+    const relative = path.relative(this.root, actual);
+    if (relative.startsWith('..') || path.isAbsolute(relative) || !/^(?:work|deliverables)[\\/]/.test(relative)) {
+      throw new Error('FILE_REQUEST_REQUIRES_OWNED_BRANCH');
+    }
+    const layers = [];
+    for (const layer of native.layers) {
+      if (key(await fs.realpath(layer.path)) === key(actual)) layers.push(layer);
+    }
+    if (layers.length !== 1) throw new Error('REQUEST_LAYER_NOT_BOUND');
+    if (native.project_modified !== false || layers[0].workspace?.modified !== false) throw new Error('UNSAVED_NATIVE_STATE');
+    const verification = await this.support('verify-request', this.root, requestId, actual);
+    if (!verification.matches_candidate_records) throw new Error('SAVED_CANDIDATE_MISMATCH');
+    const entity = {POINT:'POINT', LINE:'LINE', POLYGON:'REGION'}[verification.comparison.type];
+    if (layers[0].workspace?.counts?.[entity]?.active !== verification.comparison.after.count) throw new Error('NATIVE_COUNT_MISMATCH');
+    if (reopened) {
+      if (native.process.pid === saved.native.process.pid && native.process.create_time === saved.native.process.create_time) {
+        throw new Error('FRESH_PROCESS_REQUIRED');
+      }
+      if (key(actual) !== key(saved.file)) throw new Error('REOPENED_FILE_MISMATCH');
+      if ((await fs.stat(actual)).mtimeMs / 1000 >= native.process.create_time) throw new Error('FILE_NEWER_THAN_PROCESS');
+    }
+    const after = await this.captureLive();
+    if (after.token !== native.token) throw new Error('STALE_NATIVE_STATE');
+    if (hash(await fs.readFile(actual)) !== verification.comparison.after.sha256) throw new Error('SAVED_FILE_CHANGED');
+    return this.receipt(requestId, {state:reopened ? 'reopened_verified' : 'file_request_verified',
+      request_id:requestId, kind:request.kind, file:actual, native, file_verification:verification,
+      scope:'bound project and loaded clean layer count plus saved candidate records; no UI action is sent'},
+    reopened ? 'file-reopens' : 'file-requests');
   }
 
   async prepareStyle(requestId, fillColor) {

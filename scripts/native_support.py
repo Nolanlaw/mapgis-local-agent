@@ -89,6 +89,13 @@ def main() -> None:
     check.add_argument("before", type=Path)
     check.add_argument("after", type=Path)
     check.add_argument("expected_json")
+    request = sub.add_parser("request")
+    request.add_argument("root", type=Path)
+    request.add_argument("request_id")
+    request_check = sub.add_parser("verify-request")
+    request_check.add_argument("root", type=Path)
+    request_check.add_argument("request_id")
+    request_check.add_argument("file")
     args = parser.parse_args()
     try:
         if args.action == "identity":
@@ -97,6 +104,10 @@ def main() -> None:
             result = live_state(args.root, args.pid)
         elif args.action == "record":
             result = record(args.file, args.record_id)
+        elif args.action == "request":
+            result = Bridge(args.root).status(args.request_id)
+        elif args.action == "verify-request":
+            result = Bridge(args.root).verify_output(args.request_id, args.file)
         else:
             result = verify(args.before, args.after, json.loads(args.expected_json))
         print(json.dumps(result, ensure_ascii=False, allow_nan=False))

@@ -19,6 +19,18 @@ def test_imported_version_matches_project_version():
     assert mapgis_agent.__version__ == version
 
 
+def test_legacy_native_host_needs_explicit_package_local_opt_in(tmp_path):
+    root=tmp_path/'package';root.mkdir()
+    native=tmp_path/'mapgis';(native/'program').mkdir(parents=True)
+    (native/'program/mdiedit6x.exe').write_bytes(b'fixture')
+    portable.configure(root,root/'python.exe',str(native))
+    assert 'native_backend_legacy_dep_compatibility' not in portable.load(root/'config.local.json')
+    portable.configure(root,root/'python.exe',native_legacy=True)
+    assert portable.load(root/'config.local.json')['native_backend_legacy_dep_compatibility'] is True
+    portable.configure(root,root/'python.exe')
+    assert portable.load(root/'config.local.json')['native_backend_legacy_dep_compatibility'] is True
+
+
 def test_setup_rebinds_its_own_config_after_folder_moves_and_preserves_external_edits(tmp_path):
     first = tmp_path / 'first'
     first.mkdir()
