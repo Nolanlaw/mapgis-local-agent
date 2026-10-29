@@ -5,9 +5,10 @@ import copy
 import math
 
 from pyproj.transformer import TransformerGroup
-from shapely import get_parts, polygonize_full, unary_union
+from shapely import get_parts, polygonize_full, unary_union, set_precision, STRtree
 from shapely.geometry import mapping, shape
 from shapely.ops import transform
+from shapely.affinity import affine_transform
 
 from .core import Bridge, BridgeError, json_text, sha
 from .creation import prepare_creation
@@ -15,7 +16,8 @@ from .raster import explicit_crs
 
 
 OPERATIONS = {"topology.polygonize","overlay.clip","overlay.difference","geometry.buffer",
-              "geometry.simplify","geometry.dissolve","projection.transform","style.classify"}
+              "geometry.simplify","geometry.dissolve","projection.transform","style.classify",
+              "topology.node","topology.snap_grid","correction.affine"}
 
 
 def prepare_vector_operation(bridge: Bridge, operation_id: str, features: dict, template: dict,
@@ -38,7 +40,32 @@ def prepare_vector_operation(bridge: Bridge, operation_id: str, features: dict, 
         raise BridgeError("KNOWN_DISTANCE_UNIT_REQUIRED: local grid unit is unknown")
     if operation_id in {"geometry.buffer","geometry.simplify","topology.polygonize"} and crs and not crs.is_projected:
         raise BridgeError("PROJECTED_UNITS_REQUIRED: angular coordinates cannot define planar distance/tolerance")
-    if operation_id == "topology.polygonize":
+    if operation_id=='topology.node':
+        if any(g.geom_type not in {'LineString','MultiLineString'} for g in geometries):raise BridgeError('NODE_LINES_REQUIRED')
+        tree=STRtree(geometries);output=[]
+        for segment in get_parts(unary_union(geometries)):
+            for index in tree.query(segment,predicate='covered_by'):
+                f=source[index]
+                output.append({**f,'id':str(len(output)+1)+':'+f['id'],'geometry':mapping(segment)})
+        qa.update(noded=True,attribute_policy='each segment retains every covering source record; overlaps retain distinct provenance')
+        source=output
+    elif operation_id=='topology.snap_grid':
+        grid=parameters.get('grid_size')
+        if type(grid) not in (int,float) or not math.isfinite(grid) or grid<=0:raise BridgeError('SNAP_GRID_SIZE')
+        if crs and crs.is_geographic:raise BridgeError('PROJECTED_UNITS_REQUIRED')
+        snapped=[set_precision(g,grid_size=grid,mode='valid_output') for g in geometries]
+        if any(g.is_empty or not g.is_valid or g.geom_type!=original.geom_type for g,original in zip(snapped,geometries)):
+            raise BridgeError('SNAP_GRID_COLLAPSED_GEOMETRY')
+        qa.update(grid_size=grid,max_hausdorff_distance=max(a.hausdorff_distance(b) for a,b in zip(geometries,snapped)),
+            precision_policy='explicit zero-origin shared lattice in declared source units')
+        source=[{**f,'geometry':mapping(g)} for f,g in zip(source,snapped)]
+    elif operation_id=='correction.affine':
+        matrix=parameters.get('matrix')
+        if (not isinstance(matrix,list) or len(matrix)!=6 or any(type(v) not in (int,float) or not math.isfinite(v) for v in matrix)
+                or abs(matrix[0]*matrix[3]-matrix[1]*matrix[2])<1e-15):raise BridgeError('AFFINE_MATRIX: nonsingular [a,b,d,e,xoff,yoff] required')
+        source=[{**f,'geometry':mapping(affine_transform(g,matrix))} for f,g in zip(source,geometries)]
+        qa.update(affine_matrix=matrix,coordinate_policy='explicit planar affine in declared input/output frame; no earth datum inferred')
+    elif operation_id == "topology.polygonize":
         roles = [f.get("properties",{}).get("role") for f in source]
         if any(role not in {"boundary","fault","contour","annotation","protected"} for role in roles):
             raise BridgeError("EXPLICIT_LINE_ROLE_REQUIRED")
@@ -87,6 +114,14 @@ def prepare_vector_operation(bridge: Bridge, operation_id: str, features: dict, 
         source=[{**f,"geometry":mapping(g)} for f,g in zip(source,simplified)]
     elif operation_id == "geometry.dissolve":
         field=parameters.get("field")
+        if 'grid_size' in parameters:
+            grid=parameters['grid_size']
+            if type(grid) not in (int,float) or not math.isfinite(grid) or grid<=0:raise BridgeError('SNAP_GRID_SIZE')
+            if crs and crs.is_geographic:raise BridgeError('PROJECTED_UNITS_REQUIRED')
+            snapped=[set_precision(g,grid,mode='valid_output') for g in geometries]
+            if any(g.is_empty or not g.is_valid for g in snapped):raise BridgeError('SNAP_GRID_COLLAPSED_GEOMETRY')
+            qa.update(grid_size=grid,max_hausdorff_distance=max(a.hausdorff_distance(b) for a,b in zip(geometries,snapped)))
+            geometries=snapped
         groups={}
         for f,g in zip(source,geometries):
             if field not in f.get("properties",{}):
@@ -125,6 +160,13 @@ def prepare_vector_operation(bridge: Bridge, operation_id: str, features: dict, 
         qa.update({"classified_count":len(source),"geometry_unchanged":True})
     if not source:
         raise BridgeError("EMPTY_RESULT: no native file created")
+    expanded=[]
+    for f in source:
+        geometry=shape(f['geometry'])
+        if geometry.geom_type in {'MultiLineString','MultiPoint'}:
+            expanded.extend({**f,'id':f['id']+':part-'+str(i),'geometry':mapping(g)} for i,g in enumerate(geometry.geoms,1))
+        else:expanded.append(f)
+    source=expanded
     collection["features"]=source
     qa["output_count"]=len(source)
     provenance={"operation_id":operation_id,"source_sha256":sha(json_text(features).encode()),"parameters":parameters}

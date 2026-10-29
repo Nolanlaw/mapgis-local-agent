@@ -12,12 +12,18 @@
 | libvips / pyvips | 分块图像处理；原生库 LGPL-3.0-or-later，Python 包各自许可 | 原生库源码、LGPL/GPL 文本、MXE 与上游打包脚本、依赖源码及 notices |
 | GEOS / PROJ / GDAL | 拓扑、投影与栅格，分别保留各自许可 | GEOS 对应源码、Python 发行包内的许可与第三方声明 |
 | OpenCV、NumPy、Pandas 等 | 确定性图像与几何数据处理 | 各 `dist-info/licenses` 或包内原始许可 |
+| SciPy 1.16.2 | BSD-3-Clause，Delaunay、线性插值与曲面积分；wheel 内含 OpenBLAS/LAPACK 和各自声明 | 对应 sdist、wheel 原始 LICENSE.txt、包内第三方许可与 `packaging/backend-sources.json` |
+| ContourPy 1.3.3 | BSD-3-Clause，格网等值线 | 对应 sdist、wheel 许可和 SHA256 |
+| NetworkX 3.5 | BSD-3-Clause，路径与连通性 | 对应 sdist、wheel 许可和 SHA256 |
+| Pyogrio 0.13.0 | MIT，GDAL 矢量交换；本轮实测 GDAL 3.12.4、GEOS 3.14.1 | 对应 sdist、wheel 原始许可及 GDAL/依赖声明；GEOS 3.14.1 源码沿用已固定版本 |
 | Ghostscript 10.08.0 | 独立 CLI 将原生 EPS 转为 PDF，AGPLv3 | 官方运行时、对应源码和原始许可 |
 | winhlp | 单独的本机帮助索引工具，GPL-2.0；提交 `cb2661ef85693799641cf7ab258e7a4074732568` | `third_party/winhlp` 未修改解析器源码、原许可与来源；MCP 服务不导入该库 |
 
 libvips 原生发布及 28 个组件的版本、许可说明见 `packaging/libvips-versions.json` 和 `packaging/LIBVIPS-NOTICES.md`。`pyvips-binary` 的 Python 包装许可不能替代原生库及其静态依赖的许可。
 
 原生源码与构建脚本放在 `third_party/sources`。MXE 构建使用上游当时的分支及基础镜像；这里保存源码摘要，不承诺从今天的网络环境逐字节重建出相同 DLL。
+
+0.6.0 新增开放后端的 sdist 直接取自对应版本的 PyPI 官方发布，逐个核对官方 SHA256 和字节长度，清单在 `packaging/backend-sources.json`。SciPy 的 wheel 使用 scipy-openblas 0.3.29.dev；完整原始二进制许可保留在 dist-info/LICENSE.txt，包括 OpenBLAS、LAPACK 与运行时条款。sdist 是对应 Python 项目的源码，不据此声称逐字节重建出同一编译器/BLAS DLL。分析用 pefile、REA 和 IDA 不进入运行包。
 
 LGPL 库可以按其许可修改和替换。包内保留 Python 应用源码及构建入口，没有加密或限制为调试修改后的库而进行的逆向。替换原生库时，使用兼容 ABI，并同步修正 `pyvips_binary` 内的 DLL 名称及加载映射；可重新安装自行构建的同版本 `pyvips-binary` wheel。变更后重新运行自检和实际图像窗口检查。
 

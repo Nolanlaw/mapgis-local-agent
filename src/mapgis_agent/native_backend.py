@@ -21,6 +21,8 @@ import psutil
 from .comparison import compare_native_files
 from .core import Bridge, BridgeError, json_text, layout_signature, native_ids, read_native, sha
 from .native_state import PROFILE
+from .topology import validate_wp_topology
+from .desktop import PrivateDesktop
 
 KINDS = {'LINE': 0, 'POINT': 1, 'POLYGON': 2}
 
@@ -50,9 +52,9 @@ def backend_configuration(root: Path) -> tuple[Path, Path]:
 def _run_child(args: list[str], folder: Path, log_name: str) -> tuple[dict, list[dict]]:
     stdout_file, stderr_file = folder / (log_name + '.stdout'), folder / (log_name + '.stderr')
     # Redirect to owned files: native fflush survives loss of the MCP parent.
-    with stdout_file.open('xb') as out, stderr_file.open('xb') as err:
+    with stdout_file.open('xb') as out, stderr_file.open('xb') as err, PrivateDesktop() as desktop:
         process = subprocess.Popen(args, cwd=folder, stdout=out, stderr=err,
-                                   creationflags=subprocess.CREATE_NO_WINDOW)
+                                   creationflags=subprocess.CREATE_NO_WINDOW,startupinfo=desktop.startupinfo,env=desktop.environment)
         created, exited, kernel_time, user_time = (wt.FILETIME() for _ in range(4))
         kernel = ct.WinDLL('kernel32', use_last_error=True)
         kernel.GetProcessTimes.argtypes = [wt.HANDLE, *([ct.POINTER(wt.FILETIME)] * 4)]
@@ -75,7 +77,7 @@ def _run_child(args: list[str], folder: Path, log_name: str) -> tuple[dict, list
             process.kill()  # This Popen child only; no name-based termination.
             process.wait()
     stdout, stderr = stdout_file.read_bytes(), stderr_file.read_bytes()
-    record = {'pid': process.pid, 'returncode': process.returncode, 'timed_out': timed_out,
+    record = {'pid': process.pid, 'returncode': process.returncode, 'timed_out': timed_out,'desktop':desktop.name,
               'stdout': stdout.decode('utf8', errors='replace'),
               'stderr': stderr.decode('utf8', errors='replace')}
     (folder / log_name).write_text(json_text(record), encoding='utf8')
@@ -84,11 +86,13 @@ def _run_child(args: list[str], folder: Path, log_name: str) -> tuple[dict, list
     try:
         events = [json.loads(line) for line in record['stdout'].splitlines()]
         host = next(e for e in events if e.get('event') == 'host')
-        if host['bits'] != 32 or host['dep_flags'] != 0 or host['pid'] != process.pid or events[-1]['event'] != 'complete':
+        if (host['bits'] != 32 or host['dep_flags'] != 0 or host['pid'] != process.pid
+                or host.get('desktop')!=desktop.name or events[-1]['event'] != 'complete'):
             raise ValueError('worker receipt')
     except (ValueError, KeyError, StopIteration, IndexError) as exc:
         raise BridgeError('NATIVE_PROTOCOL: incomplete or invalid receipt') from exc
-    return {'pid': process.pid, 'dep_flags': host['dep_flags'], 'log': str(folder / log_name)}, events
+    return {'pid': process.pid, 'dep_flags': host['dep_flags'], 'desktop':desktop.name,
+            'private_desktop':True,'log': str(folder / log_name)}, events
 
 
 def _invoke(executable: Path, dll: Path, folder: Path, kind: str, operation: str,
@@ -133,11 +137,11 @@ def _parameters(operation: str, parameters: dict, reader) -> dict:
         return {}
     if operation == 'feature.delete':
         ids = parameters.get('record_ids') if isinstance(parameters, dict) else None
-        if (reader.shapeType not in ('POINT', 'LINE') or set(parameters) != {'record_ids'}
+        if (reader.shapeType not in ('POINT', 'LINE', 'POLYGON') or set(parameters) != {'record_ids'}
                 or not isinstance(ids, list) or not 1 <= len(ids) <= 1000
                 or any(type(rid) is not int for rid in ids) or len(set(ids)) != len(ids)
                 or not set(ids).issubset(native_ids(reader))):
-            raise BridgeError('DELETE_IDS: 1..1000 unique active WT/WL physical IDs required')
+            raise BridgeError('DELETE_IDS: 1..1000 unique active WT/WL/WP physical IDs required')
         return {'record_ids': sorted(ids)}
     if operation != 'point.move':
         raise BridgeError('NATIVE_OPERATION: supported operations are resave, point.move and feature.delete')
@@ -160,6 +164,9 @@ def _parameters(operation: str, parameters: dict, reader) -> dict:
 def _validate(source: Path, candidate: Path, operation: str, parameters: dict) -> tuple[bytes, dict]:
     blob, reader, _ = read_native(candidate)
     comparison = compare_native_files(str(source), str(candidate), limit=1000)
+    if reader.shapeType == 'POLYGON':
+        comparison['native_topology'] = {'source':validate_wp_topology(source),
+                                         'candidate':validate_wp_topology(candidate)}
     (source.parent / 'validation-comparison.json').write_text(json_text(comparison), encoding='utf8')
     removed = set(parameters.get('record_ids', [])) if operation == 'feature.delete' else set()
     metadata = dict(comparison['metadata_changes'])

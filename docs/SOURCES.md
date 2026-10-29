@@ -1,5 +1,17 @@
 # 公开生态与实际复用
 
+## 0.6.0 后台模块
+
+- [SciPy Delaunay](https://docs.scipy.org/doc/scipy-1.16.2/reference/generated/scipy.spatial.Delaunay.html) 和 [LinearNDInterpolator](https://docs.scipy.org/doc/scipy-1.16.2/reference/generated/scipy.interpolate.LinearNDInterpolator.html)：直接调用 1.16.2，不另写三角剖分或插值器；解析平面、凸包和切填跨基面独立检查。
+- [ContourPy](https://github.com/contourpy/contourpy/tree/v1.3.3)：直接调用 1.3.3 格网等值线，逐层检查全部请求层；源码与许可证随包保留。
+- [NetworkX](https://networkx.org/documentation/stable/reference/algorithms/shortest_paths.html)：直接调用 3.5 的图与路径算法，补原生物理边来源、单向/平行边、可达部分边和结果 WL。没有以 Star 或案例作为正确性证据。
+- [Rasterio/GDAL warp](https://rasterio.readthedocs.io/en/stable/api/rasterio.warp.html) 与 [Pyogrio](https://github.com/geopandas/pyogrio)：复用实际栅格重采样和矢量驱动，增加来源指纹、多文件提交与输出读回。GeoJSON 自定义 CRS 按 [GDAL GeoJSON 文档](https://gdal.org/en/stable/drivers/vector/geojson.html) 使用 2008 扩展，明确不是 RFC 7946。
+- Windows 自带私有桌面与目录联接：按 Microsoft CreateDesktop/SetThreadDesktop 文档绑定自有进程；短路径沿用本项目 Prepare-NativeOutput.ps1 的 New-Item Junction 方法，不另造窗口驱动，不切换输入桌面。
+
+MapGIS 原生 ABI 来自获授权的本机 REA/IDA 静态核对和最小运行试验。只把自有宿主与接口代码纳入分发，不携带原 DLL、反编译资料、课程输入或逆向工具。原生与开放后端的算法来源在各工具回执中分别记录。
+
+以下保留早期版本的生态调查与取舍，不作为 0.6.0 未测模块的后台验收。
+
 检索与本机核验日期：2026-10-27。搜索摘要只作为候选；采用项已读取官网正文、网页 DOM 或固定提交源码。
 
 | 来源 | 核验内容 | 本次取舍 |

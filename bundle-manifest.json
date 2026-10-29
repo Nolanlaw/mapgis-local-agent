@@ -4,48 +4,52 @@
     "sha256": "f85b911c12f8c7a6c5d152776d6b15a628ec2221454c3de642846995ff62d269"
   },
   "AGENTS.md": {
-    "bytes": 3890,
-    "sha256": "0f08c9172fc0811f6ebc02a883cd63043f66248b1e50affba52ada09d6fc5d60"
+    "bytes": 4724,
+    "sha256": "6986789df6ff000f8662e0760b0332a49d2017777d0e00055fd7cca3a555defa"
   },
   "NOTICE.md": {
     "bytes": 2172,
     "sha256": "0d1a609f9c6ee09fba535f9d724ff49a238f4b9ae785db5269cf0ba564b9f0ef"
   },
   "README.md": {
-    "bytes": 4797,
-    "sha256": "566ed508974b8c1eb3b4e4d9d2b12c26cda7d20774cf79f65b6c2ad3d690c71e"
+    "bytes": 4407,
+    "sha256": "d2005960f32dca11227e497b98556d48828b9edd4ba50488a06c804115007d2a"
   },
   "docs/CAPABILITIES.md": {
-    "bytes": 6152,
-    "sha256": "f0fc0494860359010797bdee3b7205fc5f90da6e6ceb3ea584d9c357da238afa"
+    "bytes": 5442,
+    "sha256": "c059bcf3a5d7ecf6b6ee5d1227726aea5572be8684fe1aa6a870ba4bd20186a1"
   },
   "docs/NATIVE.md": {
-    "bytes": 6647,
-    "sha256": "764353febb3939cc8395e66a4131eac2e3f3c571958075dd5b9ae7d3b1be66e5"
+    "bytes": 5154,
+    "sha256": "4c0f2daa5882866fe17918b95df231f92ecb75dde30daad5524f26aa9ce164f4"
   },
   "docs/SHARE.md": {
-    "bytes": 5344,
-    "sha256": "cbe36e52172b1b8ef469cebf0b434196c422e606f5d93bf97e70706843487c64"
+    "bytes": 2940,
+    "sha256": "4464875ffc1893e3182a89c92f73a9f2f33015ccb1adff6d1d2f9efd0dcf61d8"
   },
   "docs/SOURCES.md": {
-    "bytes": 5014,
-    "sha256": "19bf0d8a601b3003d0cd529881eb55cac6519c23ea387c8675db0c1a45e2ed8e"
+    "bytes": 6842,
+    "sha256": "99b21e6e3169afadc2a813c72100f3925237804ace722cc33054d2bb8d5abccd"
   },
   "docs/THIRD-PARTY.md": {
-    "bytes": 2955,
-    "sha256": "9d5070be38ac63fd8f73974cfd4941330a85c75940e3091ba15fc90251286804"
+    "bytes": 4032,
+    "sha256": "d8c3a43176400583c08d8f8b04329a7be132ddab42a54a67fd40d54ddc04e5b6"
   },
   "docs/VALIDATION.md": {
-    "bytes": 4382,
-    "sha256": "c7d64b3c76b394a0547c88027ec7164e688d57083fde24f94e28cf20623272e1"
+    "bytes": 7118,
+    "sha256": "b6765216bbe559303509a83d930254af661311266c06a21a944da336076a3359"
   },
   "native/MapgisNativeWorker.cpp": {
-    "bytes": 12646,
-    "sha256": "9bc87a475f1bc1ad044263218a049de06ce7d1523d6024e7ebfd58ca4acfc78c"
+    "bytes": 34879,
+    "sha256": "cf97e9f384d9a70b701d9f016c27bf2c50e3ef9dbdd1bf71de7af0d14d856461"
+  },
+  "native/PrivateDesktop.h": {
+    "bytes": 780,
+    "sha256": "3d9b0a05051d9fb0afe5d421e4a62375882b8c47004007b312d92bca25d7d08f"
   },
   "native/build_manifest.py": {
-    "bytes": 719,
-    "sha256": "5e3a54dfd3a3ea2267d929bc1c43f514c42061ac0661467a5c390b779c7dddb0"
+    "bytes": 919,
+    "sha256": "be292fdf5f83251b81f503834d06f4d80c0588166c8ee012d7e0bade464762fe"
   },
   "native/build_worker.cmd": {
     "bytes": 428,
@@ -54,6 +58,10 @@
   "packaging/LIBVIPS-NOTICES.md": {
     "bytes": 4295,
     "sha256": "fc09152fd0c8b1cf0f5aa15c23afd59cf15632ac079b689d01c58e3fa762b54e"
+  },
+  "packaging/backend-sources.json": {
+    "bytes": 1978,
+    "sha256": "8c60101cc48b9f7840461295858566406b0f11ae7a6586ff302d8072f5c4ecbc"
   },
   "packaging/libvips-versions.json": {
     "bytes": 596,
@@ -64,12 +72,12 @@
     "sha256": "c3b0dc8cff1052698a5b3db3b054f3e6b0bb0e41590d925098f4816da6c06df7"
   },
   "pyproject.toml": {
-    "bytes": 742,
-    "sha256": "96692229bd0b08e359721d386d1d1ac1cb7ac08f02ea4a665ba4cdd42bfdd5bb"
+    "bytes": 819,
+    "sha256": "93b03cac2a09c78bfb8a06fcac714b60d2678f73e495180c8a496ceb7bf8cb6f"
   },
   "requirements.lock.txt": {
-    "bytes": 953,
-    "sha256": "08452cecdd911c6ede90ae8174bdd94e5a57c0a27c00cc985a650b0ecbb0c485"
+    "bytes": 998,
+    "sha256": "82fd1a3ffb66fda442a4d0506adfe52f590ff8fcb797f9cf81177e8c8ec8ab2e"
   },
   "scripts/Prepare-NativeOutput.ps1": {
     "bytes": 4141,
@@ -104,32 +112,40 @@
     "sha256": "0b261f2c690615aa025ce74b363d74b880b97b65e2047a5f8dd9cae96ce31623"
   },
   "scripts/package.py": {
-    "bytes": 5169,
-    "sha256": "c4987f1b244a6ef5a7a00704c32a3285b0280b5f141716dd134870c18a056c64"
+    "bytes": 5917,
+    "sha256": "4d5aa36bce7618ae40e23c30d16495936fead4927f1744594121f5c69a5ee2a4"
   },
   "scripts/package_share.py": {
-    "bytes": 13759,
-    "sha256": "85f65130c298651fc9ca985587e3fbce11f164e9670270806657d49359b6af89"
+    "bytes": 14588,
+    "sha256": "51596948d4565354ef40a2fee723cfd175a79e95605b6482cff628819fd3b1c7"
   },
   "scripts/palette_probe.py": {
     "bytes": 4449,
     "sha256": "1063118a55b1ecb357770cdb40fd68dbafba3a3993e0f793d1ef39de0b466360"
   },
   "scripts/portable.py": {
-    "bytes": 7169,
-    "sha256": "1506fcd878872d2b3fc6a236a74a457112d27f04bf608b225ce449c655c42e6f"
+    "bytes": 7203,
+    "sha256": "8e515aff1834d7b288c323e6c97227a1116561bdf19648e5cc8974c2c4cac39f"
   },
   "scripts/self_test.py": {
-    "bytes": 13933,
-    "sha256": "d453fcdf974a620b7be5ed31b1af99853cd3c462df0adc5442987c512dc899ba"
+    "bytes": 14732,
+    "sha256": "7177ef4af6a5c38aac38f25a4a3cce0a8c51f88d97284e3b1388fe9837322c1d"
+  },
+  "scripts/self_test_modules.py": {
+    "bytes": 13559,
+    "sha256": "92ba2b89598c52ae54abd9594176927d1071b5b415525894e4704d07a36aac64"
   },
   "scripts/self_test_native.py": {
-    "bytes": 13072,
-    "sha256": "3d0feba0b334467d7ceb96d404721be76fac636946c5d52305f30cb5f81a21f3"
+    "bytes": 13634,
+    "sha256": "4ec6814492a9aaf6145f7037f2618cbb585559aff910a45da8b4a4d72cb3d385"
+  },
+  "scripts/self_test_workspace.py": {
+    "bytes": 4566,
+    "sha256": "261f0f19f05029db37e23a4ef7da704bb98c7bdfb72125fe03deab5ec1712e05"
   },
   "src/mapgis_agent/__init__.py": {
     "bytes": 105,
-    "sha256": "6db5bcd2ff69080c8b3dd53b29ccb7d4b90f31b9faec0ef502a1018036392bc3"
+    "sha256": "67e4df55125e149bfdf0c172fcb309db392057fde143c005008469a419d5bb0b"
   },
   "src/mapgis_agent/_vendor/__init__.py": {
     "bytes": 0,
@@ -171,17 +187,25 @@
     "bytes": 1284,
     "sha256": "e7bd8a93e93524096fbd91577d617997f09b46c4a1e5e11b4b18f42d2422596d"
   },
+  "src/mapgis_agent/artifacts.py": {
+    "bytes": 9626,
+    "sha256": "9c4f59405525caaaf1e3e741463b968180a59e901a88184fb9a25da3a43d1122"
+  },
   "src/mapgis_agent/bin/MapgisNativeWorker.exe": {
-    "bytes": 264192,
-    "sha256": "b50b09402f1d0c1a0fbddc626efa21db26e08c32b75f6de19e4e632ae5246f2c"
+    "bytes": 314368,
+    "sha256": "c53967e2f66bf63958bafecb348bcb5600df97de0a021be47bfa3962f40a988b"
   },
   "src/mapgis_agent/bin/native-worker.json": {
-    "bytes": 452,
-    "sha256": "a37eccc8c9512c139e568601c255ef0dfbf96edbadbeb469162d52dbf5f43a84"
+    "bytes": 695,
+    "sha256": "34c6f44eb2cde0c31827fcbc3c24b0b3677eb7e8dcff356b2bbbd8b1f70f076d"
   },
   "src/mapgis_agent/candidates.py": {
     "bytes": 20580,
     "sha256": "a0377900d7d637bd213dd058e9368e5b663ad77a7abd46e8b485a7104d5c5bbe"
+  },
+  "src/mapgis_agent/cartography.py": {
+    "bytes": 7440,
+    "sha256": "4dd1ab01e65e266750902ae5b07031d2b55a442c372d756b3038b6f19632fbca"
   },
   "src/mapgis_agent/cli.py": {
     "bytes": 2168,
@@ -192,8 +216,8 @@
     "sha256": "c9fa25bb0bb7cb9ec1460e54cf49ab0b45564d8535671ba511413074a434279e"
   },
   "src/mapgis_agent/core.py": {
-    "bytes": 35649,
-    "sha256": "d95e7d63b7aba88a065d230f0dfa59810906cdd0bcfecc4ad9b988d36adee81d"
+    "bytes": 36679,
+    "sha256": "75abcc363109a736c3183d395c571387a33eb0642d80731333a31b09d644b5d5"
   },
   "src/mapgis_agent/creation.py": {
     "bytes": 17420,
@@ -203,49 +227,93 @@
     "bytes": 5380,
     "sha256": "5050e623b42048cc8c9f13846c2d04896daed93c61297f0be2b09569a397e193"
   },
+  "src/mapgis_agent/derived.py": {
+    "bytes": 4246,
+    "sha256": "cab826f3fd3c503f7f8d2b91387a96dc94a69f6275c40e1a4d43a22b148be6ee"
+  },
+  "src/mapgis_agent/desktop.py": {
+    "bytes": 1762,
+    "sha256": "b320b30f7151b49a3702967a99662e537adf6a1698ca625e3569cb3aba714b4a"
+  },
   "src/mapgis_agent/environment.py": {
-    "bytes": 6153,
-    "sha256": "1e908a1b64ce2823faf908d4c9aa0778251202335d1a72ff6f5ee31c4edefe02"
+    "bytes": 8539,
+    "sha256": "c82e47444edfdb83c1cf1f528e349fc3d3335112db48ce783c901443a7af3655"
+  },
+  "src/mapgis_agent/exchange.py": {
+    "bytes": 21149,
+    "sha256": "f753f2126623717fadb8229d86d2f9e0c2da900cabd7d344e64a6542cc916362"
   },
   "src/mapgis_agent/features.py": {
     "bytes": 4921,
     "sha256": "53f5f6692a0813dbdb6e22a614cd4c54cf3efe5e5524048b2ca60c5304853667"
   },
   "src/mapgis_agent/native_backend.py": {
-    "bytes": 22324,
-    "sha256": "494e07e1bbf1a03144652a82b27f27a4d8809842558e012cee95868315828a62"
+    "bytes": 22843,
+    "sha256": "bbec7ce391fd3c8f95c02c5cc8a837b087d21cf95276f2a15a3547eeb2af8525"
   },
   "src/mapgis_agent/native_help.py": {
     "bytes": 2812,
     "sha256": "28d0b3a4640e56f2b3f4e8d07593f5ffedbc13d97b29cf296fdca158fd1643cc"
   },
+  "src/mapgis_agent/native_paths.py": {
+    "bytes": 3385,
+    "sha256": "24343f9476ed0fbe1ee4bee626705a1671ac563bb88841ecf284e7f221fc0d18"
+  },
   "src/mapgis_agent/native_plot.py": {
     "bytes": 8811,
     "sha256": "af3c156c8ec4aec6f45971e4f38593c8e77c39f9739bccd373f3cd95d9310aa8"
+  },
+  "src/mapgis_agent/native_project.py": {
+    "bytes": 8516,
+    "sha256": "2bd635bac8b6b2f5bd52667e1050768dc7d346c464b6c2debbc6f2d6dfcd0efe"
+  },
+  "src/mapgis_agent/native_raster.py": {
+    "bytes": 14049,
+    "sha256": "d6de42aafd5292e7305a018899a5ab089c41db6801d460020fc17ad49fba27e9"
   },
   "src/mapgis_agent/native_state.py": {
     "bytes": 15201,
     "sha256": "1bb765b0926c28712a4caf84b0c800bcbf0aef4b7b7327c0fbbd8b1a4cae4a17"
   },
+  "src/mapgis_agent/network.py": {
+    "bytes": 10607,
+    "sha256": "09596d70fc99a4e5a3726193f3e8a2d14d77d8d9751f6599d9e6c09c7b20473e"
+  },
   "src/mapgis_agent/operations.json": {
-    "bytes": 43928,
-    "sha256": "9c191eee01f1e83c38a8af51b65826122dc0a6bdd9c6b33a1cf56735e4ac9687"
+    "bytes": 61040,
+    "sha256": "4e1a292ec3b73938694ff9d7fc139f1652feafc6a3d930a0af8f7839019d100c"
   },
   "src/mapgis_agent/operations.py": {
-    "bytes": 2978,
-    "sha256": "190aafdcbbe087c2e4c98158eb43378595bc97248ee3cfbcc7c8d5a4a37570fa"
+    "bytes": 3144,
+    "sha256": "2b3c7c187121a07fd3fa3342f9bbcca7a950fcecd5be2306efe42dea80762155"
+  },
+  "src/mapgis_agent/plot_export.py": {
+    "bytes": 4935,
+    "sha256": "2d860e49791f5d5a0b578e01bf550d51ab91e67d54bf723c49cf3046cddc7aa8"
   },
   "src/mapgis_agent/raster.py": {
     "bytes": 16806,
     "sha256": "888d525f5ec3d365dfefbb1dc989a652d1918d010de4a128cab616512854e28a"
   },
   "src/mapgis_agent/server.py": {
-    "bytes": 15558,
-    "sha256": "d2e785f0a81c43a7a286abcc3a65560610387d343434a464a59f2f2a328b7964"
+    "bytes": 28547,
+    "sha256": "b8309f899ac7cb3017499bb2199d658ab97480d9b7b279e5e432c7f51f42a46f"
+  },
+  "src/mapgis_agent/terrain.py": {
+    "bytes": 9270,
+    "sha256": "ac3f03664efc47da46223327dc698cf7f023a117665d02c5ac4b80803b6f3922"
+  },
+  "src/mapgis_agent/topology.py": {
+    "bytes": 4505,
+    "sha256": "2911d1349754add5e5298c0658411e23dddd7702db455eff429b81f1ae7da665"
   },
   "src/mapgis_agent/vector.py": {
-    "bytes": 8680,
-    "sha256": "beec498b9804b0974277ea0e766fe33d0702a0adaa8a540b4467685281fb7608"
+    "bytes": 11870,
+    "sha256": "c20dce85a1a8bfc20d206053bbb89ca33b4641143c20352ec50a2084409b0389"
+  },
+  "src/mapgis_agent/workspace.py": {
+    "bytes": 20466,
+    "sha256": "3b6dbbf3cfde055706e9569da5821f7883e143507246b7f4270a6c7366fdd4b8"
   },
   "tests/conftest.py": {
     "bytes": 106,
@@ -263,6 +331,10 @@
     "bytes": 2563,
     "sha256": "4c91f71459f8a74ba72c61f37620caf80f3422a4917ead13084a13479fd99c67"
   },
+  "tests/test_artifacts.py": {
+    "bytes": 3477,
+    "sha256": "4fb2c4d39986bb9eb90c58a25214abe793488bd18ca36d3b1f741afb08f9ac84"
+  },
   "tests/test_bridge.py": {
     "bytes": 9334,
     "sha256": "ec2d019d9f35acf3131f94c8909c4246ecf8e555417a299808267cd2b6c21348"
@@ -279,13 +351,33 @@
     "bytes": 6448,
     "sha256": "a818d163e83fadd6210521eaf085cc63af94072e808b860fc3288a81a882c6b4"
   },
+  "tests/test_cartography.py": {
+    "bytes": 12024,
+    "sha256": "7afa57d80ad76074e2294f307c5eceb6f3de94171b1d7a544176e9ce5108ef6d"
+  },
   "tests/test_comparison.py": {
     "bytes": 13814,
     "sha256": "85ce8082516e08bdb56d66df3fa0387cb96b3a61a659261a659205adb8a6e1d9"
   },
+  "tests/test_connection_lifecycle.py": {
+    "bytes": 938,
+    "sha256": "98be320d36aedf9a75cf9bc3f1e8da474dedafc14df9bfbb8aa0514cd56da905"
+  },
   "tests/test_deletion.py": {
     "bytes": 8204,
     "sha256": "ddf8900a276c0f423872df648a55c9fcd96dd046ef09c43de8b4d8c6f63e1adf"
+  },
+  "tests/test_derived.py": {
+    "bytes": 2777,
+    "sha256": "279b6f92e9fa52a28770a9fc3dca7e2b2a008ee957f7765a10456648e3ee6fab"
+  },
+  "tests/test_desktop_isolation.py": {
+    "bytes": 1656,
+    "sha256": "563495777aa31b8e20eefabd7c74363d7736c71a2c4bfc0f1c3c8b7a9ee1eecb"
+  },
+  "tests/test_exchange.py": {
+    "bytes": 20290,
+    "sha256": "d38cfb22e10a3b82b1180b4cfa38dda8cda713f53edfd38d14293949b3ba362f"
   },
   "tests/test_georeference.py": {
     "bytes": 3738,
@@ -331,6 +423,18 @@
     "bytes": 1041,
     "sha256": "cbbae697574bf44901d47ab772c6d305f306a51c57dcb7a25604fb00f9d512fd"
   },
+  "tests/test_native_project.py": {
+    "bytes": 5139,
+    "sha256": "1b3f92e88e3f8f6bb911297872f902984e5a514b525f3137751097ff333b21ff"
+  },
+  "tests/test_native_project_plot.py": {
+    "bytes": 4479,
+    "sha256": "3c34669177439e7d4f7140dc740b223ec4a745c80259b53a79744711374306e9"
+  },
+  "tests/test_native_raster.py": {
+    "bytes": 5841,
+    "sha256": "cb02144a400b0dcef620c0a7de778df51e15da09aac5f7740a4df0f06115c93e"
+  },
   "tests/test_native_state.py": {
     "bytes": 1833,
     "sha256": "8673bcad6f8e53e0cbf7a3aed7a0c559015017a5a5578cab2ffc4bd264592706"
@@ -339,9 +443,21 @@
     "bytes": 1619,
     "sha256": "4597f8869c35c39d16fd39d0c7cef6038916ebe2f684c588da0afcff63e84e41"
   },
+  "tests/test_native_workspace.py": {
+    "bytes": 6084,
+    "sha256": "59dc62675a5cb1947752dc0d9d8d289f0325425fd488c838c2a00fe0c565b431"
+  },
+  "tests/test_native_wp.py": {
+    "bytes": 5016,
+    "sha256": "22e27d4589ac55470a004b12dfd26a03b37ddd542a955a290cd7b486ba887918"
+  },
+  "tests/test_network.py": {
+    "bytes": 4212,
+    "sha256": "2b35e680f2ddc546b8623452ebff5c3f6945c8cfb5d535f058c9da06e158f128"
+  },
   "tests/test_operations.py": {
-    "bytes": 2315,
-    "sha256": "bdeee9a8820b2218a20b7a7793ba0d5dba96079844fc99bbf378f34a10541dc9"
+    "bytes": 3030,
+    "sha256": "84bef321ea5dd223db1dd3357541705d7923c7a74a5fc61cc6fd4969343905c8"
   },
   "tests/test_packaging.py": {
     "bytes": 2550,
@@ -351,17 +467,41 @@
     "bytes": 1907,
     "sha256": "beb912a3d03f1fde8ad1e7935f6ab68dae19e80c89986f7d648282234b4891a0"
   },
+  "tests/test_plot_export.py": {
+    "bytes": 2161,
+    "sha256": "fcb53d1f9c68f37516e0b5226d65e200427d6d011aa7cca0c53623280624a3a9"
+  },
   "tests/test_portable.py": {
     "bytes": 3335,
     "sha256": "910ef48c8df8286f1df6272149780f5ab745dbe92cfe5714dff528c57b13418a"
   },
+  "tests/test_raster_warp.py": {
+    "bytes": 2252,
+    "sha256": "22bd3698c93db6beaa43074eee859c67ac1b6d30ea124b5ccdd01ba5fab1bbfe"
+  },
+  "tests/test_terrain.py": {
+    "bytes": 12662,
+    "sha256": "f6a903749f5afefa9ca2c9a7fb7138abacde96accc0ab08bec8c6456eba61762"
+  },
   "tests/test_tool_entry.py": {
-    "bytes": 2230,
-    "sha256": "e3dbfdc22f8bddba153c370f2bf5c5baf482a61f3899352e94eb72caf1e8ff99"
+    "bytes": 2532,
+    "sha256": "f8b74ecae8c1b4bfcf0272284e17db41340fbc6be0235bcf1ba116a9bbf9bc57"
+  },
+  "tests/test_vector_extended.py": {
+    "bytes": 2514,
+    "sha256": "a522e3fff9905810b7dc91cce619f0e3f050331698d15e49688a21517659799e"
   },
   "tests/test_vector_operations.py": {
     "bytes": 3467,
     "sha256": "7fd07e9d7f5991b3f56749d32458f2b44934c201ba979f92bc4614c380ea2397"
+  },
+  "tests/test_workspace_cleanup.py": {
+    "bytes": 1066,
+    "sha256": "c1952dba7e41716692b29e199ae5d8741ae6e366bb0f5a21862017a326a9f6f2"
+  },
+  "tests/test_workspace_wp.py": {
+    "bytes": 1759,
+    "sha256": "503a12b2dae25a3a8dc603651f3892dc438b824d383d27bbe501ac957284c31f"
   },
   "third_party/winhlp/LICENSE.md": {
     "bytes": 18118,

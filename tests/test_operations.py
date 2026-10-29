@@ -31,23 +31,36 @@ def test_unsupported_module_is_explicit(tmp_path):
     from mapgis_agent.operations import find_operations, describe_operation
 
     assert not find_operations(tmp_path, "", module="absent")["operations"]
-    item = describe_operation(tmp_path, "terrain.dtm")
+    item = describe_operation(tmp_path, "style.library")
     assert item["availability"] == "NOT_CONFIGURED"
-    assert item["validation"] == "PARTIAL"
-    assert "Fast TIN crashed" in item["validation_scope"]
+    assert item["validation"] == "DISCOVERED"
     assert item["executable_by_mcp"] is False
     with pytest.raises(ValueError, match="UNKNOWN_OPERATION"):
         describe_operation(tmp_path, "run_arbitrary_script")
 
 
-def test_native_description_includes_the_workflow_without_claiming_mcp_execution(tmp_path):
+def test_backend_description_keeps_legacy_workflow_and_distinguishes_the_backend(tmp_path):
     from mapgis_agent.operations import describe_operation
 
     item = describe_operation(tmp_path, "projection.point")
-    assert item["executable_by_mcp"] is False
+    assert item["executable_by_mcp"] is True
+    assert item['execution']['tool']=='mapgis_projection_points'
+    assert 'PROJ' in item['coverage_scope']
     assert item["workflow_knowledge"]["id"] == "projection"
     point = next(step for step in item["workflow_knowledge"]["steps"] if step["id"] == "point")
     assert any("500000" in check for check in point["checks"])
     terrain = describe_operation(tmp_path, "terrain.contours")["workflow_knowledge"]
     assert "Other models" in terrain["validation_scope"]
     assert any("快速" in step.get("limit", "") for step in terrain["steps"])
+
+
+def test_catalog_backend_routes_are_real_and_exact_build_availability_is_explicit(tmp_path):
+    from mapgis_agent.operations import _catalog,describe_operation
+    tools={tool.name for tool in asyncio.run(build_server(tmp_path).list_tools())}
+    for item in _catalog():
+        if item['execution']['kind']=='mcp':assert item['execution']['tool'] in tools
+    item=describe_operation(tmp_path,'native.workspace')
+    assert item['availability']=='NOT_CONFIGURED'
+    assert 'external GUI' in item['coverage_scope']
+    wp=describe_operation(tmp_path,'native.feature.delete')
+    assert 'WP' in wp['parameters']['file'] and 'unsupported' not in wp['scope']

@@ -5,6 +5,7 @@ file is overwritten. Physical record numbers differ from an attribute named ID.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 import hashlib
 import io
 import json
@@ -15,7 +16,7 @@ import re
 import sqlite3
 import struct
 import tempfile
-from typing import Any
+from typing import Any, Iterator
 
 from pymapgis import Reader
 from pymapgis import reader as native
@@ -124,6 +125,15 @@ def native_ids(reader: Reader) -> list[int]:
     return list(range(1, len(reader) + 1))
 
 
+def require_native_crs(reader: Reader, specification: dict, error_code: str):
+    """Derived geometry keeps its source frame unless an explicit transform runs."""
+    from .raster import explicit_crs
+    target=explicit_crs(specification)
+    if (not bool(reader.crs))!=(target is None) or reader.crs and not reader.crs.equals(target):
+        raise BridgeError(error_code)
+    return target
+
+
 def annotation_text(blob: bytes, entries: list, record_id: int) -> str | None:
     position=entries[0][0]+record_id*93
     if blob[position+31]!=0:
@@ -167,10 +177,15 @@ class Bridge:
                 before_blob BLOB NOT NULL, after_blob BLOB NOT NULL,
                 changes TEXT NOT NULL, receipt TEXT NOT NULL)""")
 
-    def connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
         db = sqlite3.connect(self.db_path, timeout=15)
         db.row_factory = sqlite3.Row
-        return db
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
 
     def owned_path(self, value: str | Path) -> Path:
         path = Path(value).resolve(strict=True)
@@ -378,6 +393,9 @@ class Bridge:
             if not row:
                 raise BridgeError("Unknown request_id")
             result = self._receipt(row)
+            if result.get('kind')=='BUNDLE':
+                from .artifacts import bundle_status
+                return bundle_status(db,row)
             output = Path(result["output"])
             result["output_exists"] = output.exists()
             result["output_matches"] = output.exists() and sha(output.read_bytes()) == sha(row["after_blob"])
@@ -397,6 +415,9 @@ class Bridge:
                 raise BridgeError("This request was cancelled")
             if row["state"] not in ("PREPARED", "APPLIED"):
                 raise BridgeError("Request is not prepared; reconcile its native execution first")
+            if receipt.get('kind')=='BUNDLE':
+                from .artifacts import apply_bundle
+                return apply_bundle(self,db,row)
             output = Path(receipt["output"])
             if output.exists():
                 if sha(output.read_bytes()) != sha(row["after_blob"]):
@@ -451,6 +472,8 @@ class Bridge:
                 raise BridgeError("Verification requires a previously applied request")
             receipt = self._receipt(row)
             candidate = row["after_blob"]
+            if receipt.get('kind') in ('BUNDLE','NATIVE_PLOT'):
+                raise BridgeError('NATIVE_VECTOR_REQUEST_REQUIRED: use get_request for artifact member hashes')
         actual = Path(file).resolve(strict=True)
         with tempfile.TemporaryDirectory(prefix="verify-request-", dir=self.root / "work") as folder:
             baseline = Path(folder) / Path(receipt["output"]).name
@@ -479,7 +502,7 @@ class Bridge:
             original = db.execute("SELECT * FROM commands WHERE id=?", (applied_request,)).fetchone()
             if original is None or original["state"] != "APPLIED":
                 raise BridgeError("Recovery requires a previously applied request")
-            if json.loads(original["receipt"]).get("kind") == "NATIVE_PLOT":
+            if json.loads(original["receipt"]).get("kind") in ("NATIVE_PLOT","BUNDLE"):
                 raise BridgeError("Plot output is a new artifact; its input files were preserved")
             later, later_reader, later_entries = read_native(later_path)
             if sha(later) != expected_sha256:

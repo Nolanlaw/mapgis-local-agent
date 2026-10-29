@@ -11,10 +11,20 @@
   classifications against the source before treating a draft as a finished map.
 - Saved WT/WL/WP file operations use the existing Python stdio/CLI server.
 - With explicit native_backend_legacy_dep_compatibility opt-in, prefer the isolated
-  x86 backend for native_file_info, resave, point.move and native EPS composition.
+  x86 backend for native_file_info, resave, point.move, WT/WL/WP deletion,
+  native_workspace dirty/save/discard/recover, MSI, MPJ and native EPS composition.
   It uses no desktop input. Read docs/NATIVE.md for frame/ABI/runtime constraints.
   Never change Windows DEP or patch MapGIS binaries. Other editor workflows still
   require the documented host binding; saved-file operations do not edit unsaved memory.
+- Prefer the headless routes returned by describe_operation. Terrain/network and
+  other open backends identify their algorithms; do not claim native module execution.
+  native_workspace owns a separate editing buffer and never changes external GUI memory.
+  Use expected_revision and stable request_id; reconcile a timeout before repeating edits.
+- Multi-file bundles publish through apply_patch and reconcile_artifact. For native
+  MPJ, first create a portable project with copied sibling dependencies; then use
+  prepare_project_plot and prepare_plot_export for actual EPS, PDF and RGB TIFF.
+- For a release restore run self_test.py, self_test_native.py, self_test_workspace.py
+  and self_test_modules.py --native using the restored package's own Python.
 - Native plot layers are ordered bottom to top. Obtain raw native_bounds with
   native_file_info, confirm compatible coordinate frames, choose paper_mm, then
   prepare_native_plot and apply_patch. Keep the native EPS and independent preview.

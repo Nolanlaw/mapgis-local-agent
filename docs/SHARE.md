@@ -1,84 +1,49 @@
-# Windows 分享版使用说明
+# Windows 分享版
 
-分享包适用于 Windows 10/11 x64，自带 Python 和运行依赖。解压后不需要另装 Python。
+适用于 Windows 10/11 x64，自带 Python 和运行依赖。MapGIS、许可、专有字体和系统库由接收者提供。
 
-## 安装与自检
+## 首次运行
 
-1. 将压缩包完整解压到可写目录。
-2. 双击 `01-Setup.cmd`，输入 MapGIS 安装根目录。也可以输入 `program` 目录或 `mdiedit6x.exe` 的完整路径；只使用文件工具时直接回车。
-3. 双击 `02-SelfTest.cmd`，确认结果为 `PASS`。该自检使用合成文件检查 MCP 服务、文件读写和恢复，不会启动 MapGIS。
-4. 双击 `03-Diagnostics.cmd` 查看运行环境和 MapGIS 版本匹配情况。
+1. 完整解压到可写目录，不在 ZIP 预览中启动。
+2. 运行 `01-Setup.cmd`。输入 MapGIS 根目录、program 目录或 mdiedit6x.exe 路径；只用文件处理可直接回车。
+3. 运行 `02-SelfTest.cmd`，确认 PASS；`03-Diagnostics.cmd` 检查依赖和版本。
+4. 把生成的 `mcp-config.local.json` 加入支持 stdio 的 MCP 客户端。
 
-安装后会在解压目录生成 `mcp-config.local.json` 和 `setup-state.local.json`；填写 MapGIS 路径时还会生成 `config.local.json`。移动文件夹后重新运行 `01-Setup.cmd`，以更新客户端路径。手动修改过的客户端配置会被保留，需要核对后再重新配置。
-
-## 在 Agent 中使用
-
-在支持本地文件、终端和电脑操作的 Agent 宿主中打开解压目录，先让 Agent 阅读 `AGENTS.md` 和 `docs/NATIVE.md`，再提供工程路径与任务。例如：
-
-> 查看当前 MapGIS 工程的图层和选中的区。
-
-普通 MCP 客户端可以加载安装时生成的 `mcp-config.local.json`。桌面编辑和出图还需要宿主提供 Sky 电脑操作能力；分享包不包含 Agent 宿主或模型。
-
-## 命令行
-
-在解压目录打开 PowerShell，运行：
-
-```powershell
-./runtime/python/python.exe -s -B -X utf8 scripts/portable.py setup --enable-native-legacy-host
-./runtime/python/python.exe -s -B -X utf8 scripts/self_test_native.py
-```
-
-`MapGIS-MCP.cmd` 是 stdio 服务入口，通常由 MCP 客户端启动。直接双击后它会等待客户端输入。
-
-自行调用包内 Python 时，使用以下参数，避免加载用户目录中的 Python 包：
-
-```powershell
-.\runtime\python\python.exe -s -B -X utf8 .\scripts\mapgis_cli.py capabilities
-```
-
-## MapGIS 兼容性
-
-文件工具可以在没有 MapGIS 的情况下使用。原生编辑、保存和出图需要 MapGIS 6.7、有效许可，以及工程所用的字体和符号库。
-
-实时读取工程、选区和未保存状态，目前匹配 build 051118 的四个程序模块。`03-Diagnostics.cmd` 显示 `MATCH` 表示模块指纹匹配；`UNSUPPORTED_BUILD` 表示需要重新适配。许可和 Sky 宿主是否可用仍需分别确认。
-
-出图前使用 `scripts/Prepare-NativeOutput.ps1` 将工程及其显式依赖暂存到短 ASCII 路径，再在 MapGIS 中核对加载的图层和输出文件。步骤见 `docs/NATIVE.md`。
+安装只在解压目录写本地配置。移动目录后重新安装以更新路径；独立手改的配置会保留，需要自行合并。MapGIS-MCP.cmd 是 stdio 入口，由客户端启动后等待输入。
 
 ## 后台原生模式
 
-0.5.0 可直接调用本机原生组件处理保存文件并生成 EPS，不需要电脑操作宿主。默认关闭；本包的独立 x86 子进程使用旧版 DEP 兼容构建，接收者接受该进程的保护取舍后运行：
+默认关闭。旧 BAS60 需要本包独立 32 位进程采用 DEP 兼容构建，只影响该子进程。接受此取舍后运行：
 
 ```powershell
-.
-untimepythonpython.exe -s -B -X utf8 scriptsportable.py setup --enable-native-legacy-host
-.
-untimepythonpython.exe -s -B -X utf8 scriptsself_test_native.py
+./runtime/python/python.exe -s -B -X utf8 scripts/portable.py setup --mapgis D:/MapGIS67 --enable-native-legacy-host
+./runtime/python/python.exe -s -B -X utf8 scripts/self_test_native.py
+./runtime/python/python.exe -s -B -X utf8 scripts/self_test_workspace.py
+./runtime/python/python.exe -s -B -X utf8 scripts/self_test_modules.py --native
 ```
 
-先完成安装路径绑定。自检会调用实际 MapGIS 组件，用合成点线区验证读取、移动、删除、另存、新进程重开、恢复和原生 EPS。它不操作桌面，不修改 MapGIS 或 Windows 设置。只用普通文件工具时无需启用。
+已绑定安装可省略 --mapgis。路径含空格时加引号。自检使用合成数据，不操作鼠标，不修改安装或系统 DEP。许可仍由原生组件确认。
 
-Agent 可通过 mapgis_native_file_info、mapgis_prepare_native_operation 和 mapgis_prepare_native_plot 使用此通道。参数和限制见[原生操作](NATIVE.md)。运行中编辑器未保存的内容及其他模块仍使用原来的宿主入口。
+不启用原生后端也可运行开放模块自检：
 
-## 数据与恢复
+```powershell
+./runtime/python/python.exe -s -B -X utf8 scripts/self_test_modules.py
+```
 
-保留原始文件，在副本上编辑。文件工具使用物理记录编号定位对象，属性字段中的 ID 可以重复。恢复操作需要基线和请求记录，并会检查目标字段是否有后续冲突；它不能恢复崩溃前任意未保存的内存内容。
+## 交给 Agent
 
-扫描图流程可生成可编辑点线区草稿；地层、花纹、文字和符号的解释需要复核。可以明确使用本地演示坐标，不能把它当作真实地理精度。完整范围与已知问题见 `docs/CAPABILITIES.md`。
+Agent 阅读 AGENTS.md 和 docs/NATIVE.md 后，通过 MCP 或 MapGIS-CLI.cmd 调用。例如：
 
-## 第三方组件
+> 用这些控制点校正扫描件，提取颜色区和开放线候选；保留原图，生成点线区草稿和可迁移工程，核对后输出 EPS、PDF 和 TIFF。
 
-Ghostscript 位于 `runtime/ghostscript/`，可将原生 EPS 转换为 PDF。对应源码、GEOS 源码及许可证随包保留；组件清单见 `THIRD-PARTY.json`，原生格式库源码位于 `vendor/mapgis2shp/`。
+> 把这份 WP 打开到后台会话，删除物理区 3 和 5。检查孔洞和共享边界，查看未保存状态，再另存并重开验证。
 
-分享包包含 Rasterio 使用的 GDAL 栅格运行时；没有附带可选的 pyogrio 通用矢量转换引擎。需要这些功能的开发者可按 `requirements.lock.txt` 准备开发环境。
+49 个工具和 57 项任务说明通过 find_operations/describe_operation 查询。接口返回候选、实际检查和来源指纹，apply_patch 后才交付。后台运行无需电脑操作宿主；外部 GUI 的只读绑定有单独宿主要求。
 
-## 查找原生功能
+## 数据和恢复
 
-安装时填写 MapGIS 路径后，会从本机 HLP/CHM 建立帮助索引。Agent 可用 `mapgis_find_operations` 找到整理后的入口，再用 `mapgis_describe_operation` 读取参数和工作流；其他菜单可通过 `mapgis_search_native_help` 指定模块、关键词和主题编号检索。索引失效或缺失时，重新运行 `scripts/index_native_help.py`。目录状态、帮助说明与实际执行结果分别记录。
+保留原图、可编辑源文件、工程全部图层和请求账本。输出使用新分支。record_id/__record_id 是物理槽位，属性 ID 可以重复。异常后先 recover/reconcile；重复 request_id 用于对账，避免盲目再执行。
 
-例如：
+扫描候选需专业复核，本地示意坐标要标明用途。真实地理精度和接收机的颜色/符号另行核对。[功能与限制](CAPABILITIES.md)列明尚未接通的模块。
 
-> 从这张扫描件建立一个本地演示坐标工程，生成点线区草稿；保留开放断层，检查接边，保存重开后导出 EPS 和 TIFF。
-
-> 查找 DTM 的格网与等值线操作，先用解析平面小样核对输出，再处理我的数据。
-
-新增原生库的源码、构建脚本、许可和替换说明见 `docs/THIRD-PARTY.md`。
+开放依赖、许可和对应源码见 THIRD-PARTY.json、docs/THIRD-PARTY.md 与 third_party/sources。包内没有 MapGIS、许可工具、IDA/Ghidra、课程报告、私人图件或发送者配置。

@@ -51,7 +51,8 @@ def public_sources(portable: bool = False) -> dict[str, Path]:
                 selected[file.relative_to(ROOT).as_posix()] = file
     for name in ('launch_mcp.py', 'mapgis_cli.py', 'native_support.py', 'native_session.mjs',
                  'native_workflows.mjs', 'palette_probe.py', 'package.py', 'package_share.py',
-                 'index_native_help.py', 'Prepare-NativeOutput.ps1', 'Setup.ps1', 'portable.py', 'self_test.py', 'self_test_native.py'):
+                 'index_native_help.py', 'Prepare-NativeOutput.ps1', 'Setup.ps1', 'portable.py', 'self_test.py', 'self_test_native.py',
+                 'self_test_workspace.py', 'self_test_modules.py'):
         selected['scripts/'+name] = ROOT/'scripts'/name
     return selected
 
@@ -90,7 +91,8 @@ def copy_base_runtime(stage: Path, bundle: Path) -> None:
 
 def build(stage: Path, python_archive: Path | None, ghostscript: Path | None,
           source_archives: Path | None, base_bundle: Path | None = None,
-          extra_sources: Path | None = None, extra_bundle: Path | None = None) -> dict:
+          extra_sources: Path | None = None, extra_bundle: Path | None = None,
+          backend_sources: Path | None = None) -> dict:
     stage.mkdir(parents=True, exist_ok=False)
     if base_bundle:
         copy_base_runtime(stage, base_bundle)
@@ -114,13 +116,13 @@ def build(stage: Path, python_archive: Path | None, ghostscript: Path | None,
         '.\nLib\nDLLs\nLib/site-packages\nimport site\n', encoding='ascii')
     site = Path(sysconfig.get_paths()['purelib'])
     destination = runtime / 'python/Lib/site-packages'
-    excluded = ('pyogrio', 'pyogrio.libs', '_virtualenv.py', '_virtualenv.pth', 'mapgis_agent')
+    excluded = ('_virtualenv.py', '_virtualenv.pth', 'mapgis_agent','pefile.py','peutils.py','ordlookup')
     for file in site.rglob('*'):
         if not file.is_file():
             continue
         relative = file.relative_to(site)
         first = relative.parts[0].lower()
-        if first in excluded or first.startswith(('pyogrio-', 'mapgis_local_agent-')):
+        if first in excluded or first.startswith(('mapgis_local_agent-','pefile-')):
             continue
         if '__pycache__' in relative.parts or file.suffix in ('.pyc', '.pyo'):
             continue
@@ -154,17 +156,25 @@ def build(stage: Path, python_archive: Path | None, ghostscript: Path | None,
             if sha(source)!=item['sha256']:
                 raise ValueError('Extra source mismatch: '+item['file'])
             ordinary_copy(source,stage/'third_party/sources'/item['file'])
+    backend = json.loads((ROOT/'packaging/backend-sources.json').read_text(encoding='utf8'))
+    if not backend_sources:raise ValueError('Provide --backend-sources with the pinned SciPy/ContourPy/NetworkX sources')
+    for item in backend:
+        source=backend_sources/item['file']
+        if sha(source)!=item['sha256'] or source.stat().st_size!=item['bytes']:
+            raise ValueError('Backend source mismatch: '+item['file'])
+        ordinary_copy(source,stage/'third_party/sources'/item['file'])
     components = sorted([{'name': d.metadata['Name'], 'version': d.version}
                          for d in metadata.distributions()
-                         if d.metadata['Name'].lower() not in ('pyogrio', 'mapgis-local-agent')],
+                         if d.metadata['Name'].lower() not in ('mapgis-local-agent','pefile')],
                         key=lambda x: x['name'].lower())
     third_party = {'python': {'version': '3.12.16', 'release': 'python-build-standalone 20261026',
         'url': 'https://github.com/astral-sh/python-build-standalone/releases/tag/20261026', 'archive_sha256': PYTHON_SHA},
         'packages': components, 'ghostscript': {'version': '10.08.0', 'source_included': True},
         'geos': {'version': '3.14.1', 'source_included': True},
         'libvips': {'version': '8.18.7', 'source_included': True, 'build_recipes_and_native_dependencies': extra},
-        'runtime_scope': '29 MapGIS tools; isolated exact-build x86 native worker; Rasterio/GDAL raster reader, libvips and a separate GPL-2.0 help-indexing tool included; optional pyogrio vector conversion excluded',
+        'runtime_scope': '49 MapGIS tools; isolated exact-build x86 native buffers, WP topology deletion, MSI/MPJ/EPS; SciPy/ContourPy/NetworkX open algorithms; Pyogrio/GDAL vector exchange and Rasterio/GDAL rasters, libvips and separate GPL-2.0 help indexing; analysis-only pefile excluded',
         'sources': SOURCE_SHA,
+        'backend_sources': backend,
         'base_bundle_sha256': BASE_BUNDLE_SHA if base_bundle else None,
         'licences': 'See docs/THIRD-PARTY.md, dependency dist-info/licenses and included source archives.'}
     (stage / 'THIRD-PARTY.json').write_text(json.dumps(third_party, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -222,11 +232,12 @@ def main() -> None:
     extra_input.add_argument('--extra-sources', type=Path)
     extra_input.add_argument('--extra-sources-bundle', type=Path)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--backend-sources', type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
     manifest = build(args.stage.resolve(), args.python_archive, args.ghostscript,
-                     args.source_archives, args.base_bundle, args.extra_sources, args.extra_sources_bundle)
+                     args.source_archives, args.base_bundle, args.extra_sources, args.extra_sources_bundle,args.backend_sources)
     with zipfile.ZipFile(args.output, 'x', zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
         for file in sorted(args.stage.rglob('*')):
             if file.is_file():

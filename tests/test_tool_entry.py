@@ -18,6 +18,10 @@ def test_operation_description_reuses_real_mcp_input_schema(tmp_path):
         assert result["execution_status"] == "MCP_TOOL_AVAILABLE"
         raw = await server.call_tool("mapgis_describe_operation", {"operation_id": "edit.points"})
         result = json.loads(raw[0].text)
+        assert result["execution_status"] == "MCP_TOOL_AVAILABLE"
+        assert result["input_schema"] == tools['mapgis_prepare_native_operation'].inputSchema
+        raw = await server.call_tool("mapgis_describe_operation", {"operation_id": "style.library"})
+        result = json.loads(raw[0].text)
         assert result["execution_status"] == "HOST_OBSERVATION_REQUIRED"
         assert result["executable_by_mcp"] is False
         assert "input_schema" not in result

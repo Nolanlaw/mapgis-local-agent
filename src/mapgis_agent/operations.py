@@ -29,13 +29,14 @@ def describe_operation(root: str | Path, operation_id: str) -> dict:
     exe = program / item["executable"] if native and program else None
     availability = ("INSTALLED_LICENCE_UNCHECKED" if exe and exe.is_file() else
                     "NOT_INSTALLED" if program else "NOT_CONFIGURED") if native else "AVAILABLE"
-    if operation_id.startswith("native."):
+    if operation_id.startswith("native.") or item["execution"].get("backend")=="mapgis_native":
         availability = ("NOT_CONFIGURED" if not program else
                         "LEGACY_HOST_DISABLED" if config.get("native_backend_legacy_dep_compatibility") is not True else
                         "EXACT_BUILD_AND_LICENCE_CHECKED_PER_CALL")
     result = {**item, "availability": availability,
             "executable_path": str(exe) if exe and exe.is_file() else None,
             "executable_by_mcp": not native,
+            "coverage_scope": item.get("validation_scope",item.get("scope","See output_checks and parameters")),
             "version": "6.7; live editor requires exact supported build",
             "licence": "Native module access must be checked in the actual session" if native else None}
     if item.get("workflow"):

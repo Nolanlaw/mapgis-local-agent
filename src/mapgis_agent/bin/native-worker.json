@@ -1,8 +1,8 @@
 {
   "protocol": 1,
   "architecture": "x86",
-  "sha256": "b50b09402f1d0c1a0fbddc626efa21db26e08c32b75f6de19e4e632ae5246f2c",
-  "source_sha256": "9bc87a475f1bc1ad044263218a049de06ce7d1523d6024e7ebfd58ca4acfc78c",
+  "sha256": "c53967e2f66bf63958bafecb348bcb5600df97de0a021be47bfa3962f40a988b",
+  "source_sha256": "cf97e9f384d9a70b701d9f016c27bf2c50e3ef9dbdd1bf71de7af0d14d856461",
   "bas60_sha256": "680029d3ed7a04338a6799f1e16cab30d6e421d13e3d8c66bbeccb057a50ee24",
   "legacy_dep_compatibility": true,
   "operations": [
@@ -10,6 +10,15 @@
     "resave",
     "point.move",
     "feature.delete",
-    "plot"
-  ]
+    "plot",
+    "workspace",
+    "image.to_msi",
+    "image.to_tiff",
+    "project.create",
+    "project.inspect",
+    "project.plot"
+  ],
+  "headers": {
+    "PrivateDesktop.h": "3d9b0a05051d9fb0afe5d421e4a62375882b8c47004007b312d92bca25d7d08f"
+  }
 }

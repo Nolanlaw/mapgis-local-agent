@@ -92,7 +92,7 @@ def profile(root: Path) -> dict:
 def doctor(root: Path) -> dict:
     imports = {}
     for name in ('numpy', 'pandas', 'geopandas', 'shapely', 'pyproj', 'psutil', 'mcp', 'pymapgis',
-                 'pyvips', 'cv2', 'rasterio', 'mapgis_agent'):
+                 'pyvips', 'cv2', 'rasterio', 'scipy', 'contourpy', 'networkx', 'mapgis_agent'):
         module = importlib.import_module(name)
         imports[name] = str(Path(module.__file__).resolve())
     gs = root / 'runtime/ghostscript/bin/gswin64c.exe'

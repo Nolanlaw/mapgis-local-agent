@@ -19,12 +19,127 @@ from .features import read_features, prepare_file_operation
 from .comparison import compare_native_files
 from .native_backend import native_file_info, prepare_native_operation, reconcile_native_request
 from .native_plot import prepare_native_plot
+from .workspace import NativeWorkspaces
+from .exchange import query_attributes,prepare_export,prepare_import
+from .terrain import analyze_terrain,prepare_terrain
+from .network import analyze_network,prepare_network
+from .native_raster import prepare_native_raster,prepare_raster_warp
+from .artifacts import reconcile_bundle
+from .native_project import native_project_info,prepare_native_project,prepare_project_plot
+from .cartography import projection_points,prepare_map_frame
+from .derived import prepare_annotations,prepare_seams,prepare_attribute_report
 
 
 def build_server(root: str | Path) -> FastMCP:
     bridge = Bridge(root)
     raster = RasterWorkspace(root)
+    workspaces = NativeWorkspaces(bridge)
     server = FastMCP("MapGIS 6.7 本机原生文件工具")
+
+    @server.tool()
+    def mapgis_prepare_project_plot(file:str,expected_sha256:str,view:dict,request_id:str)->dict:
+        """Render a portable saved MPJ's ordered vector and MSI background layers through native MapGIS into EPS, with an independent PNG preview. view={native_bounds:[xmin,ymin,xmax,ymax],paper_mm:[width,height],coordinate_frame:'native'}. Project dependencies must be siblings (prepare_native_project makes such a bundle). Freezes project/member hashes, checks actual drawn layer counts and EPS page/visible output, then prepares an atomic bundle for apply/get/cancel. No mouse or external editor mutation."""
+        return prepare_project_plot(bridge,file,expected_sha256,view,request_id)
+
+    @server.tool()
+    def mapgis_projection_points(points:list[list[float]],source_crs:dict,target_crs:dict,allow_unknown_accuracy:bool=False)->dict:
+        """Transform explicit XY pairs using PROJ with no ballpark operation. Require Earth CRS definitions and xy axes. Missing best grids fail; unknown accuracy across datums needs explicit opt-in. Returns actual operation/accuracy metadata, independently of native file CRS encoding limits."""
+        return projection_points(points,source_crs,target_crs,allow_unknown_accuracy)
+
+    @server.tool()
+    def mapgis_prepare_map_frame(part:str,parameters:dict,template:dict,request_id:str)->dict:
+        """Create frame border/grid WL or tick-label WT. parameters={geographic_bounds:[west,south,east,north],grid_step_degrees,subdivisions?:32,geographic_crs?:EPSG4326 explicit dict}. Densifies before projection, checks native CRS encoding, and writes actual GBK DMS annotations. template requires name, explicit target crs and map_scale. No national sheet-number convention inferred; apply/get/cancel use the ledger."""
+        return prepare_map_frame(bridge,part,parameters,template,request_id)
+
+    @server.tool()
+    def mapgis_prepare_annotations(file:str,expected_sha256:str,field:str,template:dict,request_id:str)->dict:
+        """Make a new native annotation WT from a saved attribute field. Points retain position, lines use half-length, polygons use an interior representative point (avoids holes). Keeps source attributes/physical mapping, explicit CRS/scale and native text style. apply/get/cancel publish a new branch; no source mutation."""
+        return prepare_annotations(bridge,file,expected_sha256,field,template,request_id)
+
+    @server.tool()
+    def mapgis_prepare_seams(files:list[dict],parameters:dict,template:dict,request_id:str)->dict:
+        """Join 2..100 saved native files by an explicit class field: files=[{file,expected_sha256}], parameters={field,grid_size?}. Optional positive precision grid snaps to a shared zero-origin lattice, then GEOS dissolves each class. Reports movement and source mappings; only the group field is retained in the derived attributes. Requires a common declared CRS and template name/scale; inputs are preserved."""
+        return prepare_seams(bridge,files,parameters,template,request_id)
+
+    @server.tool()
+    def mapgis_prepare_attribute_report(file:str,expected_sha256:str,sql:str,request_id:str,limit:int=100000)->dict:
+        """Persist a real read-only native attribute query/aggregate as JSON plus UTF-8 CSV. Same SQL limits and authorizer as query_attributes. Whole result set/member hashes publish atomically through apply_patch; truncation is explicit and source bytes stay unchanged."""
+        return prepare_attribute_report(bridge,file,expected_sha256,sql,request_id,limit)
+
+    @server.tool()
+    def mapgis_native_project_info(file:str,expected_sha256:str)->dict:
+        """Inspect a saved MPJ through the installed exact-build project library in an owned process. Reopens vector layers and reads actual native active counts; MSI backgrounds return native extents. No project edit/save call. Does not bind or change an external editor. Native paths must fit the verified CP936 interface."""
+        return native_project_info(bridge.root,file,expected_sha256)
+
+    @server.tool()
+    def mapgis_prepare_native_project(layers:list[dict],parameters:dict,request_id:str)->dict:
+        """Prepare a portable native MPJ with copied WT/WL/WP and MSI layers. layers=[{file,expected_sha256}], parameters={name:'map.mpj',coordinate_frame:'native'}. Uses mapprj60 Create/Append/Update/Save; relative references, no original rename. Reopens after relocation with the old candidate directory hidden and compares native counts/extents. apply publishes MPJ and dependencies atomically; sources stay unchanged. A common physical coordinate frame remains the caller's responsibility."""
+        return prepare_native_project(bridge,layers,parameters,request_id)
+
+    @server.tool()
+    def mapgis_query_attributes(file:str,expected_sha256:str,sql:str,limit:int=1000)->dict:
+        """Read-only SQLite over saved native attributes in table features. __record_id is physical identity; ID may repeat. SELECT/CTE/aggregates allowed, writes/ATTACH/PRAGMA/extensions denied; bounded query work and row limit. Source remains unchanged."""
+        return query_attributes(file,expected_sha256,sql,limit)
+
+    @server.tool()
+    def mapgis_prepare_export(file:str,expected_sha256:str,driver:str,request_id:str)->dict:
+        """Prepare a standard vector bundle: GeoJSON, GPKG or ESRI Shapefile. Full geometry/attribute readback; sidecar binds physical IDs, native symbols/text/styles and member hashes. GeoJSON uses the 2008 named-CRS extension for custom projected data. Shapefile truncation/collisions rejected. apply_patch atomically publishes all members; status verifies the complete set."""
+        return prepare_export(bridge,file,expected_sha256,driver,request_id)
+
+    @server.tool()
+    def mapgis_prepare_import(file:str,expected_sha256:str,template:dict,request_id:str,layer:str|None=None)->dict:
+        """Prepare NEW WT/WL/WP from GeoJSON/GPKG. template requires name, explicit crs and map_scale. Rejects invalid/mixed/3D geometry, duplicate identities, wrong CRS and ambiguous GPKG layers. A project-local, input-hashed sidecar restores native annotation/styles and attributes. apply/get/cancel use the existing ledger."""
+        return prepare_import(bridge,file,expected_sha256,template,request_id,layer)
+
+    @server.tool()
+    def mapgis_analyze_terrain(file:str,expected_sha256:str,height_field:str,base_height:float|None=None)->dict:
+        """Analyze saved WT elevations using SciPy Delaunay. Returns planar hull area, triangulated 3D area and exact piecewise-linear cut/fill against an optional horizontal base. XY and elevations must share a linear unit; no extrapolation outside the convex hull. Does not mutate the source."""
+        return analyze_terrain(file,expected_sha256,height_field,base_height)
+
+    @server.tool()
+    def mapgis_prepare_terrain(file:str,expected_sha256:str,height_field:str,parameters:dict,template:dict,request_id:str)->dict:
+        """Prepare terrain native vectors: parameters={operation:'tin'} for WP; {operation:'grid',bounds:[xmin,ymin,xmax,ymax],step} for WT; {operation:'contours',grid:{bounds,step},levels:[...]} for WL. Separate height_field names the WT elevation attribute. SciPy/ContourPy, hull masking, all requested levels checked and empty levels reported. Output template requires the explicit source CRS, map_scale and matching suffix. apply/get/cancel use the ledger."""
+        if 'height_field' in parameters and parameters['height_field']!=height_field:
+            from .core import BridgeError
+            raise BridgeError('TERRAIN_HEIGHT_FIELD_CONFLICT')
+        return prepare_terrain(bridge,file,expected_sha256,parameters|{'height_field':height_field},template,request_id)
+
+    @server.tool()
+    def mapgis_analyze_network(file:str,expected_sha256:str,parameters:dict)->dict:
+        """NetworkX/GEOS over saved WL: operation=route, service_area or components. Explicit directed boolean, optional cost_field, source/target XY or cutoff; snap_tolerance and node_intersections are opt-in. Physical IDs and edge direction preserved; negative costs refused. Service area returns reachable network segments including partial edges, not a filled isochrone."""
+        return analyze_network(file,expected_sha256,parameters)
+
+    @server.tool()
+    def mapgis_prepare_network(file:str,expected_sha256:str,parameters:dict,template:dict,request_id:str)->dict:
+        """Prepare native WL for route, reachable segments or connected components using analyze_network parameters. Keeps source edge IDs/costs/attributes and explicit source CRS. New branch only; apply/get/cancel use the existing ledger."""
+        return prepare_network(bridge,file,expected_sha256,parameters,template,request_id)
+
+    @server.tool()
+    def mapgis_prepare_native_raster(operation:str,file:str,expected_sha256:str,parameters:dict,request_id:str)->dict:
+        """Native TIFF/MSI conversion with no mouse: operation=to_msi or to_tiff, parameters={name?,gcps?:[{pixel:[col,row],world:[x,y]}],max_error?}. Verified byte gray/RGB without palette/nodata. to_msi writes native GCPs, closes and reopens in a fresh process, and proves exact pixels. GCP saving is not rectification. A hashed sidecar preserves CRS identifiers the native converter drops; to_tiff restores it only when bound to the exact MSI. apply publishes the complete file set."""
+        return prepare_native_raster(bridge,operation,file,expected_sha256,parameters,request_id)
+
+    @server.tool()
+    def mapgis_prepare_raster_warp(file:str,expected_sha256:str,parameters:dict,request_id:str)->dict:
+        """Rectify affine GCP scans/reproject rasters with GDAL, without a GUI. parameters={name,target_crs,bounds:[xmin,ymin,xmax,ymax],resolution:[dx,dy],resampling:'nearest'|'bilinear'|'cubic',max_gcp_error?}. Explicit target grid; 64MB warp memory, no full-image array. Original pixels remain in the source. New GeoTIFF is read back before preparation; apply/get/cancel use the ledger. Independent checkpoints determine real ground accuracy."""
+        return prepare_raster_warp(bridge,file,expected_sha256,parameters,request_id)
+
+    @server.tool()
+    def mapgis_reconcile_artifact(request_id:str)->dict:
+        """Reconcile a completed multi-file export/raster result after parent interruption. Validates frozen member hashes and source fingerprints, then prepares the same result without rerunning its algorithm or native call. Incomplete producers are not replayed. Use apply_patch afterward."""
+        return reconcile_bundle(bridge,request_id)
+
+    @server.tool()
+    def mapgis_prepare_plot_export(file:str,expected_sha256:str,parameters:dict,request_id:str)->dict:
+        """Export an actual native EPS to PDF and/or RGB TIFF without a desktop. parameters={formats:['pdf','tiff'],dpi:300}; dpi 72..600, at most 100M pixels. Ghostscript retains the physical page, TIFF is read back, and PDF is independently rendered and compared with the EPS. No georeferencing is inferred from a printed page. apply_patch publishes all members atomically; original EPS is preserved."""
+        from .plot_export import prepare_plot_export
+        return prepare_plot_export(bridge,file,expected_sha256,parameters,request_id)
+
+    @server.tool()
+    def mapgis_native_workspace(action: str, workspace_id: str, parameters: dict,
+                                expected_revision: int | None = None, request_id: str | None = None) -> dict:
+        """Own a persistent native buffer without mouse/UI. open: parameters={source,expected_sha256}; status: {}. edit: parameters={operation:'point.move'|'feature.delete',parameters:{updates:[{record_id,x,y}]}|{record_ids:[1,3]}}; save: {}; edit/save require expected_revision and stable request_id. close: {} refuses dirty work, {discard:true} explicitly discards back to last save. recover: {} restores completed checkpoints and reconciles an interrupted edit/save without replay. close/recover require expected_revision. Saved outputs are new deliverables; the source stays unchanged. Dirty checkpoints survive parent/native failure. This buffer belongs to the agent, independently of any external MapGIS editor and its unsaved memory. Requires the explicitly enabled exact-build x86 backend."""
+        return workspaces.execute(action,workspace_id,parameters,expected_revision,request_id)
 
     @server.tool()
     def mapgis_reconcile_native_request(request_id: str) -> dict:
@@ -44,7 +159,7 @@ def build_server(root: str | Path) -> FastMCP:
     @server.tool()
     def mapgis_prepare_native_operation(operation: str, file: str, expected_sha256: str,
                                        parameters: dict, request_id: str) -> dict:
-        """Prepare a new branch through actual BAS60 calls without mouse/UI. operation=resave with {}; point.move with {updates:[{record_id:1,x:12.5,y:13.75}]}; or feature.delete with {record_ids:[1,3]} for WT/WL. Requires an owned work copy and explicit legacy x86 compatibility opt-in. Verifies saved geometry/attributes/style and opens it in another native process before PREPARED. apply_patch/get_request/cancel_request use the existing ledger. RUNNING or FAILED is never blindly replayed. Other native APIs are not exposed."""
+        """Prepare a new branch through actual BAS60 calls without mouse/UI. operation=resave with {}; point.move with {updates:[{record_id:1,x:12.5,y:13.75}]}; or feature.delete with {record_ids:[1,3]} for WT/WL/WP. WP deletion checks shared arc ownership, holes and active regions before and after native save/reopen. Requires an owned work copy and explicit legacy x86 compatibility opt-in. Verifies saved geometry/attributes/style and opens it in another native process before PREPARED. apply_patch/get_request/cancel_request use the existing ledger. RUNNING or FAILED is never blindly replayed."""
         return prepare_native_operation(bridge, operation, file, expected_sha256, parameters, request_id)
 
     @server.tool()
@@ -110,7 +225,7 @@ def build_server(root: str | Path) -> FastMCP:
     @server.tool()
     def mapgis_prepare_vector_operation(operation_id: str, features: dict, template: dict,
                                         parameters: dict, request_id: str) -> dict:
-        """Prepare a NEW native branch using GEOS/PROJ: topology.polygonize, overlay.clip/difference, geometry.buffer/simplify/dissolve, projection.transform, style.classify. Explicit CRS/units and stable IDs; preserves open nonboundary features; reports QA. Existing request apply/get/cancel commits the result."""
+        """Prepare a NEW native branch using GEOS/PROJ: topology.polygonize/node/snap_grid, correction.affine, overlay.clip/difference, geometry.buffer/simplify/dissolve, projection.transform, style.classify. Explicit CRS/units and stable IDs; preserves open nonboundary features; reports QA. Existing request apply/get/cancel commits the result."""
         return prepare_vector_operation(bridge,operation_id,features,template,parameters,request_id)
 
     @server.tool()

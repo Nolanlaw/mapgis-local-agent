@@ -15,7 +15,7 @@ async def run():
     from mcp.client.stdio import stdio_client
     import geopandas as gpd
     from pymapgis import Writer
-    from shapely.geometry import Point,LineString,Polygon
+    from shapely.geometry import Point,LineString,Polygon,mapping
     config=json.loads((ROOT/'config.local.json').read_text(encoding='utf8'))
     if config.get('native_backend_legacy_dep_compatibility') is not True:
         raise RuntimeError('Explicit isolated legacy host opt-in is required in config.local.json')
@@ -40,14 +40,28 @@ async def run():
                     nonlocal total
                     response=await session.call_tool(name,args)
                     if response.isError:
-                        diagnostics={str(p.relative_to(root)):p.read_text(encoding='utf8') for p in root.rglob('native-plot.json')}
-                        (ROOT/'evidence/native-interop/headless-native-selftest-failure.json').write_text(json.dumps(diagnostics,ensure_ascii=False,indent=2),encoding='utf8')
+                        diagnostics={'response':response.model_dump(mode='json'),'logs':{
+                            str(p.relative_to(root)):p.read_text(encoding='utf8',errors='replace')
+                            for p in root.rglob('*') if p.is_file() and p.suffix in ('.json','.stdout','.stderr')}}
+                        failure=ROOT/'evidence/native-interop/headless-native-selftest-failure.json'
+                        failure.parent.mkdir(parents=True,exist_ok=True)
+                        failure.write_text(json.dumps(diagnostics,ensure_ascii=False,indent=2),encoding='utf8')
                         raise RuntimeError(response.content)
                     total+=1
                     return response.structuredContent or json.loads(''.join(x.text for x in response.content if hasattr(x,'text')))
                 for ext,geometries in fixtures.items():
-                    original=root/('original.'+ext)
-                    Writer(gpd.GeoDataFrame({'ID':[9]*len(geometries)},geometry=geometries)).to_file(original)
+                    if ext=='wp':
+                        # The plain upstream WP writer omits the native drawing
+                        # walk. Use the production native-compatible creation route.
+                        await call('mapgis_prepare_creation',features={'type':'FeatureCollection','features':[
+                            {'type':'Feature','id':str(i),'geometry':mapping(g),'properties':{'ID':9}}
+                            for i,g in enumerate(geometries,1)]},template={'name':'region.wp',
+                                'crs':{'kind':'local','name':'Synthetic native coordinates','unit':'metre','axis_order':'xy','reference_sha256':'0'*64},
+                                'map_scale':1,'style':{'fill_color':8}},request_id='native-wp-fixture')
+                        original=Path((await call('mapgis_apply_patch',request_id='native-wp-fixture'))['output'])
+                    else:
+                        original=root/('original.'+ext)
+                        Writer(gpd.GeoDataFrame({'ID':[9]*len(geometries)},geometry=geometries)).to_file(original)
                     original_bytes=original.read_bytes()
                     copy=await call('mapgis_make_work_copy',source=str(original),request_id='copy-'+ext)
                     initial=await call('mapgis_inspect_file',file=copy['path'])
@@ -65,7 +79,7 @@ async def run():
                         expected_sha256=initial['sha256'],parameters={},request_id='save-'+ext)
                     assert repeated['state']=='APPLIED' and repeated['native_execution']['pid']==prepared['native_execution']['pid']
                     receipts.append({'type':ext,'native_reopen':fresh,'records_equal':True,'no_replay':True})
-                    if ext in ('wt','wl'):
+                    if ext in ('wt','wl','wp'):
                         deleted=await call('mapgis_prepare_native_operation',operation='feature.delete',file=copy['path'],
                             expected_sha256=initial['sha256'],parameters={'record_ids':[1]},request_id='delete-'+ext)
                         assert deleted['comparison']['removed_ids']==[1] and deleted['comparison']['counts']['changed']==0
@@ -73,11 +87,12 @@ async def run():
                         live=await call('mapgis_native_file_info',file=deletion['output'],expected_sha256=deletion['candidate_sha256'])
                         assert live['active']==len(geometries)-1
                         reread=await call('mapgis_inspect_file',file=deletion['output'])
-                        assert [row['record_id'] for row in reread['rows']]==[2]
+                        remaining=[2] if len(geometries)==2 else []
+                        assert [row['record_id'] for row in reread['rows']]==remaining
                         await call('mapgis_prepare_recovery',applied_request='delete-'+ext,later_file=deletion['output'],expected_sha256=deletion['candidate_sha256'],request_id='recover-delete-'+ext)
                         restored_delete=await call('mapgis_apply_patch',request_id='recover-delete-'+ext)
                         assert Path(restored_delete['output']).read_bytes()==original_bytes
-                        receipts.append({'native_delete':ext,'physical_ids':[2],'recovery':'BYTE_IDENTICAL'})
+                        receipts.append({'native_delete':ext,'physical_ids':remaining,'recovery':'BYTE_IDENTICAL'})
 
                     if ext=='wt':
                         moved=await call('mapgis_prepare_native_operation',operation='point.move',file=copy['path'],
@@ -95,12 +110,6 @@ async def run():
                         receipts.append({'native_multi_point_move':'PASS','recovery':'BYTE_IDENTICAL'})
                     plot_file=copy['path']
                     plot_hash=initial['sha256']
-                    if ext=='wp':
-                        await call('mapgis_prepare_creation',features={'type':'FeatureCollection','features':[
-                            {'type':'Feature','id':'region','geometry':{'type':'Polygon','coordinates':[[[0,0],[10,0],[10,10],[0,10],[0,0]]]},'properties':{'ID':9}}]},
-                            template={'name':'region.wp','crs':{'kind':'local','name':'Synthetic native coordinates','unit':'metre','axis_order':'xy','reference_sha256':'0'*64},'map_scale':1,'style':{'fill_color':8}},request_id='plot-fill')
-                        filled=await call('mapgis_apply_patch',request_id='plot-fill')
-                        plot_file=filled['output'];plot_hash=filled['candidate_sha256']
                     plot_layers.insert(0,{'file':plot_file,'expected_sha256':plot_hash})
                     assert original.read_bytes()==Path(copy['path']).read_bytes()==original_bytes
                 plotted=await call('mapgis_prepare_native_plot',layers=plot_layers,
