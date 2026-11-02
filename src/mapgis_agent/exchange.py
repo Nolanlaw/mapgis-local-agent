@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import math
+import hashlib
 from pathlib import Path
 import sqlite3
 from typing import Any
@@ -19,6 +20,52 @@ from shapely.geometry import mapping
 from .core import Bridge, BridgeError, annotation_text, json_text, native_ids, read_native, scalar, sha
 from .creation import PARAMS, TYPES, prepare_creation
 from .raster import explicit_crs
+
+
+def _input_members(path:Path)->dict[str,str]:
+    """Freeze OGR's known shapefile companions, including encoding and CRS."""
+    if path.suffix.lower() not in ('.json','.geojson','.gpkg','.shp'):
+        raise BridgeError('UNSUPPORTED_IMPORT_FORMAT: GeoJSON, GPKG or SHP required')
+    paths=[path]
+    if path.suffix.lower()=='.shp':
+        suffixes={'.shp','.shx','.dbf','.prj','.cpg','.qix','.sbn','.sbx','.qpj','.idm','.ind',
+                  '.shp.xml','.dbf.xml','.shp.aux.xml'}
+        prefix=path.stem.casefold();paths=[]
+        for candidate in path.parent.iterdir():
+            tail=candidate.name.casefold()[len(prefix):]
+            if not candidate.name.casefold().startswith(prefix+'.') or (tail not in suffixes and not tail.endswith('.atx')):continue
+            paths.append(candidate)
+        names={p.name.casefold() for p in paths}
+        if not {prefix+s for s in ('.shp','.shx','.dbf')}<=names:
+            raise BridgeError('IMPORT_MEMBERS_REQUIRED: shapefile needs .shp, .shx and .dbf; input files are not repaired in place')
+    members={}
+    for member in sorted(paths,key=lambda p:p.name.casefold()):
+        if member.is_symlink() or not member.is_file() or member.resolve().parent!=path.parent:
+            raise BridgeError('IMPORT_MEMBER_TYPE')
+        with member.open('rb') as stream:members[member.name]=hashlib.file_digest(stream,'sha256').hexdigest()
+    return members
+
+
+def vector_source_info(file:str,layer:str|None=None)->dict:
+    """Read actual OGR layers/schema and fingerprint all required local files."""
+    path=Path(file).resolve(strict=True)
+    if not path.is_file():raise BridgeError('FILE_NOT_FOUND')
+    members=_input_members(path)
+    layers=pyogrio.list_layers(path)
+    if len(layers)>1000:raise BridgeError('TOO_MANY_LAYERS')
+    names=[str(row[0]) for row in layers]
+    if layer is not None and layer not in names:raise BridgeError('LAYER_NOT_FOUND')
+    result=[]
+    for name in names:
+        if layer is not None and layer!=name:continue
+        info=pyogrio.read_info(path,layer=name)
+        result.append({'name':name,'driver':info['driver'],'geometry_type':info['geometry_type'],
+                       'feature_count':int(info['features']),'crs':info['crs'],'encoding':info['encoding'],
+                       'fields':[{'name':str(n),'dtype':str(t)} for n,t in zip(info['fields'],info['dtypes'])],
+                       'bounds':None if info['total_bounds'] is None else [float(v) for v in info['total_bounds']]})
+    if _input_members(path)!=members:raise BridgeError('STALE_SOURCE_MEMBERS')
+    return {'file':str(path),'sha256':sha(path.read_bytes()),'members':members,'layers':result,
+            'backend':'GeoPandas/Pyogrio/GDAL','input_modified':False}
 
 
 def _safe_dbf_field_name(name: str) -> str:
@@ -254,8 +301,9 @@ def export_vector(file: str, expected_sha256: str, output_directory: str, driver
     }
 
 
-def prepare_import(bridge: Bridge, file: str, expected_sha256: str, template: dict, request_id: str, layer: str | None = None) -> dict:
-    """Prepare MapGIS native creation from single GeoJSON or GPKG vector file."""
+def prepare_import(bridge: Bridge, file: str, expected_sha256: str, template: dict, request_id: str, layer: str | None = None,
+                   expected_members:dict[str,str]|None=None,multipart:str='reject',reproject:bool=False) -> dict:
+    """Prepare a frozen native branch from GeoJSON, GPKG or a complete SHP set."""
     path = Path(file).resolve(strict=True)
     if not path.is_file():
         raise BridgeError(f"FILE_NOT_FOUND: '{path}' is not a regular file")
@@ -263,6 +311,12 @@ def prepare_import(bridge: Bridge, file: str, expected_sha256: str, template: di
     actual_sha = sha(blob)
     if actual_sha != expected_sha256:
         raise BridgeError("STALE_SOURCE: input file changed or hash mismatch")
+    members=_input_members(path)
+    if path.suffix.lower()=='.shp' and expected_members is None:
+        raise BridgeError('IMPORT_MEMBERS_REQUIRED: use vector_source_info and pass every returned member hash')
+    if expected_members is not None and members!=expected_members:raise BridgeError('STALE_SOURCE_MEMBERS')
+    if multipart not in ('reject','explode'):raise BridgeError('MULTIPART_IMPORT: reject or explode required')
+    if type(reproject) is not bool:raise BridgeError('IMPORT_REPROJECT: boolean required')
 
     name = template.get("name", "")
     if not name or Path(name).name != name or any(c in name for c in '/\\:<>"|?*') or name.rstrip(". ") != name:
@@ -281,8 +335,10 @@ def prepare_import(bridge: Bridge, file: str, expected_sha256: str, template: di
         format_type = "GeoJSON"
     elif suffix == ".gpkg":
         format_type = "GPKG"
+    elif suffix == '.shp':
+        format_type='SHP'
     else:
-        raise BridgeError(f"UNSUPPORTED_IMPORT_FORMAT: only GeoJSON and GPKG are supported, got '{suffix}'")
+        raise BridgeError(f"UNSUPPORTED_IMPORT_FORMAT: only GeoJSON, GPKG and SHP are supported, got '{suffix}'")
 
     if format_type == "GPKG":
         layers = pyogrio.list_layers(path)
@@ -342,7 +398,10 @@ def prepare_import(bridge: Bridge, file: str, expected_sha256: str, template: di
             raise BridgeError("NATIVE_2D_REQUIRED: explicit projection of Z/M before creating 6.x vectors")
         if not all(math.isfinite(c) for c in g.bounds):
             raise BridgeError("INVALID_GEOMETRY: non-finite coordinates")
-        if g.geom_type not in expected_types:
+        multi_type={'POINT':'MultiPoint','LINE':'MultiLineString'}.get(kind)
+        if g.geom_type==multi_type and multipart=='reject':
+            raise BridgeError('MULTIPART_IMPORT: explicitly select multipart=explode to create separate native records with copied attributes')
+        if g.geom_type not in expected_types and not (g.geom_type==multi_type and multipart=='explode'):
             raise BridgeError(f"INVALID_GEOMETRY: feature {feature_ids[idx]} has type {g.geom_type}, expected {expected_types}")
 
     sidecar_path = None
@@ -396,11 +455,23 @@ def prepare_import(bridge: Bridge, file: str, expected_sha256: str, template: di
     source_crs=gdf.crs
     if sidecar_path is not None and manifest_data.get('crs') is None:
         source_crs=None  # Verified local-coordinate export; GeoJSON drivers otherwise assume WGS84.
-    if (source_crs is None)!=(crs is None) or source_crs is not None and not source_crs.equals(crs):
-        raise BridgeError('IMPORT_CRS_MISMATCH: explicitly reproject before importing')
+    reprojected=False
+    if (source_crs is None)!=(crs is None):raise BridgeError('IMPORT_CRS_MISMATCH: cannot infer Earth coordinates from a local or absent CRS')
+    if source_crs is not None and not source_crs.equals(crs):
+        if not reproject:raise BridgeError('IMPORT_CRS_MISMATCH: explicitly choose reproject=True with the intended output CRS')
+        from pyproj.transformer import TransformerGroup
+        group=TransformerGroup(source_crs,crs,always_xy=True,allow_ballpark=False)
+        if not group.best_available or not group.transformers:raise BridgeError('IMPORT_TRANSFORM_UNAVAILABLE: required datum grids or non-ballpark operation missing')
+        # Use the selected non-ballpark transformer, not GeoPandas' implicit
+        # fallback selection. Each original segment's vertices are transformed.
+        from shapely import transform
+        transformer=group.transformers[0]
+        gdf=gdf.set_geometry(transform(gdf.geometry.to_numpy(),lambda x,y:transformer.transform(x,y,errcheck=True),interleaved=False))
+        gdf=gdf.set_crs(crs,allow_override=True);reprojected=True
 
     reverse_map = {v: k for k, v in sidecar_field_map.items()} if sidecar_field_map else {}
     features_list = []
+    feature_parts=[]
 
     for idx, row in gdf.iterrows():
         fid = feature_ids[idx]
@@ -451,14 +522,22 @@ def prepare_import(bridge: Bridge, file: str, expected_sha256: str, template: di
                     if k in PARAMS[kind] and isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
                 }
 
-        features_list.append(feature_dict)
+        components=list(geom.geoms) if geom.geom_type in ('MultiPoint','MultiLineString') else [geom]
+        for part_index,part in enumerate(components,1):
+            identity=fid if len(components)==1 else fid+'-part-'+str(part_index)
+            features_list.append(feature_dict|{'id':identity,'geometry':mapping(part)})
+            feature_parts.append({'feature_id':identity,'source_feature_id':fid,'part':part_index,'part_count':len(components)})
 
     features_collection = {
         "type": "FeatureCollection",
         "features": features_list,
     }
 
+    if _input_members(path)!=members:raise BridgeError('STALE_SOURCE_MEMBERS')
     provenance=dict(template.get('provenance',{}))|{'operation':'vector.import','input_file':str(path),'input_sha256':actual_sha,
+        'input_members':members,'multipart':multipart,'feature_parts':feature_parts,
+        'source_crs_wkt':source_crs.to_wkt() if source_crs is not None else None,
+        'output_crs_wkt':crs.to_wkt() if crs is not None else None,'reprojected':reprojected,
         'sidecar_sha256':sha(resolved_sidecar.read_bytes()) if sidecar_path is not None else None,'backend':'GeoPandas/Pyogrio'}
     return prepare_creation(bridge, features_collection, template|{'provenance':provenance}, request_id)
 

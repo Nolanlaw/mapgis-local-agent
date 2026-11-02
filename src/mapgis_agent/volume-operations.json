@@ -1,0 +1,177 @@
+[
+  {
+    "id": "volume.inspect",
+    "name": "XYZV三维离散和3DEM体模型读取",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_volume_source_info",
+      "backend": "python"
+    },
+    "parameters": {
+      "file": "3BN或3DM完整路径及expected_sha256",
+      "native_reopen": "可选原厂逐层头信息重开；默认只检查文件和数值。mapgis_read_volume分页读取实际XYZV节点",
+      "statistics_policy": "默认strict；仅3DM的显式report_discrepancies同时返回原声明/逐体素重算统计，保留全部有限值和偏差，不改输入。页读取也须显式同策略。未知单位/CRS不推断。",
+      "encoding_policy": "默认linear_only保持原生产拒绝规则。只读显式stored返回原保存log10Z/V，physical对已核验联合flag1,1逐Z/逐体素做float64的10**log重建并重算统计；混合标记仍明确拒绝。"
+    },
+    "output_checks": [
+      "字节长度、有限值、头/目录/每层数据边界及统计检查",
+      "显式物理zyx轴序，零值有效，原始输入和绑定语义元数据保持",
+      "只读域必须显式；log0是物理1，有效值不作缺测；反变换溢出/正数下溢/轴点塌缩拒绝"
+    ],
+    "scope": "MapGIS6.7 count-first3BN及有限3DEM线性/已核验联合log10Z-V标记1,1的只读显式解码。默认linear_only不变；strict仍拒绝不一致的声明统计，report_discrepancies把原声明与存储体素统计分别保留。physical域逐值反变换后重新计算物理平均/标准差，原存储统计在stored_metrics；不对平均数简单指数化。原厂头读回仍只验证保存的存储域声明字段，旧CRT半值精确格式规则保留。全部136640原厂示例节点已在存储/物理两个域分页核对；未知CRS/单位、logfloat32量化和混合标记/NoData版本未推断。生产grid/slice/plot仍只接受已验证线性profile。",
+    "original_sample_evidence": "work/full-implementation-20261101/mcp-volume-statistics-02/result.json",
+    "workflow": "workflows/volume.json",
+    "runtime_notes": [
+      "原厂3BN/3DM逐输出头信息重开已通过真实MCP；native_reopen=true且本地native_volume_private_ui=true时启用，仅新建自有私有进程与任务副本。",
+      "实际生产可通过既有新stdio/CLI入口使用；旧长驻连接需要刷新才能加载新schema。"
+    ],
+    "log_profile_evidence": "work/full-implementation-20261101/mcp-volume-log-01/result.json"
+  },
+  {
+    "id": "volume.scatter.import",
+    "name": "XYZV DAT转兼容原生3BN",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_volume_import",
+      "backend": "python_compatible_mapgis"
+    },
+    "parameters": {
+      "file": "UTF8/ASCII DAT n及n条XYZV",
+      "parameters": "frame、max_coordinate_error_m、max_value_error",
+      "template": "新小写ASCII .3bn名称",
+      "request_id": "稳定请求编号",
+      "native_reopen": "parameters.native_reopen默认false；设true启用已获授权的原厂头信息重开，另需本地native_volume_private_ui=true及既有legacy-host选项"
+    },
+    "output_checks": [
+      "不改点序；float32误差必须在显式预算内",
+      "助手兼容写入、独立逐条XYZV读回、原厂新进程头信息重开分别验证",
+      "apply/get/reconcile账本保护来源和候选"
+    ],
+    "scope": "6.7兼容3BN；XYZ均为米，Z正向和值名/单位明确，缺值拒绝。原厂DAT转换的弹窗入口与本工具的编码器不混称。",
+    "workflow": "workflows/volume.json",
+    "runtime_notes": [
+      "原厂3BN/3DM逐输出头信息重开已通过真实MCP；native_reopen=true且本地native_volume_private_ui=true时启用，仅新建自有私有进程与任务副本。",
+      "实际生产可通过既有新stdio/CLI入口使用；旧长驻连接需要刷新才能加载新schema。"
+    ]
+  },
+  {
+    "id": "volume.grid",
+    "name": "XYZV体插值和3DM网格保存",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_volume_grid",
+      "backend": "python_compatible_mapgis"
+    },
+    "parameters": {
+      "parameters": "algorithm=idw_3d|borehole_linear_idw；显式XYZ bounds、[nx,ny,nz]、power、neighbors、vertical_extrapolation、frame和误差预算",
+      "template": "新.3dm名称",
+      "request_id": "稳定请求编号",
+      "native_reopen": "parameters.native_reopen默认false；设true启用已获授权的原厂头信息重开，另需本地native_volume_private_ui=true及既有legacy-host选项"
+    },
+    "output_checks": [
+      "三维物理轴序、重复点冲突、同孔Z顺序、外推策略明确",
+      "助手插值及兼容3DEM写入；原厂新进程逐层维数/范围/均值核对",
+      "独立解析体场体素和X/Y/Z剖切检验"
+    ],
+    "scope": "有限值线性XYZ场，最多200万节点，nz2..256。插值为NumPy/SciPy实现；地质断层/接触关系、闭合矿体和储量分类需要独立建模约束。",
+    "workflow": "workflows/volume.json",
+    "runtime_notes": [
+      "原厂3BN/3DM逐输出头信息重开已通过真实MCP；native_reopen=true且本地native_volume_private_ui=true时启用，仅新建自有私有进程与任务副本。",
+      "实际生产可通过既有新stdio/CLI入口使用；旧长驻连接需要刷新才能加载新schema。"
+    ]
+  },
+  {
+    "id": "volume.slice",
+    "name": "三维体模型X/Y/Z数值切片",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_volume_slice",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "parameters": "frame、axis、position_m、method=linear|nearest、max_value_error",
+      "template": "新.grd名称",
+      "request_id": "稳定请求编号"
+    },
+    "output_checks": [
+      "世界XYZ及列/行轴映射明确，超界拒绝，最近邻实际位置返回",
+      "数值GRD与逐节点XYZV CSV绑定",
+      "原厂W60_Tin新进程重开，逐格检查实际保存值"
+    ],
+    "scope": "X固定时Y/Z图，Y固定时X/Z图，Z固定时X/Y图。Z为深度向下或高程向上按声明保持，断层解释和原厂3D彩色剖面渲染独立验收。",
+    "workflow": "workflows/volume.json",
+    "runtime_notes": [
+      "3BN/3DM头信息可选择原厂私有进程重开；本数值切片工具始终使用既有原厂DTM接口逐格读回。",
+      "实际生产可通过既有新stdio/CLI入口使用；旧长驻连接需要刷新才能加载新schema。"
+    ]
+  },
+  {
+    "id": "volume.plot",
+    "name": "原厂D3M彩色三维图与点线区保存",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_volume_plot",
+      "backend": "mapgis_native_private_ui"
+    },
+    "parameters": {
+      "file": "有限线性轴3DM及expected_sha256",
+      "parameters": "明确frame；已验view=full|stereo_x/y/z|flat_x/y/z|block_1/2/3|multilayer。剖面planes只含所选轴，block_1含XZ、block_2含YZ、block_3含XYZ；multilayer用layers=[{position_m,max_error_m},...]，2..100个递增源Z，不同时传planes。depth_down另须max_coordinate_error_m。",
+      "template": "新小写ASCII .wp名称，连同同名WT/WL及来源元数据发布",
+      "request_id": "稳定编号；中断先查get/reconcile，不盲目重绘"
+    },
+    "output_checks": [
+      "仅已批准自有私有原厂进程和任务副本；正常自动色阶、完整3D预热、剖面独立新文档及依次SaveAs点/线/区",
+      "源/渲染副本/原厂程序/进程身份和保存文件哈希绑定，三个图层独立原厂重开及几何检查",
+      "完整保存结果可恢复收养，绘图命令不重放；原厂等值线循环超时仅结束自有Job",
+      "二维投影绘图框架与原三维物理坐标分离；可继续组合原生MPJ和实际EPS/PDF/TIFF"
+    ],
+    "scope": "原厂自动色阶full、立体/平面XYZ剖面、三种切块及多层叠置，输出为可编辑WT/WL/WP二维投影。负观测值通过原厂询问的否选项保留。剖面普通文件另存33004与缓存完整3D存盘16620区分；每次新文档标题推进必须观察。多层已验3层和双Z约定，100层上界未验。观测值高度图菜单16902虽接通，原厂示例和任务数据均出现异常扇状线，仍NOT_VERIFIED；手工色阶另列。小型退化网格已观察到原厂等值线循环；非交互式地质实体。",
+    "workflow": "workflows/volume.json",
+    "evidence": "work/full-implementation-20261101/mcp-volume-plot-02/result.json",
+    "recovery_evidence": "work/full-implementation-20261101/mcp-volume-plot-recovery-03/result.json",
+    "views_evidence": [
+      "work/full-implementation-20261101/mcp-volume-views-02/result.json",
+      "work/full-implementation-20261101/mcp-volume-views-02/visual-review.json",
+      "work/full-implementation-20261101/mcp-volume-block1-03/result.json",
+      "work/full-implementation-20261101/mcp-volume-block2-03/result.json"
+    ],
+    "verified_views": [
+      "full",
+      "stereo_x",
+      "stereo_y",
+      "stereo_z",
+      "flat_x",
+      "flat_y",
+      "flat_z",
+      "block_1",
+      "block_2",
+      "block_3",
+      "multilayer"
+    ],
+    "multilayer_evidence": [
+      "work/full-implementation-20261101/mcp-volume-multilayer-01/result.json",
+      "work/full-implementation-20261101/mcp-volume-multilayer-01/visual-review.json",
+      "work/full-implementation-20261101/mcp-volume-multilayer-recovery-01/result.json"
+    ],
+    "negative_evidence": "work/full-implementation-20261101/mcp-volume-negative-full-01/result.json",
+    "pending_views": [
+      "scalar_height_z"
+    ],
+    "runtime_notes": [
+      "full已通过双Z约定；九视图经114次真实MCP、实际原厂重开/MPJ/EPS/PDF/TIFF和不同图形审阅。两种双轴切块接口另各14次MCP；修正后full/flatZ父进程中断及计算中断14请求验收。",
+      "早期九视图错误保存full缓存的验收已撤回，证据保留。剖面必须保存当前新文档，不能使用完整3D缓存存盘。",
+      "多层24次真实MCP及双Z原厂图审阅通过；10次中断恢复请求证明multi及共用控件的flatZ完整保存可收养，原文件SHA/mtime不变，不重绘。负值14次MCP实测通过。",
+      "原厂剖面菜单须先完成full绘图；0.1m滑块加原厂网格层采样，实际位置必须在显式max_error_m内。"
+    ]
+  }
+]

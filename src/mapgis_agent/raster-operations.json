@@ -1,0 +1,207 @@
+[
+  {
+    "id": "raster.pca",
+    "name": "多波段主成分分析PCA",
+    "module": "raster",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_processing",
+      "backend": "numpy"
+    },
+    "parameters": {
+      "parameters": "operation=pca，bands为1..8个已有波段；components可选，standardize和whiten明确；默认中心化、全有效像元、薄SVD、保留全部可用分量",
+      "template": "新GeoTIFF名称",
+      "request_id": "稳定请求编号"
+    },
+    "output_checks": [
+      "共同有效像元上拟合，保留原网格、GCP、有效零及掩膜",
+      "记录均值/标准化尺度/主轴/特征值/方差占比/白化尺度/符号规则和Float32保存损失",
+      "解析主轴、全分量重建、白化方差与小特征分量独立检验；MSI另作实际原厂往返"
+    ],
+    "scope": "助手NumPy/LAPACK薄SVD；非原厂PCA求解器。按原始存储值计算，不隐式应用scale/offset。零方差轴不白化，重特征值子空间的独立主轴不唯一，实际分量矩阵须随成果保存。最多1600万所选波段像元。",
+    "evidence": "work/implementation-20261101/mcp-pca-01/result.json"
+  },
+  {
+    "id": "raster.color-space",
+    "name": "RGB与HSV/HLS双向颜色空间转换",
+    "module": "raster",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_processing",
+      "backend": "numpy"
+    },
+    "parameters": {
+      "parameters": "operation=rgb_to_hsv|rgb_to_hls|hsv_to_rgb|hls_to_rgb；bands为3个有序波段；rgb_maximum必须显式给定，例如1/254/255/65535",
+      "units": "HSV/HLS均归一化0..1；H为周数，1与0同色相；RGB按显式最大值换算，不自动应用gamma/ICC/scale/offset",
+      "template": "新的float32 GeoTIFF名称",
+      "request_id": "稳定请求编号"
+    },
+    "output_checks": [
+      "原色/灰色/一般颜色与独立Python colorsys逐像元对照及正逆往返",
+      "微弱饱和信号、有效黑色0与共同缺测掩膜保留；超出声明色域拒绝",
+      "记录归一化、分量顺序及float32保存误差/下溢，不把色彩分量当成地质分类",
+      "MSI数值/掩膜往返及RGB显示工程另作原厂实际验收"
+    ],
+    "scope": "助手NumPy颜色运算，采用Python colorsys的HSV/HLS约定；非原厂参数文件。保留原网格/GCP/CRS，选择波段的有效性取交集；不隐式裁切输入色域或进行光谱/辐射校准。",
+    "evidence": "work/full-implementation-20261101/mcp-color-01/result.json"
+  },
+  {
+    "id": "raster.fft",
+    "name": "双波段复数傅里叶正逆变换",
+    "module": "raster",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_processing",
+      "backend": "numpy"
+    },
+    "parameters": {
+      "parameters": "operation=fft|ifft；fft选择1个实数波段或有序实部/虚部2波段，ifft必须2波段；fft_norm=ortho|backward|forward，fft_shift为明确的频谱中心移位",
+      "fft_reference": "ifft可显式指定原图file/expected_sha256/expected_members，恢复同尺寸空间网格/GCP；不指定则保持像素索引坐标",
+      "template": "新的float64双波段GeoTIFF名称",
+      "request_id": "稳定请求编号"
+    },
+    "output_checks": [
+      "独立直接DFT逐像元比较，三种归一化、奇数尺寸、中心移位及正逆重建",
+      "实部虚部均保存为float64；弱于float32范围的信号、有效0均保留",
+      "存在任何缺测样本则拒绝；不静默补0、加窗、填充或舍弃逆变换虚部",
+      "频率单位为行列方向cycles/pixel，不沿用原图空间CRS；原图网格须显式受保护地恢复",
+      "双波段float64数值MSI往返另作真实原厂验收；频谱显示另建副本"
+    ],
+    "scope": "助手NumPy complex128有限周期二维DFT；输出独立实部/虚部float64，而非只输出幅度图。带有MAPGIS_FFT标签的反变换要求norm/shift一致；标签经其他软件丢失后调用者须明确约定。非原厂专有频域参数格式。",
+    "evidence": "work/full-implementation-20261101/mcp-fft-02/result.json"
+  },
+  {
+    "id": "raster.supervised",
+    "name": "AOI监督分类及分离验证像元评价",
+    "module": "raster",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_classification",
+      "backend": "numpy"
+    },
+    "parameters": {
+      "parameters": "method=minimum_distance|mahalanobis|parallelepiped；bands1..8；training/validation=[{class_id,name,polygon:[闭合外环,可选闭合内环]}]；class_id1..254，2..32类",
+      "aoi_frame": "默认pixel(col,row)；map须显式aoi_crs等于原图CRS。训练/验证像元必须分离，不隐式重投影或自动随机拆分",
+      "decisions": "显式standardize仅训练样本拟合；mahalanobis可显式covariance_ridge；距离方法可max_distance；ambiguity=unclassified|lowest_id",
+      "template": "新的类别GeoTIFF名称；0为有效拒分，255为NoData",
+      "request_id": "稳定请求编号"
+    },
+    "output_checks": [
+      "训练统计和每类协方差/Cholesky模型、AOI掩膜、验证标签和混淆矩阵随成果保存",
+      "验证像元不参加训练统计；类冲突、泄漏、奇异协方差和错误坐标系明确拒绝",
+      "保留原网格/GCP/CRS及共同缺测掩膜；类别0不被误作NoData",
+      "实际MCP调用、原厂MSI往返和明确颜色映射出图另验"
+    ],
+    "scope": "助手NumPy/Rasterio监督学习。广义距离明确采用类内Mahalanobis，不声称原厂同名算法参数完全一致；像元互斥不等于独立野外地质验证。原厂专有AOI文件格式未在此实现。",
+    "evidence": "work/full-implementation-20261101/mcp-classification-01/result.json"
+  },
+  {
+    "id": "raster.sieve",
+    "name": "分类后连通小区清理",
+    "module": "raster",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_processing",
+      "backend": "rasterio_gdal"
+    },
+    "parameters": {
+      "parameters": "operation=sieve；bands仅一个整数类别波段；显式minimum_region_pixels，connectivity=4或8",
+      "template": "新的int32 GeoTIFF名称；0为有效类别，NoData为无冲突的独立整数",
+      "request_id": "稳定请求编号"
+    },
+    "output_checks": [
+      "连通同类像元区小于阈值时合并到最大且达到阈值的邻区；孤立区保持",
+      "NoData不参与区面积或邻接，不改变有效性；不把0类误作缺测",
+      "输入须为精确int32范围整数，拒绝小数和溢出；超过float32精度的类号保持",
+      "原网格/CRS/GCP、来源成员保护；MSI数值往返和实际原厂出图另验"
+    ],
+    "scope": "复用既有Rasterio/GDAL GDALSieveFilter，小区阈值以像元数计。不是按光谱中心距离或几何最近距离合并；不声称等同MapGIS专有小区算法。仅主题分类数据，最多16000000像元，噪声图有更多连通区内存开销。",
+    "reference": "https://gdal.org/en/stable/api/gdal_alg.html",
+    "evidence": "work/full-implementation-20261101/mcp-sieve-01/result.json"
+  },
+  {
+    "id": "raster.isodata",
+    "name": "自适应分裂合并无监督聚类",
+    "module": "raster",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_processing",
+      "backend": "numpy_scipy"
+    },
+    "parameters": {
+      "parameters": "operation=isodata，bands1..8，isodata={initial_classes,max_classes,min_cluster_pixels,split_stddev,merge_distance,max_merge_pairs?,split_fraction?,center_tolerance?}",
+      "fit": "共用iterations默认30、sample_size默认100000至多200000、seed、standardize；最小类像元和统计阈值作用于拟合样本，标准化只拟合样本统计。",
+      "output": "1..K为按原始特征单位中心字典序排序的数值类，0为NoData。模板为新GeoTIFF；模型/采样哈希/迭代分裂合并历史随成果保存。"
+    },
+    "output_checks": [
+      "独立已知数值群实际触发分裂、加权合并、小样本类删除及单中心自适应",
+      "固定种子抽样和显式尺度、常量波段、输入有效零值、共同缺测掩膜保持",
+      "最终预测由保存中心和尺度独立重算；不把达到迭代上界写成已收敛",
+      "原网格/CRS/GCP与来源成员保护，原厂MSI往返和实际出图另验"
+    ],
+    "scope": "助手NumPy/SciPy的明确ISOCLUS式变体；分裂用坐标轴均值±split_fraction×总体标准差，近中心按阈值和样本数加权合并，单一弥散中心可分裂；保留max_classes上界。采用论文的规则族，不复刻原厂专有分类参数或推断地物/地质标签。最小样本数是删除步骤判据，迭代被截断时不保证最终所有类均达到该数。",
+    "reference": "https://www.cs.umd.edu/~mount/Projects/ISODATA/ijcga07-isodata.pdf",
+    "evidence": "work/full-implementation-20261101/mcp-isodata-01/result.json"
+  },
+  {
+    "id": "raster.vectorize",
+    "name": "分类栅格精确转原生区文件",
+    "module": "raster",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_vectorization",
+      "backend": "rasterio_gdal_geos_native_encoder"
+    },
+    "parameters": {
+      "parameters": "band默认1；connectivity=4|8，max_regions默认20000至多100000；最多16000000像元/2000000环顶点",
+      "template": "新的WP名称，显式与原图一致的crs、正map_scale及可选原生区style；无CRS原图须给源哈希绑定的本地坐标系",
+      "request_id": "稳定请求编号"
+    },
+    "output_checks": [
+      "类别须为精确int32整数，0为有效类；NoData面不生成",
+      "严格像元边界、孔洞、共享弧及逐类像元数/源坐标面积核对；不平滑或简化",
+      "8连通点触多面分别保存为有效WP记录，以相同region_id和不同part_id保留连通组；去除零面积回走线后逐像元重栅格验证",
+      "已有WP制区器保存可编辑区及class_id/region_id/pixel_count/coord_area，原厂保存重开/出图另验",
+      "来源和完整栅格成员哈希贯穿准备/发布；GCP/RPC须显式先纠正，禁止猜测CRS"
+    ],
+    "scope": "复用GDAL Polygonize与已有新WP弧索引编码器；面积为源XY坐标单位平方，不能等同于测地面积或推断平方米。8连通区可能对应多个有效原生面片记录，region_id保留连通组，part_id和pixel_count分别标识面片；不自动给数值类别赋地质意义。GeoJSON几何和QA/来源保留在现有创建输入清单，标准导出沿用既有工具。",
+    "reference": "https://rasterio.readthedocs.io/en/stable/api/rasterio.features.html#rasterio.features.shapes",
+    "evidence": "work/full-implementation-20261101/mcp-vectorize-02/result.json"
+  },
+  {
+    "id": "raster.fusion",
+    "name": "配准多源加权IHS与小波影像融合及参考评价",
+    "module": "raster",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_fusion",
+      "backend": "numpy_scipy_rasterio"
+    },
+    "parameters": {
+      "sources": "multispectral、panchromatic及可选reference均为file/expected_sha256/expected_members；空间网格须实际相等，不同分辨率先显式raster_warp",
+      "parameters": "method=weighted|ihs|wavelet_ihs|wavelet_awlp|wavelet_maxabs，bands1..8、pan_band，matching显式none|mean_std，radiometry=stored|scale_offset",
+      "weighted": "每个输出通道显式pan_weights0..1；IHS与wavelet_ihs须3个有序RGB通道",
+      "wavelet": "B3样条[1,4,6,4,1]/16，levels1..6，无降采样；edge=reflect|complete；AWLP可显式强度权重/零分母mask|reject",
+      "reference": "同网格且恰为输出通道顺序的真实参考影像；reference_scale_ratio为原多光谱/PAN空间分辨率比",
+      "template": "新的float64GeoTIFF及方法/来源/质量JSON"
+    },
+    "output_checks": [
+      "独立线性IHS矩阵逆变换和25抽头二维直接卷积核对所有波段像元",
+      "逐通道加权、带符号小波细节、逐尺度maxabs选择、低通PAN矩匹配有明确约定",
+      "无隐式重采样/裁切/校准/缺测填充；共同有效性按所有非零核抽头传播；NoData数值与有效0分离",
+      "记录相对原MS的变化诊断，不写成精度；有受保护的参考时计算RMSE/MAE/SAM/ERGAS及未定义项",
+      "GCP/仿射/CRS及完整来源成员保护；原厂MSI往返和MPJ出图另验"
+    ],
+    "scope": "明确的助手NumPy/SciPy数学变体，非MapGIS原厂专有参数等价复现。线性IHS保留V1/V2色轴；wavelet_ihs为强度细节注入，AWLP为共同亮度矩匹配的比例注入，无MTF/SRF/雾霾估计；maxabs可能选择噪声。最多16000000所选光谱波段像元；共配准/传感器光谱响应与参考真值适用性不从相同元数据推断。 maxabs的幅值差在64eps×每波段源/已缩放PAN峰值内按相等保留MS，避免反号系数被卷积舍入翻转；阈值逐波段记录。",
+    "reference": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11766025/",
+    "evidence": "work/full-implementation-20261101/mcp-fusion-01/result.json"
+  }
+]

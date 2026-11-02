@@ -10,7 +10,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src'))
 
 async def run():
-    from mapgis_agent.core import sha
+    from mapgis_agent.core import sha,read_native
     from mcp import ClientSession,StdioServerParameters
     from mcp.client.stdio import stdio_client
     import geopandas as gpd
@@ -151,6 +151,44 @@ async def run():
                 assert reconciled_plot['render_check']['ink_pixels']>10000
                 await call('mapgis_apply_patch',request_id='crash-plot')
                 receipts.append({'interrupted_native_file_and_plot_parents':'PASS','parent_exit_codes':[91,92],'edit_replayed':False})
+                await call('mapgis_prepare_native_project',layers=plot_layers,
+                    parameters={'name':'recovery.mpj','coordinate_frame':'native'},request_id='crash-project-source')
+                project=await call('mapgis_apply_patch',request_id='crash-project-source')
+                point_index=next(i for i,layer in enumerate(plot_layers,1) if layer['file'].lower().endswith('.wt'))
+                crash_project=(context+"from mapgis_agent.workspace import NativeWorkspaces;from mapgis_agent.project_workspace import ProjectWorkspaces;"
+                    +"b=Bridge(root);leaves=NativeWorkspaces(b);p=ProjectWorkspaces(b,leaves);"
+                    +"p.execute('open','crash-project',{'file':"+repr(project['output'])+",'expected_sha256':"+repr(project['candidate_sha256'])+"});"
+                    +"p.execute('set_layer','crash-project',{'index':"+str(point_index)+",'state':2},0,'editable');"
+                    +"p.execute('edit','crash-project',{'index':"+str(point_index)+",'operation':'point.move','parameters':{'updates':[{'record_id':1,'x':42,'y':43}]}},1,'move');"
+                    +"p._rebind=lambda *a,**k:os._exit(93);p.execute('save','crash-project',{},2,'save')")
+                stopped_project=subprocess.run([sys.executable,'-s','-B','-X','utf8','-c',crash_project],capture_output=True,timeout=60,creationflags=subprocess.CREATE_NO_WINDOW)
+                assert stopped_project.returncode==93,stopped_project.stderr
+                from mapgis_agent.core import Bridge
+                with Bridge(root).connect() as db:
+                    state=json.loads(db.execute("SELECT state FROM project_workspaces WHERE id='crash-project'").fetchone()['state'])
+                prior_buffers=[]
+                for layer in state['layers']:
+                    if layer.get('workspace_id'):
+                        metadata=root/'work/native-workspaces'/sha(layer['workspace_id'].encode())[:24]/'state.json'
+                        prior_buffers.append(json.loads(metadata.read_text(encoding='utf8')))
+                saved_request=state['pending']['result']['id']
+                before_recovery=await call('mapgis_get_request',request_id=saved_request)
+                restored_project=await call('mapgis_project_workspace',action='recover',workspace_id='crash-project',parameters={},expected_revision=2)
+                after_recovery=await call('mapgis_get_request',request_id=saved_request)
+                assert restored_project['revision']==3 and not restored_project['dirty']
+                assert before_recovery['native_execution']['pid']==after_recovery['native_execution']['pid']
+                actual_project=await call('mapgis_native_project_info',file=restored_project['saved_project']['file'],expected_sha256=restored_project['saved_project']['sha256'])
+                actual_point=read_native(Path(actual_project['layers'][point_index-1]['file']))[1].geom[0]
+                assert (actual_point.x,actual_point.y)==(42,43)
+                import psutil
+                for prior in prior_buffers:
+                    try:
+                        process=psutil.Process(prior['native_pid'])
+                        assert abs(process.create_time()-prior['native_start'])>=.001 or Path(process.exe()).resolve()!=Path(prior['native_executable']).resolve()
+                    except psutil.NoSuchProcess:pass
+                await call('mapgis_project_workspace',action='close',workspace_id='crash-project',parameters={},expected_revision=3)
+                receipts.append({'interrupted_multilayer_project_parent':'PASS','parent_exit_code':93,'published_save_native_pid_unchanged':True,
+                                 'prior_owned_buffers_ended_or_retired_by_verified_identity':True,'edit_replayed':False})
 
     return {'status':'PASS','tools':len(names),'successful_calls':total,'receipts':receipts,
             'mouse_used':False,'system_dep_changed':False,'originals_preserved':True,'temporary_test_root_removed':True}

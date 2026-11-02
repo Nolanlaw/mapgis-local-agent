@@ -1,0 +1,49 @@
+{
+  "id": "volume",
+  "name": "MapGIS6.7 XYZV体数据",
+  "status": "VERIFIED_BOUNDED_SCOPE",
+  "route": [
+    "volume_source_info/read_volume",
+    "prepare_volume_import DAT->3BN",
+    "prepare_volume_grid 3BN->3DEM",
+    "prepare_volume_slice 3DEM->GRD+XYZV CSV",
+    "prepare_volume_plot 3DEM->original full colour3D WT/WL/WP",
+    "prepare_grid_vectors contours/bands + prepare_creation annotations",
+    "prepare_native_project + project_plot + plot_export",
+    "apply_patch/get_request/reconcile_artifact"
+  ],
+  "frame": {
+    "crs": "明确米制投影或有来源摘要的本地XY",
+    "z_axis": "elevation_up或depth_down；Z为米",
+    "value_name": "物理量名",
+    "value_unit": "单位，未知需明确写unknown"
+  },
+  "precision": "XYZV为float32；坐标与值误差须显式给定。GRD剖切结果另核对保存精度。",
+  "algorithms": {
+    "idw_3d": "三维欧氏距离近邻IDW；显式完整长方体外推",
+    "borehole_linear_idw": "按连续同XY孔组Z线性插值，再做XY近邻IDW；垂向拒绝或端值clamp必须声明"
+  },
+  "native_evidence": "真实MCP已验证3BN/3DM原厂新进程头信息读回、独立体素数值与三轴GRD原厂逐格读回。2026-11-01用户仅批准3BN/3DM新建自有私有进程、任务副本的Win32控件后端；不操作用户桌面。 正式volume.plot已通过高程/深度两种Z约定的真实MCP，三个投影图层分别原厂重开和独立几何检查，完成原生MPJ/EPS/PDF/TIFF。",
+  "limits": [
+    "最多100万XYZV点、200万体素；nx/ny2..32767，nz2..256",
+    "仅有限值线性轴，零有效，未知NoData/对数轴格式拒绝",
+    "体场不自动代表闭合地质实体、断层拓扑或资源分类"
+  ],
+  "recovery": "已验证完成验证后父进程退出的接管、清单篡改拒绝，以及原厂读回中父进程被终止后的自有Job退出、别名清理和只读重验；候选数据SHA及mtime不变，不重算算法。 volume.plot另通过实际MCP在原厂SaveAs完成后父进程退出的接续，以及原厂计算期间父进程终止的自有Job退出；完整保存结果不重绘，未完成请求明确FAILED。",
+  "evidence": [
+    "work/implementation-20261101/mcp-volumes-native-03/result.json",
+    "work/implementation-20261101/recovery-native-01/result.json",
+    "work/implementation-20261101/recovery-inflight-02/result.json",
+    "work/implementation-20261101/mcp-volume-sections-final-01/result.json",
+    "work/implementation-20261101/mcp-volume-section-migration/result.json",
+    "work/full-implementation-20261101/mcp-volume-plot-02/result.json",
+    "work/full-implementation-20261101/mcp-volume-plot-recovery-01/result.json"
+  ],
+  "editable_sections": "已通过既有注册工具组合完成三轴高程正向上的合成示例：三色WP、两条WL等值线、四条WT注记、原生MPJ/EPS/PDF/300dpiTIFF及异目录原厂重开。数值剖面坐标与页面mm映射明确；世界XYZ留在CSV。Agent按既有工具组合执行，无新增平行编码器。",
+  "remaining": [
+    "原厂X/Y/Z彩色剖面、切块、多层叠加、手工/负值色阶与任意斜剖面仍待各自实现验收；退化小网格原厂等值线循环保持明确缺口",
+    "原厂专有插值器、未知3BN版本、对数轴与缺值格式仍单列",
+    "本链是XYZV数值体场，不替代闭合地质实体与断层拓扑"
+  ],
+  "native_projection": "原厂full彩色3D输出为二维投影WT/WL/WP；源三维物理帧与输出绘图帧分开。depth_down用显式误差预算在任务副本反转Z层、native_z=-depth，不插值或改变标量。"
+}

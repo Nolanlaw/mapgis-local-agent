@@ -63,7 +63,15 @@
       "file": "Owned work copy",
       "expected_sha256": "Current fingerprint",
       "record_ids": "Physical record numbers",
-      "style": "Explicit changed fields"
+      "style": "Explicit changed fields",
+      "style_updates": {
+        "1": {
+          "color": 3
+        },
+        "3": {
+          "color": 5
+        }
+      }
     },
     "preconditions": [
       "No overwrite of original",
@@ -72,12 +80,16 @@
     "output_checks": [
       "Untargeted bytes unchanged",
       "Source and output fingerprint",
-      "Readback and conflict-aware recovery"
+      "Readback and conflict-aware recovery",
+      "Individual graphic values use canonical selected physical IDs, not attribute ID; uniform/per-record overlap rejected",
+      "Known WT/WL/WP graphic fields preserve unselected bytes and geometry; exact circle/arc merged profile and native radius guard",
+      "Actual54-region parameters-to-attributes and attributes-to-graphics roundtrip; native TIFF pixels identical after original styles restored"
     ],
     "help": {
       "file": "Mpedit60.hlp",
       "topic": "参数编辑"
-    }
+    },
+    "validation_scope": "Byte-preserving owned-file patch ledger. Per-record style_updates shares the existing request/recovery contract. 29 real MCP calls for54 report regions, native save/reopen and MPJ/EPS/PDF/TIFF;97 related tests. Complete original native parameter dictionaries and unsupported font fields are not implied."
   },
   {
     "id": "file.features",
@@ -246,7 +258,7 @@
     "module": "raster",
     "executable": "msiProc60.exe",
     "validation": "BACKEND_TESTED",
-    "validation_scope": "Native byte grayscale/RGB, no palette/nodata; exact pixel roundtrip and native GCP readback in a fresh process. CRS/GCP identifiers bind through a hashed sidecar. RBM and other profiles not connected.",
+    "validation_scope": "Native uniform numeric bands through typed MSI tile APIs, finite numeric nodata, exact per-pixel fresh-process readback and native pyramid samples. UINT16 also passed MPJ save/reopen and actual native gradient output. A hashed sidecar binds CRS identifiers. Palette, arbitrary masks/partial alpha, RBM and the >2GB typed stream profile remain explicit gaps.",
     "execution": {
       "kind": "mcp",
       "tool": "mapgis_prepare_native_raster",
@@ -257,7 +269,8 @@
       "file": "TIFF/MSI path",
       "expected_sha256": "Current hash",
       "parameters": "name, optional explicit gcps/max_error",
-      "request_id": "Stable ID"
+      "request_id": "Stable ID",
+      "expected_members": "Complete raster_source_info members map when sidecars exist"
     },
     "preconditions": [
       "Current source SHA256 and explicit coordinate frame",
@@ -288,7 +301,8 @@
       "file": "Raster with known CRS/affine GCPs",
       "expected_sha256": "Current hash",
       "parameters": "target_crs, bounds, resolution, resampling, optional max_gcp_error",
-      "request_id": "Stable ID"
+      "request_id": "Stable ID",
+      "expected_members": "Complete raster_source_info members map when sidecars exist"
     },
     "preconditions": [
       "Current source SHA256 and explicit coordinate frame",
@@ -296,7 +310,9 @@
     ],
     "output_checks": [
       "Input fingerprints remain unchanged",
-      "Independent output readback; inspect returned QA and scope"
+      "Independent output readback; inspect returned QA and scope",
+      "Internal validity mask and valid numeric zero remain distinct; source sidecars are frozen and snapshotted",
+      "Known polynomial2/3/TPS mappings, withheld checks, 39 actual MCP calls and native MSI roundtrip"
     ],
     "help": {
       "file": "MsiProc.chm",
@@ -306,7 +322,8 @@
     "related_tools": [
       "mapgis_prepare_georeference",
       "mapgis_prepare_native_raster"
-    ]
+    ],
+    "scope": "GDAL3.10.3 polynomial2/3/TPS plus affine raster correction on an explicit output grid; withheld checkpoints, native inverse residual and source/mask hashes. Rasterio1.4.4 warp approximation0.125pixels is recorded separately. Synthetic analytic mappings and all-pixel native MSI readback verified; independent real ground accuracy is not established."
   },
   {
     "id": "scan.auto_trace",
@@ -662,13 +679,15 @@
     ],
     "output_checks": [
       "Input fingerprints remain unchanged",
-      "Independent output readback; inspect returned QA and scope"
+      "Independent output readback; inspect returned QA and scope",
+      "Exact native WT circles and arcs: point_type2/3, radius_mm and native degree angles; centre geometry plus explicit graphic parameters; SDK-record byte fixture, BAS60 save/new PID reopen and actual output",
+      "Real MCP native graphic edit/copy and parent loss without generation replay;40mm circle centreline measured40.04mm at300dpi"
     ],
     "help": {
       "file": "Mpedit60.hlp",
       "topic": "注释编辑"
     },
-    "validation_scope": "GBK text/style readback and real native EPS rendering. Uses installed symbols/fonts; custom native library authoring is not connected.",
+    "validation_scope": "GBK text/style readback and real native EPS rendering. Uses installed symbols/fonts; custom native library authoring is not connected. Parameter circles/arcs use projected or declared local drawing coordinates; drawing-mm radius, no wraparound/geographic/ellipse profile or arbitrary curve editing.",
     "workflow": "workflows/scan-geology.json",
     "related_tools": [
       "mapgis_prepare_annotations"
@@ -678,27 +697,37 @@
     "id": "style.library",
     "name": "子图库、线型库、填充库及自建符号",
     "module": "symbols",
-    "executable": "w60_bb.exe",
-    "validation": "DISCOVERED",
+    "executable": "mdiedit6x.exe",
+    "validation": "BACKEND_TESTED",
     "execution": {
-      "kind": "host_sky",
-      "requires_observation": true
+      "kind": "mcp",
+      "tool": "mapgis_prepare_system_library"
     },
     "parameters": {
-      "library": "Task-owned library copy",
-      "symbol": "Unused native number and geometry"
+      "folder": "Saved Slib folder",
+      "expected_manifest_sha256": "Fingerprint returned by mapgis_system_library_info",
+      "changes": "Append/replace symbols and patterns using native polyline/polygon/circle/arc primitives; circle color fields follow each original renderer; simple solid/dashed lines; PCOLOR3 ordinary process KCMY replace/append with stable IDs",
+      "request_id": "Stable request ID"
     },
     "preconditions": [
       "Preserve installed original library"
     ],
     "output_checks": [
-      "Library save/reopen",
-      "Target symbol renders in editor"
+      "Original installed libraries unchanged",
+      "Saved copy independently parsed",
+      "Native child binds copied library and actual EPS pixels show requested symbol/dash/pattern",
+      "Native original _OpenColorLib/_UpdateAColor read-only IDA evidence reused after exact original mapdsp60 SHA check; active count@8,32byte records from124 and cap16384 confirmed",
+      "New process records have declared KCMY and zero remaining channels, only active count changes in existing header; old records/IDs and opaque trailer preserved",
+      "24 actual MCP calls add IDs1576..1578 to copied report library; original BAS save/fresh native reads, portable2layer MPJ reopen and relocated library, EPS/PDF/300dpiTIFF; three rendered pairs equal existing same-KCMY controls",
+      "Parent exit110 then10 MCP calls recover sealed library without duplicate append; count1579 and candidate/manifest hashes+mtimes retained, actual native project/TIFF equals baseline",
+      "50 related checks include maximum palette bound, invalid appends, raw preservation and native rendering; library/caller sources unchanged",
+      "14 native curve tests and real MCP49 distinct argument sets/111 successful resumed receipts verify5new symbols/4patterns;3layerMPJ/EPS/PDF/TIFF and portable library;12calls after real parentexit111 adopt sealed result without duplicate appends;74shared/14interface checks passed"
     ],
     "help": {
-      "file": "Gisbb.hlp",
-      "topic": "系统库管理"
-    }
+      "file": "Mpedit60.hlp",
+      "topic": "系统库：编辑符号库、线型库和图案库"
+    },
+    "validation_scope": "Original glyph payloads/all line variants preserved. Native symbol/pattern types0..6 support polylines, filled/outlined polygons, arcs and circles; exact original renderers confirm different circle fill fields in symbols vs patterns. Native WT and original installed glyph/pattern controls pass. Existing PCOLOR3 KCMY replacement preserves extras; ordinary process-color append preserves IDs/trailer,max16384. Portable MPJ bundles bind sibling libraries. Full Font/color-table authoring beyond ordinary process entries (new spot definitions, fonts), low-width style remapping, unknown primitive kinds and full native line-variant authoring remain unimplemented."
   },
   {
     "id": "projection.transform",
@@ -854,13 +883,14 @@
     ],
     "output_checks": [
       "Input fingerprints remain unchanged",
-      "Independent output readback; inspect returned QA and scope"
+      "Independent output readback; inspect returned QA and scope",
+      "Actual native source file SHA bound through publication; lower-dimensional boundary-only contacts excluded from typed output"
     ],
     "help": {
       "file": "W60_Anly.hlp",
       "topic": "空间分析"
     },
-    "validation_scope": "GEOS new-file operation with source mapping and independent geometry readback; no original overwrite."
+    "validation_scope": "GEOS new-file operation with source mapping and independent geometry readback; no original overwrite. Mixed-project workflow verified on original eight-layer report with lossless MSI window; mapped primary attributes, supported graphics and annotation text preserved. Native auxiliary tables are not copied by rebuilding."
   },
   {
     "id": "analysis.buffer",
@@ -1026,7 +1056,8 @@
     ],
     "output_checks": [
       "Input fingerprints remain unchanged",
-      "Independent output readback; inspect returned QA and scope"
+      "Independent output readback; inspect returned QA and scope",
+      "Completed project PS/layer/view/context/library fingerprints can be reconciled without native rerender;12 real MCP calls after exits105/106 on3/8layer projects,300dpi output equals uninterrupted baseline"
     ],
     "help": {
       "file": "Mapout60.hlp",
@@ -1034,7 +1065,8 @@
     },
     "related_tools": [
       "mapgis_prepare_native_plot",
-      "mapgis_prepare_plot_export"
+      "mapgis_prepare_plot_export",
+      "mapgis_prepare_map_series"
     ]
   },
   {
@@ -1498,7 +1530,8 @@
         "paper_mm": "[width,height]",
         "coordinate_frame": "native"
       },
-      "request_id": "Unique ID"
+      "request_id": "Unique ID",
+      "system_library": "Optional {folder,expected_manifest_sha256} from system_library_info"
     },
     "preconditions": [
       "Exact BAS60/mapdsp60/winout60 build",
@@ -1507,9 +1540,9 @@
       "Installed symbols, fonts and licence"
     ],
     "output_checks": [
-      "Native EPS header, EOF and physical page",
-      "Independent Ghostscript rendering and nonblank pixels",
-      "Source fingerprints unchanged"
+      "Native Level-2 PostScript completion/hash and physical page",
+      "Ghostscript standard EPS, matching native PS marks within one 72-dpi edge pixel",
+      "Original source fingerprints unchanged"
     ],
     "scope": "Native EPS composition only; geological interpretation remains subject to source review"
   },
@@ -1635,10 +1668,10 @@
     "parameters": {
       "file": "Actual EPS",
       "expected_sha256": "Current hash",
-      "parameters": "formats pdf/tiff, dpi 72..600",
+      "parameters": "unique formats pdf/tiff/jpeg,dpi72..600; per-format checkpoints bound to EPS snapshot and Ghostscript runtime",
       "request_id": "Stable ID"
     },
-    "validation_scope": "Ghostscript conversion, physical page and pixel size verified; PDF preview compared to EPS, TIFF read back. Input unchanged; complete set atomically published.",
+    "validation_scope": "Protocol4: frozen EPS/context and Ghostscript exe/DLL identity; per-format process PID/start/argv and output hashes; preserve completed files, wait for exact live writer, adopt complete unacknowledged formats by readback, convert missing/incomplete formats in separate attempts. PDF mean<=1/fraction>=.99 plus native spatial/color gate;72dpi alias rechecked at300dpi with unchanged thresholds,bounded32M pixels. Four real parent exits112/113/114/115 and18MCP calls verified complete/missing/live/partial/unacknowledged paths; native source unchanged and all recovered TIFFs match baseline. Older sealed bundles remain supported; older unsealed requests without context require a fresh branch.",
     "preconditions": [
       "Current source SHA256 and explicit coordinate frame",
       "New output branch; apply prepared request before use"
@@ -1751,5 +1784,2501 @@
       "Input fingerprints remain unchanged",
       "Independent output readback; inspect returned QA and scope"
     ]
+  },
+  {
+    "id": "geometry.replace",
+    "name": "按选定要素替换顶点和孔洞边界",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_file_operation",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "operation_id": "geometry.replace",
+      "file": "Saved native vector",
+      "expected_sha256": "Current input hash",
+      "record_ids": "Optional selected physical IDs",
+      "template": "New native name, explicit same CRS/scale",
+      "parameters": "updates:[{feature_id,geometry}]",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Source fingerprint and declared coordinate frame",
+      "New derived branch; apply prepared request"
+    ],
+    "output_checks": [
+      "Independent geometry/attributes/style readback",
+      "Native save and fresh-process reopen"
+    ],
+    "validation_scope": "Retains original attributes/text/style and unchanged selected geometries; creates a derived branch. Actual MCP request/apply, native resave and fresh-process native reopen tested.",
+    "related_tools": [
+      "mapgis_prepare_vector_operation"
+    ]
+  },
+  {
+    "id": "line.split",
+    "name": "按明确切割点或线分割线",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_file_operation",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "operation_id": "line.split",
+      "file": "Saved native vector",
+      "expected_sha256": "Current input hash",
+      "record_ids": "Optional selected physical IDs",
+      "template": "New native name, explicit same CRS/scale",
+      "parameters": "splitter:Point/MultiPoint/LineString/MultiLineString",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Source fingerprint and declared coordinate frame",
+      "New derived branch; apply prepared request"
+    ],
+    "output_checks": [
+      "Independent geometry/attributes/style readback",
+      "Native save and fresh-process reopen"
+    ],
+    "validation_scope": "Exact intersection; no automatic snap or tolerance. Actual MCP request/apply, native resave and fresh-process native reopen tested.",
+    "related_tools": [
+      "mapgis_prepare_vector_operation"
+    ]
+  },
+  {
+    "id": "polygon.split",
+    "name": "分割区并保留孔洞和共享弧段",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_file_operation",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "operation_id": "polygon.split",
+      "file": "Saved native vector",
+      "expected_sha256": "Current input hash",
+      "record_ids": "Optional selected physical IDs",
+      "template": "New native name, explicit same CRS/scale",
+      "parameters": "splitter:LineString",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Source fingerprint and declared coordinate frame",
+      "New derived branch; apply prepared request"
+    ],
+    "output_checks": [
+      "Independent geometry/attributes/style readback",
+      "Native save and fresh-process reopen"
+    ],
+    "validation_scope": "GEOS split plus native region-walk generation; attributes copied to each piece. Actual MCP request/apply, native resave and fresh-process native reopen tested.",
+    "related_tools": [
+      "mapgis_prepare_vector_operation"
+    ]
+  },
+  {
+    "id": "line.merge",
+    "name": "合并相连线及明确处理属性冲突",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_file_operation",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "operation_id": "line.merge",
+      "file": "Saved native vector",
+      "expected_sha256": "Current input hash",
+      "record_ids": "Optional selected physical IDs",
+      "template": "New native name, explicit same CRS/scale",
+      "parameters": "directed:true|false; optional attribute_source_id",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Source fingerprint and declared coordinate frame",
+      "New derived branch; apply prepared request"
+    ],
+    "output_checks": [
+      "Independent geometry/attributes/style readback",
+      "Native save and fresh-process reopen"
+    ],
+    "validation_scope": "No automatic snap; refuses disconnected/forked result and unresolved metadata conflict. Actual MCP request/apply, native resave and fresh-process native reopen tested.",
+    "related_tools": [
+      "mapgis_prepare_vector_operation"
+    ]
+  },
+  {
+    "id": "line.reverse",
+    "name": "反转线的顶点顺序",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_file_operation",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "operation_id": "line.reverse",
+      "file": "Saved native vector",
+      "expected_sha256": "Current input hash",
+      "record_ids": "Optional selected physical IDs",
+      "template": "New native name, explicit same CRS/scale",
+      "parameters": "{}",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Source fingerprint and declared coordinate frame",
+      "New derived branch; apply prepared request"
+    ],
+    "output_checks": [
+      "Independent geometry/attributes/style readback",
+      "Native save and fresh-process reopen"
+    ],
+    "validation_scope": "Reverses full selected line coordinate sequence, keeps attributes/style. Actual MCP request/apply, native resave and fresh-process native reopen tested.",
+    "related_tools": [
+      "mapgis_prepare_vector_operation"
+    ]
+  },
+  {
+    "id": "line.offset",
+    "name": "按正负距离生成平行线",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_file_operation",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "operation_id": "line.offset",
+      "file": "Saved native vector",
+      "expected_sha256": "Current input hash",
+      "record_ids": "Optional selected physical IDs",
+      "template": "New native name, explicit same CRS/scale",
+      "parameters": "distance, optional quad_segs/join_style/mitre_limit",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Source fingerprint and declared coordinate frame",
+      "New derived branch; apply prepared request"
+    ],
+    "output_checks": [
+      "Independent geometry/attributes/style readback",
+      "Native save and fresh-process reopen"
+    ],
+    "validation_scope": "Positive left, negative right; GEOS offset, known planar units required. Actual MCP request/apply, native resave and fresh-process native reopen tested.",
+    "related_tools": [
+      "mapgis_prepare_vector_operation"
+    ]
+  },
+  {
+    "id": "line.substring",
+    "name": "按长度或比例截取线段",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_file_operation",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "operation_id": "line.substring",
+      "file": "Saved native vector",
+      "expected_sha256": "Current input hash",
+      "record_ids": "Optional selected physical IDs",
+      "template": "New native name, explicit same CRS/scale",
+      "parameters": "start,end,optional normalized",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Source fingerprint and declared coordinate frame",
+      "New derived branch; apply prepared request"
+    ],
+    "output_checks": [
+      "Independent geometry/attributes/style readback",
+      "Native save and fresh-process reopen"
+    ],
+    "validation_scope": "Strict bounded range, no clamping or extrapolation. Actual MCP request/apply, native resave and fresh-process native reopen tested.",
+    "related_tools": [
+      "mapgis_prepare_vector_operation"
+    ]
+  },
+  {
+    "id": "geometry.densify",
+    "name": "按最大段长加密几何",
+    "module": "editor",
+    "executable": "mdiedit6x.exe",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_file_operation",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "operation_id": "geometry.densify",
+      "file": "Saved native vector",
+      "expected_sha256": "Current input hash",
+      "record_ids": "Optional selected physical IDs",
+      "template": "New native name, explicit same CRS/scale",
+      "parameters": "max_segment_length",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Source fingerprint and declared coordinate frame",
+      "New derived branch; apply prepared request"
+    ],
+    "output_checks": [
+      "Independent geometry/attributes/style readback",
+      "Native save and fresh-process reopen"
+    ],
+    "validation_scope": "GEOS linear subdivision; known planar units; does not invent a smooth curve. Actual MCP request/apply, native resave and fresh-process native reopen tested.",
+    "related_tools": [
+      "mapgis_prepare_vector_operation"
+    ]
+  },
+  {
+    "id": "native.line.replace",
+    "name": "后台原生线顶点增删改",
+    "module": "editor",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "line.replace",
+      "file": "Owned saved WL",
+      "expected_sha256": "Current hash",
+      "parameters": {
+        "updates": [
+          {
+            "record_id": 1,
+            "coordinates": [
+              [
+                0,
+                0
+              ],
+              [
+                5,
+                2
+              ],
+              [
+                10,
+                0
+              ]
+            ]
+          }
+        ]
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Exact BAS60 build, licence and enabled isolated legacy x86 host"
+    ],
+    "output_checks": [
+      "Same physical identity and unchanged untargeted records",
+      "Original attributes and style preserved",
+      "Fresh native process opens saved result"
+    ],
+    "validation_scope": "Native BAS60 ordinal 1553, raw XY converted from source map units. Agent-owned persistent workspace also supports the operation and recovers dirty checkpoints; external GUI memory is not changed.",
+    "related_tools": [
+      "mapgis_native_workspace"
+    ]
+  },
+  {
+    "id": "attributes.schema",
+    "name": "原生属性字段增删、重命名、排序和类型转换",
+    "module": "attributes",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_attribute_schema",
+      "backend": "native_file_codec"
+    },
+    "parameters": {
+      "file": "Owned saved WT/WL/WP",
+      "expected_sha256": "Current source hash",
+      "fields": [
+        {
+          "name": "ID",
+          "source": "ID"
+        },
+        {
+          "name": "岩性",
+          "source": "code"
+        },
+        {
+          "name": "厚度",
+          "type": "double",
+          "default": 2.5
+        }
+      ],
+      "request_id": "Stable ID",
+      "table": "primary (default), arc or node (WP only)",
+      "attribute_updates": {
+        "2": {
+          "desired field name": "explicit value for physical record2"
+        },
+        "optional": true
+      }
+    },
+    "preconditions": [
+      "Full desired schema and explicit types/defaults; omitted fields drop from the new table",
+      "Empty WP arc/node tables require a type/default for every initial field; canonical active physical IDs identify updates"
+    ],
+    "output_checks": [
+      "Every non-attribute section byte unchanged",
+      "Physical IDs/deleted slots and geometry/style/text preserved",
+      "Actual MCP apply, native save and fresh-process reopen for WT/WL/WP",
+      "Known WP auxiliary schema/values readable through read_wp_arcs; new/renamed fields support per-record updates, native save preserves auxiliary records",
+      "Actual MCP fully builds arc/node tables, preserves duplicate attribute IDs, copies/transforms and saves/reopens; editing real legend metadata keeps rendered TIFF pixels identical"
+    ],
+    "validation_scope": "Reuses pinned mapgis2shp field codecs. Dense native table layout retains declared widths/flags and unchanged value bytes. Rejects truncation, numeric loss and NULL time (native zero time is midnight). Source and ledger snapshots remain available; not secure erasure. WP auxiliary tables2/5 share the same codec. Native resave rejects subordinate raw-record or schema changes.",
+    "related_tools": [
+      "mapgis_query_attributes",
+      "mapgis_prepare_patch",
+      "mapgis_prepare_native_operation",
+      "mapgis_reconcile_artifact"
+    ],
+    "workflow": "workflows/attributes.json"
+  },
+  {
+    "id": "attributes.values",
+    "name": "按物理编号批量赋值、计算字段及已匹配表值写入",
+    "module": "attributes",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_patch",
+      "backend": "native_file_codec"
+    },
+    "parameters": {
+      "file": "Owned saved native vector",
+      "expected_sha256": "Current source hash",
+      "record_ids": "Selected physical IDs",
+      "attribute_updates": {
+        "1": {
+          "value": 2
+        },
+        "2": {
+          "value": 3
+        }
+      },
+      "request_id": "Stable ID",
+      "style_updates": {
+        "1": {
+          "color": 3
+        },
+        "3": {
+          "color": 5
+        }
+      }
+    },
+    "preconditions": [
+      "Field already exists with adequate type/width; use attributes.schema first when needed",
+      "Use __record_id for query/calculation, never assume ID uniqueness"
+    ],
+    "output_checks": [
+      "Per-row values differ as requested",
+      "Untargeted bytes and geometry unchanged",
+      "Native save/reopen WT/WL/WP; recovery preserves later independent edits",
+      "Individual graphic values use canonical selected physical IDs, not attribute ID; uniform/per-record overlap rejected",
+      "Known WT/WL/WP graphic fields preserve unselected bytes and geometry; exact circle/arc merged profile and native radius guard",
+      "Actual54-region parameters-to-attributes and attributes-to-graphics roundtrip; native TIFF pixels identical after original styles restored"
+    ],
+    "validation_scope": "Existing patch ledger extended to per-record values. Read-only SQL SELECT/CTE can calculate values; feed returned physical IDs/values to attribute_updates and apply. Uniform and per-record changes to the same field are rejected. Existing date/time fields also accept strict ISO edits; DATE null is supported, TIME null/time zones rejected. Native WT/WL/WP readback verified. External DB drivers and automatic joins are separate work. Per-record style_updates shares the existing request/recovery contract. 29 real MCP calls for54 report regions, native save/reopen and MPJ/EPS/PDF/TIFF;97 related tests. Complete original native parameter dictionaries and unsupported font fields are not implied.",
+    "related_tools": [
+      "mapgis_query_attributes",
+      "mapgis_prepare_attribute_schema",
+      "mapgis_prepare_recovery"
+    ],
+    "workflow": "workflows/attributes.json"
+  },
+  {
+    "id": "topology.arcs",
+    "name": "读取区文件弧段编号、相邻区、结点和顶点",
+    "module": "editor",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_read_wp_arcs",
+      "backend": "native_file_codec"
+    },
+    "parameters": {
+      "file": "Saved WP",
+      "expected_sha256": "Current source hash",
+      "offset": "Active arc offset",
+      "limit": "1..100",
+      "arc_ids": "Optional explicit active arc IDs"
+    },
+    "preconditions": [
+      "Saved WP signed-walk and owner topology must validate"
+    ],
+    "output_checks": [
+      "Arc identity separate from region and attribute IDs",
+      "Source map coordinates, native owners and style",
+      "Source remains unchanged",
+      "Paged physical arc/node auxiliary attribute values and table field names; missing stored rows are null, unassigned closed-ring node IDs reported explicitly"
+    ],
+    "validation_scope": "Saved-file topology inspection. External unsaved editor memory and native node editing are separate."
+  },
+  {
+    "id": "native.arc.replace",
+    "name": "后台原生共享弧段顶点编辑、相邻区维护",
+    "module": "editor",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "arc.replace",
+      "file": "Owned WP",
+      "expected_sha256": "Current source hash",
+      "parameters": {
+        "updates": [
+          {
+            "arc_id": 1,
+            "coordinates": [
+              [
+                10,
+                0
+              ],
+              [
+                12,
+                5
+              ],
+              [
+                10,
+                10
+              ]
+            ]
+          }
+        ]
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Use read_wp_arcs to obtain actual IDs and source-map coordinates",
+      "Keep both shared endpoints unchanged; node relocation not covered"
+    ],
+    "output_checks": [
+      "Both adjacent region geometries updated by BAS60",
+      "Arc/region IDs, owners, node IDs, style and attributes unchanged",
+      "Native signed walks, holes, fresh-process reopen and exact undo",
+      "Persistent buffer loss/recovery and vertex removal"
+    ],
+    "validation_scope": "Native BAS60 shared-arc interior vertex replacement. Original source unchanged; full node relocation and native curve editing remain open.",
+    "related_tools": [
+      "mapgis_read_wp_arcs",
+      "mapgis_native_workspace"
+    ]
+  },
+  {
+    "id": "project.edit",
+    "name": "原生工程图层增删排序、隐藏与编辑状态",
+    "module": "editor",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_project_edit",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "file": "Owned saved MPJ",
+      "expected_sha256": "Current project hash",
+      "layers": [
+        {
+          "source_index": 2,
+          "state": 3
+        },
+        {
+          "source_index": 1,
+          "state": 0
+        },
+        {
+          "file": "Additional native layer",
+          "expected_sha256": "Layer hash",
+          "state": 2
+        }
+      ],
+      "request_id": "Stable ID",
+      "environment": {
+        "translation": "[x,y]",
+        "scale": "[sx,sy] >=0.001",
+        "rotation_degrees": "finite native layout angle",
+        "paper_mm": "[width,height], positive <=2000"
+      }
+    },
+    "preconditions": [
+      "Full desired ordered layer list; one-based source indexes identify layers",
+      "0 hidden, 1 displayed, 2 editable, 3 current; MSI supports 0/1"
+    ],
+    "output_checks": [
+      "Native deletion/reordering/append; source and dependency bytes unchanged",
+      "State/identity preserved in fresh process after relocation",
+      "Actual MCP plus native EPS honors hidden layers",
+      "Retained or explicitly changed native layout header survives fresh-process reopen and transformed plot"
+    ],
+    "validation_scope": "Existing MPJ copied and edited through mapprj60; project/item metadata retained by native reader/writer. Separate owned branch; live external unsaved GUI collaboration, project environment and all library types remain separate.",
+    "related_tools": [
+      "mapgis_native_project_info",
+      "mapgis_prepare_project_plot",
+      "mapgis_reconcile_artifact"
+    ]
+  },
+  {
+    "id": "native.node.move",
+    "name": "后台原生区共享结点联合移动",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation"
+    },
+    "parameters": {
+      "operation": "node.move",
+      "file": "Owned saved WP",
+      "expected_sha256": "Current source hash",
+      "parameters": "{updates:[{node_id,x,y}]} in source map units",
+      "request_id": "Stable request ID"
+    },
+    "preconditions": [
+      "Read actual node identities and all incident arc owners with mapgis_read_wp_arcs",
+      "No merge of distinct nodes; exact installed native profile and process-only legacy compatibility"
+    ],
+    "output_checks": [
+      "Every incident arc endpoint moves",
+      "Node/arc/region IDs, ownership, attributes and styles retained",
+      "Native save and new-process reopen; dirty workspace recovery and byte-exact undo"
+    ],
+    "scope": "WP shared arc endpoints; all neighbouring owners move together. Network-node metadata and native node merging are separate."
+  },
+  {
+    "id": "native.project.workspace",
+    "name": "后台原生多图层工程会话与选区绑定",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_project_workspace"
+    },
+    "parameters": {
+      "action": "open/status/select/set_layer/set_environment/edit/save/close/recover",
+      "workspace_id": "Stable project context identity",
+      "parameters": "See actual tool schema and description",
+      "expected_revision": "Current project revision; required for mutations",
+      "request_id": "Stable idempotent mutation ID"
+    },
+    "preconditions": [
+      "Owned saved MPJ with supported WT/WL/WP/MSI layers",
+      "Full source path/hash binding; each selection uses layer index and physical record IDs"
+    ],
+    "output_checks": [
+      "Same-name same-hash projects remain separate by full path/context",
+      "Selection-bound native edit, dirty state, native MPJ and all saved members",
+      "Published save recovery without replay; native child loss and dirty discard recovery",
+      "Native project layout transform saved/reopened; environment dirty/discard/recovery"
+    ],
+    "scope": "Agent-owned project and native buffers; hash-bound query selections and layout environment are included. External GUI unsaved memory and unobserved proprietary layer kinds remain separate."
+  },
+  {
+    "id": "spatial.query",
+    "name": "后台空间选择关系与最近距离",
+    "module": "analysis",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_spatial_query"
+    },
+    "parameters": {
+      "left": "{file,expected_sha256}",
+      "right": "{file,expected_sha256}",
+      "parameters": "See actual MCP schema and description"
+    },
+    "preconditions": [
+      "Current source hashes and a shared coordinate frame",
+      "No implicit CRS transformation or geometry repair"
+    ],
+    "output_checks": [
+      "Physical source identities and deterministic results",
+      "Inputs unchanged; inspect returned QA and dimensional scope"
+    ],
+    "scope": "Saved native files, explicit CRS/local frame, physical-ID pairs with paging and all nearest ties; query hash can bind owned project selection."
+  },
+  {
+    "id": "overlay.polygons",
+    "name": "后台区相交联合差集异或与属性来源",
+    "module": "analysis",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_polygon_overlay"
+    },
+    "parameters": {
+      "left": "{file,expected_sha256}",
+      "right": "{file,expected_sha256}",
+      "parameters": "See actual MCP schema and description"
+    },
+    "preconditions": [
+      "Current source hashes and a shared coordinate frame",
+      "No implicit CRS transformation or geometry repair"
+    ],
+    "output_checks": [
+      "Physical source identities and deterministic results",
+      "Inputs unchanged; inspect returned QA and dimensional scope"
+    ],
+    "scope": "GeoPandas/GEOS polygon areas; explicit source references, field and no-owner/null policies. Empty area results are valid. D3M and whole-project clip remain separate."
+  },
+  {
+    "id": "raster.source.info",
+    "name": "影像像素、掩膜和整组依赖校验",
+    "module": "raster",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_raster_source_info"
+    },
+    "parameters": {
+      "file": "Local raster path",
+      "expected_sha256": "Optional current primary SHA256"
+    },
+    "preconditions": [
+      "Local file and local sibling dependencies"
+    ],
+    "output_checks": [
+      "Streaming pixel/mask hashes, opaque and valid counts, CRS/affine/GCP metadata",
+      "Complete hash map of GDAL-reported and recognized sidecars"
+    ],
+    "scope": "Inspection of local raster sources; external VRT or network dependencies must be materialized first"
+  },
+  {
+    "id": "table.inspect",
+    "name": "Excel 原始表与坐标字段核对",
+    "module": "attributes",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_table_info"
+    },
+    "parameters": {
+      "file": "Local .xlsx",
+      "expected_sha256": "Current source SHA256",
+      "sheet": "Explicit sheet name"
+    },
+    "preconditions": [
+      "Cached formula results must exist; choose the actual sheet"
+    ],
+    "output_checks": [
+      "Header uniqueness, row count, original cell values and row identities"
+    ],
+    "scope": "openpyxl read-only inspection; does not execute spreadsheet formulas or modify Excel",
+    "workflow": "workflows/geochemistry-course.json"
+  },
+  {
+    "id": "table.points",
+    "name": "Excel XY 建立原生采样点 WT",
+    "module": "attributes",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_table_points"
+    },
+    "parameters": {
+      "parameters": "Explicit sheet, x_field/y_field and attribute_fields",
+      "template": "New WT, CRS and map_scale"
+    },
+    "preconditions": [
+      "Current workbook SHA; finite XY and selected values; explicit source frame"
+    ],
+    "output_checks": [
+      "Every original raw observation retained; native saved WT and fresh process reopen"
+    ],
+    "scope": "No outlier filtering on map inputs; workbook row mapping retained",
+    "workflow": "workflows/geochemistry-course.json"
+  },
+  {
+    "id": "geochemistry.background",
+    "name": "地球化学上侧箱线迭代与异常下限",
+    "module": "attributes",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_geochemistry"
+    },
+    "parameters": {
+      "parameters": "sheet, elements, id_field",
+      "file": "Fingerprint-bound original XLSX"
+    },
+    "preconditions": [
+      "Finite numeric original observations and explicit target elements"
+    ],
+    "output_checks": [
+      "Linear inclusive quantiles; upper-only Q3+1.5IQR iteration; sample SD; C=mean+2SD; raw rows retained"
+    ],
+    "scope": "Reports each removed row/round and both C/2C/4C and C/4C/16C. Screening does not prove normality.",
+    "workflow": "workflows/geochemistry-course.json"
+  },
+  {
+    "id": "terrain.native_idw",
+    "name": "MapGIS 原生反距离插值与 GRD 保存",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_terrain",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "height_field": "Finite WT attribute",
+      "parameters": "operation=native.idw; bounds, shape, power, search_radius, anisotropy_ratio, anisotropy_angle_degrees"
+    },
+    "preconditions": [
+      "Exact DLL hashes, installed licence and explicit isolated 32-bit legacy compatibility opt-in",
+      "Source CRS and centre-node bounds declared"
+    ],
+    "output_checks": [
+      "Actual native GRD save; GDAL plus another native PID compare every cell",
+      "Parent loss reconciled without regenerating the completed native grid"
+    ],
+    "scope": "Native all-point IDW; integer power 1..16, no smoothing. search_radius/1e8 is the coincidence tolerance, not a search cutoff. Rectangular extrapolation remains explicit.",
+    "workflow": "workflows/geochemistry-course.json"
+  },
+  {
+    "id": "terrain.native_grid_info",
+    "name": "原生 GRD 与 GDAL 双重逐像素读回",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_native_grid_info",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "file": "Surfer GRD",
+      "expected_sha256": "Current source SHA256"
+    },
+    "preconditions": [
+      "Owned native reader process and exact native build"
+    ],
+    "output_checks": [
+      "Shape, node-centre bounds, valid range, masks and every saved cell"
+    ],
+    "scope": "GSBG/GSAG profile; not an arbitrary proprietary TIN reader"
+  },
+  {
+    "id": "terrain.grid_vectors",
+    "name": "已有格网生成等值线与分级色带",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_grid_vectors"
+    },
+    "parameters": {
+      "parameters": "operation=contours|bands; explicit levels/colors; optional native WT convex-hull or WP mask",
+      "template": "New WL/WP, source frame and scale"
+    },
+    "preconditions": [
+      "Current GRD and metadata hashes; no implicit interpolation or CRS conversion"
+    ],
+    "output_checks": [
+      "Actual empty levels/band areas; hull clipping; native save and fresh reopen"
+    ],
+    "scope": "ContourPy over existing cells, without recomputing interpolation",
+    "workflow": "workflows/geochemistry-course.json"
+  },
+  {
+    "id": "scan.match_windows",
+    "name": "扫描局部与整图的图像控制点套合",
+    "module": "raster",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_match_scan_windows"
+    },
+    "parameters": {
+      "source": "Registered bounded source window",
+      "reference": "Registered bounded reference window and accepted georeference",
+      "parameters": "Explicit ratio/RANSAC thresholds and minimum inliers"
+    },
+    "preconditions": [
+      "Fingerprint-bound local images; declared reference frame"
+    ],
+    "output_checks": [
+      "Distinct distributed SIFT inliers, residuals and composed source-to-world control/check pairs"
+    ],
+    "scope": "Image matching shares model selection across its check points; no independent ground-accuracy or datum claim",
+    "workflow": "workflows/scan-geology.json"
+  },
+  {
+    "id": "scan.seed_trace",
+    "name": "无鼠标种子跟踪、退点重选与路口暂停",
+    "module": "editor",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_trace_scan"
+    },
+    "parameters": {
+      "config": "Explicit RGB, stroke-width range, gap closing, preview anchors; guided or until_junction"
+    },
+    "preconditions": [
+      "Bounded source window; explicit line role; accepted frame for map coordinates"
+    ],
+    "output_checks": [
+      "Actual curved source dyke reaches the branch; stair-step diagonals do not create false junctions",
+      "Equal shortest routes pause with alternatives; revised anchors create a new trace"
+    ],
+    "scope": "OpenCV/GeoScan/NetworkX ink tracing. Native hardware digitizers and the legacy GUI command are separate; candidates need source interpretation.",
+    "workflow": "workflows/scan-geology.json"
+  },
+  {
+    "id": "topology.trim_dangles",
+    "name": "相交线剪断与限定长度悬挂线清理",
+    "module": "editor",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_vector_operation"
+    },
+    "parameters": {
+      "operation_id": "topology.trim_dangles",
+      "parameters": "max_length in explicit source coordinate units",
+      "features": "Line features with boundary/fault/contour/annotation/protected/dyke roles"
+    },
+    "preconditions": [
+      "Valid planar linework, stable IDs and explicit roles; no implicit snapping"
+    ],
+    "output_checks": [
+      "Only short complete leaf branches removed in one pass; open nonboundary features and source attributes retained",
+      "Original report boundaries polygonize back to 54 native regions with zero coverage difference"
+    ],
+    "scope": "GEOS noding/degree-2 merging, then new WL. Polygonize is a separate step; native WP save/reopen remains required.",
+    "workflow": "workflows/scan-geology.json"
+  },
+  {
+    "id": "table.join",
+    "name": "Excel 关联已有点线区与按地层号设色",
+    "module": "attributes",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_table_join"
+    },
+    "parameters": {
+      "file": "Saved WT/WL/WP and its current SHA256",
+      "table": "Fingerprint-bound XLSX and exact sheet",
+      "parameters": "Explicit native/table key, text or numeric comparison, typed NEW columns, missing/null replacements"
+    },
+    "preconditions": [
+      "Unique non-null workbook keys; native attribute keys may repeat",
+      "No implicit overwrite of existing native fields or null replacement"
+    ],
+    "output_checks": [
+      "Physical IDs and every nonattribute section byte retained; both source hashes guard publication",
+      "WT/WL/WP independently native-saved and reopened; actual raw 1611-point join and 54-region number+100 color rule verified"
+    ],
+    "scope": "Left join from local XLSX onto a new native branch. No Excel UI, external database writeback or installed ODBC-driver claim.",
+    "workflow": "workflows/scan-geology.json"
+  },
+  {
+    "id": "terrain.grid_analysis",
+    "name": "格网坡度、坡向、晕渲与地形指标",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_grid_analysis",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "file": "Saved native GRD",
+      "expected_sha256": "Current source SHA256",
+      "parameters": "operation=slope/aspect/hillshade/tri/tpi/roughness; vertical_unit required; explicit operation-specific options",
+      "template": "New TIFF basename and exact explicit source frame",
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Known linear XY units and declared elevation unit",
+      "Source grid, coordinate metadata and all dependencies bound through publication"
+    ],
+    "output_checks": [
+      "Analytical plane, flat/zero and NoData neighborhood values",
+      "Preserve valid TPI=-9999 with distinct finite NoData",
+      "Native MSI pixels/masks/extent and portable MPJ output checked separately"
+    ],
+    "scope": "Bundled GDAL3.10 public DEM utility algorithms, not proprietary native DTM models. Horn/ZevenbergenThorne gradients, Riley/Wilson TRI, fixed 3x3 TPI and roughness. No automatic geographic-unit conversion or unknown-unit angle inference.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "terrain.viewshed",
+    "name": "投影高程格网可视域与距离掩膜",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_viewshed",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "file": "Saved GDAL-readable numeric DEM; explicit band",
+      "expected_sha256": "Current source hash; complete expected_members for raster dependencies",
+      "parameters": "observer XY, declared elevation unit, heights above DEM, planar/curvature coefficient and max distance in metres",
+      "template": "New TIFF basename plus exact projected metre CRS",
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Square north-up metre cells; requested observer inside source",
+      "At most2M complete finite cells in analysis window; source NoData rejected",
+      "Known band scale/offset applied before explicit vertical unit conversion"
+    ],
+    "output_checks": [
+      "Analytic flat plane and blocking ridge, exact cell-centre distance mask including GDAL unfilled corners",
+      "Height calibration/unit equivalence and valid zero elevation",
+      "Guard source/staged input/raw result/runtime during interrupted finalization; never replay completed GDAL analysis"
+    ],
+    "scope": "Bundled public GDAL3.10.3 GDALViewshedGenerate with explicit range postmask, numeric codes0/1/2 and separate RGB display. Observer snapped to containing cell centre. Not the legacy GDAL3.10 ground-endpoint line-of-sight predicate, native proprietary DTM solver, vegetation/building or field-visibility proof.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "terrain.line_of_sight",
+    "name": "高程格网两点通视与可编辑剖面",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_line_of_sight",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "file": "Numeric DEM plus current source/dependency hashes",
+      "parameters": "observer/target XY; declared vertical_unit and heights above terrain; band",
+      "crs": "Explicit matching projected metre frame",
+      "include_samples": "False default; explicitly request the complete elevation/clearance table",
+      "include_profile": "False default; request terrain/sight line features in separate local metre profile frame"
+    },
+    "preconditions": [
+      "North-up square metre cells; endpoints inside; at most2M window cells/20000ray samples",
+      "Complete finite sampled ray elevations; unsampled missing cells allowed"
+    ],
+    "output_checks": [
+      "Flat zero-height ground endpoints visible in all directions including same cell",
+      "First ordered obstruction on known ridge, forward and reverse",
+      "200 seeded random cases agree with actual legacy GDAL Boolean results away from equality; surface-equality behavior follows merged upstream fix"
+    ],
+    "scope": "Read-only Python adaptation of MIT GDALv3.13.0/alg/los.cpp pinned130cb4675a0b42bd32acad56e57022cca44fc008. Planar cell-centre Bresenham; no epsilon height shift, DLL upgrade, native3D or observed ground-visibility claim. Complete sampled profile and first ordered obstruction extend upstream callback output. Native WT/WL/save/reopen/project/output compose existing tools.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "terrain.hydrology",
+    "name": "D8填洼、流向、汇流、流域与点线区",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_hydrology",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "file": "Saved numeric DEM/current source/dependency hashes",
+      "parameters": "Requiredvertical_unit/depression_handling=fill; edge|minoutlets; explicitNoDataopenboundary/roundingallowance; stream_min_cells; vector_outputs",
+      "template": "New TIFFbasename,exactprojectedmetreCRS,positive nativevector map_scale",
+      "request_id": "StableID; atomic apply/get/reconcile_artifact"
+    },
+    "preconditions": [
+      "Square north-up metre cells, at most2M DEM cells; finite calibrated elevations",
+      "Pinned MITPyFlwDir0.5.12/Numba0.68.1/llvmlite0.50.0; default exactfloat32heightconversion",
+      "Missing cells require explicit open boundary; single-minimum outlet requires connected domain"
+    ],
+    "output_checks": [
+      "Analytic valley conservation49cells,4900m2; closedbowl fill1000m3",
+      "Six numeric raster pixel/mask readback including valid0pit and NoData247",
+      "Editable nativeWToutlets/WLflows/WPbasin polygons preserve exact rastercellarea; original native save/reopen checked separately",
+      "Completed publicalgorithm/source/snapshots/NPZ/runtime guarded through parent recovery; no completedhydrologyreplay"
+    ],
+    "scope": "Open PyFlwDir D8 priority-flood/depressionfilling,upstreamcount/area,basins/vectorization. Stream threshold/modeldomain explicit, not proprietaryMapGISDTM,breaching,MFD,rainfall/runoff/river/floodvalidation. Float32routing must satisfydeclared roundingallowance. Native storage/rendering compose existingbackends.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "terrain.native_tin",
+    "name": "CDT 约束剖分与 MapGIS 原生 TIN 保存",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_terrain",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "height_field": "Finite elevation attribute in saved WT",
+      "parameters": "operation=native.tin; vertical_unit required; optional constraints=[[physical WT record ID,record ID]]",
+      "template": "New .tin name and explicit matching source CRS"
+    },
+    "preconditions": [
+      "Exact installed W60_Tin build and isolated legacy process",
+      "No coincident conflicting elevations; crossing constraints must have an existing height node"
+    ],
+    "output_checks": [
+      "Actual WTIN file saved by native APIs and every vertex/face reopened in another native PID",
+      "Known plane area/surface/cut-fill, forced breakline, editable WT/WL/WP and portable MPJ/EPS/PDF/TIFF/JPEG",
+      "Actual parent loss recovered without replay"
+    ],
+    "scope": "Pinned CDT 2.0.1 computes topology; MapGIS writes and reads the native TIN. Full convex hull, original elevations, no Steiner heights. Does not claim the proprietary licensed triangulator is available. CRS and vertical units are hash-bound in a required sidecar for quantitative analysis.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "terrain.native_tin_info",
+    "name": "原生 TIN 全记录读回与质量检查",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_native_tin_info",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "file": "Saved .tin",
+      "expected_sha256": "Current TIN hash",
+      "base_height": "Optional, in declared vertical unit"
+    },
+    "preconditions": [
+      "Dense active native WTIN profile; at most 100000 nodes and 200000 faces"
+    ],
+    "output_checks": [
+      "Independent native reader, finite XYZ, nondegenerate faces, shared edge neighbors and coverage",
+      "Explicit unit conversion for surface area and exact piecewise linear cut/fill"
+    ],
+    "scope": "Reads native records, not an editable WP substitute. Unknown source units remain unknown.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "terrain.tin_vectors",
+    "name": "从原生 TIN 导出可编辑点线区",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_tin_vectors",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "part": "nodes WT, faces WP, edges WL",
+      "template": "New name, matching explicit CRS, map_scale and optional native style"
+    },
+    "preconditions": [
+      "Fresh native TIN readback; source and metadata hashes unchanged through publication"
+    ],
+    "output_checks": [
+      "Original Z/node IDs retained as attributes; boundary and constraint flags",
+      "Native save/reopen and project output"
+    ],
+    "scope": "2D editable native vectors with elevation attributes, derived from saved native faces without retriangulation.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "terrain.tin_edit",
+    "name": "原生 TIN 节点、约束与边交换",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_tin_edit",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "node.height/node.move/node.insert/node.delete/edge.flip/constraints.replace",
+      "parameters": "Strict operation-specific node updates, XYZ points, physical node IDs or constraint pairs",
+      "template": "New .tin basename; inherit bound frame/units"
+    },
+    "preconditions": [
+      "Bound dense CDT native TIN full-hull profile",
+      "Explicit elevations for inserted nodes; no implicit crossing heights"
+    ],
+    "output_checks": [
+      "Fresh native readback, preserved XYZ/connectivity where specified, source hashes unchanged",
+      "Actual MCP edit chain and native TIN edit parent loss recovered without replay"
+    ],
+    "scope": "CDT handles retriangulation; explicit convex interior edge exchanges and height updates retain specified topology. Constraint endpoints protected; node renumbering recorded. Original native coordinate parameters outside the bound profile are not edited.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "terrain.tin_profile",
+    "name": "按保存的原生三角面生成地形剖面",
+    "module": "terrain",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_tin_profile",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "parameters": "path in source XY; positive spacing, outside=error/gap, explicit vertical_exaggeration",
+      "template": "New WL basename/map_scale/optional native line style"
+    },
+    "preconditions": [
+      "Known source XY/vertical units in bound metadata",
+      "Saved native faces, no implicit retriangulation"
+    ],
+    "output_checks": [
+      "Analytic plane; explicit exchanged topology changes section; boundary gaps and mm/metre conversion",
+      "Native WL/WT stations/CSV/JSON and actual portable MPJ/EPS/PDF/TIFF/JPEG"
+    ],
+    "scope": "Barycentric terrain section, not geological strata interpretation. CSV retains source units; section XY normalized to metres with explicit exaggeration.",
+    "workflow": "workflows/terrain.json"
+  },
+  {
+    "id": "spatial.summary",
+    "name": "空间连接、分区汇总与原生属性回填",
+    "module": "analysis",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_spatial_summary",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "left": "Native target plus current hash",
+      "right": "Native matched data plus current hash",
+      "parameters": "Explicit left-to-right predicate, all/unique ownership, null policy, typed new statistic/join fields and empty values; polygon weighting=intersection_area adds weighted_mean, prorated_sum and union coverage_area in planar source units"
+    },
+    "preconditions": [
+      "Matching source frames; local unreferenced data need explicit shared context",
+      "No invalid geometry, existing-field overwrite or implicit null replacement"
+    ],
+    "output_checks": [
+      "Duplicate attribute IDs, boundary ownership, empty groups and ddof0/1",
+      "Native non-attribute bytes unchanged, source hashes through publication",
+      "Actual1611 samples,4explicit demo zones, independent NumPy totals/means/max/stddev, native save/reopen/MPJ/output",
+      "Positive intersection areas only; boundary-only contacts excluded from area ownership, known local/projected units, no geographic area weights",
+      "Weighted mean removes skipped-null areas from denominator; extensive totals prorated by source area under uniform density assumption; union coverage counts source overlap once",
+      "Seven new area tests plus existing summaries,69 related tests;24 actual MCP calls for54 source regions/four targets, independent GeoPandas overlay+NumPy, native save/reopen/MPJ/EPS/PDF/TIFF",
+      "Actual parent exit95 after complete.json sealing and before ledger promotion;7 MCP recovery calls, original sealed files and mtimes unchanged"
+    ],
+    "scope": "New WT/WL/WP fields using GEOS plus Python statistics and existing native byte-preserving editors. Not area-weighted summary or an external DB driver.",
+    "validation_scope": "Saved target identities, original fields and all non-attribute native bytes preserved. Ratios are planar feature intersections; target overlap receives separate allocations. Demonstrative real-map values are explicitly supplied, not geological observations or ground accuracy. Other spatial aggregation rules and D3M models remain separate."
+  },
+  {
+    "id": "raster.processing",
+    "name": "影像滤波、波段运算、增强、形态学与数值聚类",
+    "module": "raster",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_processing",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "parameters": "Explicit raw band indices; operation-specific filter/math/stretch/threshold/morphology/kmeans/colorize options",
+      "expected_members": "All sibling source dependency hashes",
+      "template": "New GeoTIFF basename"
+    },
+    "preconditions": [
+      "Binary validity masks, finite valid raw samples; at most16000000 selected band cells",
+      "No implicit scale/offset calibration or geological class labels"
+    ],
+    "output_checks": [
+      "Known neighborhoods/zero-denominator/valid zero/masks/local seeded clusters/GCPs",
+      "Eleven real1600x1598scan operations, each nativeMSI/freshTIFF all-pixel/mask readback",
+      "Portable nativeMPJ and lossless EPS/PDF plus actualTIFF/JPEG"
+    ],
+    "scope": "Existing SciPy1.16.2 ndimage/vq and NumPy algorithms. Joint selected-band validity. Numeric float32; byte display0..254 reserves255 for NoData. Explicit RGB class palette; no proprietary palette format claim."
+  },
+  {
+    "id": "native.msd.collection",
+    "name": "原生 MSD 影像库创建、查询、成员增删与迁移",
+    "module": "multiscale",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_msd",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "images": "Saved MSI paths/hashes and required existing witness hash",
+      "parameters": "Lowercase ASCII .msd filename and explicit coordinate_frame=native",
+      "editing": "prepare_msd_edit binds full msd_source_info members; one-based deletion and ordered append",
+      "query": "native_msd_info optional bounds; boundary-inclusive envelope intersection"
+    },
+    "preconditions": [
+      "Exact installed CMsiDB/MSI build; process-only legacy compatibility",
+      "MSI images need >=3 saved native GCPs; known frame conflicts rejected"
+    ],
+    "output_checks": [
+      "Native creation, independent reopen, empty/add/delete-all/order/extent",
+      "Native 2-image collection relocation and actual MPJ/EPS/PDF/TIFF/JPEG",
+      "Source/dependency preservation; completed native child recovery without replay is tested separately"
+    ],
+    "scope": "MSD6.0 saved image collection with native CMsiDB wrappers. Index close may save, so originals are never opened. Does not establish all multi-scale level switching, other vector/remote/elevation databases or device modules."
+  },
+  {
+    "id": "scan.seed_branches",
+    "name": "种子跟踪、分支选择、退回与续跟",
+    "module": "editor",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_seed_trace",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "parameters": "Bound window seed, explicit RGB/gray and halfwidth constraints; explicit bridge endpoints/reasons and exclusion polygons",
+      "decisions": "Branch ids with matching graph fingerprint; stop_after_segments rewinds the deterministic prefix"
+    },
+    "preconditions": [
+      "Saved bounded RGB scan window; no device input or guessed geological interpretation"
+    ],
+    "output_checks": [
+      "Crossing branches, alternate continuation, source/graph hash, color/width, explicit gap, full closed loop",
+      "Real scan native WL resave/reopen, MPJ/EPS/PDF/TIFF/JPEG; separate real MCP branch/rewind fixture"
+    ],
+    "scope": "Existing pinned MIT GeoScan thinning/skeleton paths. Returns UNREVIEWED source/map GeoJSON; original mapgis_trace_scan guided-anchor API retained unchanged. Device digitizers and automatic geological interpretation remain separate."
+  },
+  {
+    "id": "exchange.dxf_export",
+    "name": "原生点线区导出 DXF 图层与注记",
+    "module": "conversion",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_dxf_export",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "files": "Native file/hash plus unique CAD layer",
+      "parameters": "Explicit common native frame, DXF linear units and optional RGB mapping/font reference"
+    },
+    "preconditions": [
+      "Matching declared planar source context; no implicit reprojection"
+    ],
+    "output_checks": [
+      "UTF8 Chinese TEXT, explicit unit conversion, polyline geometry, HATCH holes",
+      "ezdxf readback and independent GDAL vector read; source preservation and complete sidecar/snapshot hashes"
+    ],
+    "scope": "ezdxf1.4.5 R2013 modelspace. Native symbols, fonts, patterns and linewidth appearance losses are reported explicitly. Untouched native snapshots carry opaque fields for exact complete-layer restoration; no DWG converter."
+  },
+  {
+    "id": "exchange.dxf_import",
+    "name": "DXF 分图层导入原生 WT WL WP",
+    "module": "conversion",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_dxf_import",
+      "backend": "open_geospatial"
+    },
+    "parameters": {
+      "parameters": "Selected layers and one point/line/polygon kind, header source units, explicit curve tolerance and metadata mode",
+      "template": "Output suffix, explicit native frame and map scale"
+    },
+    "preconditions": [
+      "No nonzero Z or unsupported selected entities; source/member hashes must match"
+    ],
+    "output_checks": [
+      "Analytic ARC sagitta, unitless rejection, unsupported INSERT rejection",
+      "Chinese attributes/text/styles/holes; native snapshot restoration byte-identical after DXF geometry validation"
+    ],
+    "scope": "Standard DXF conversion uses existing native writer. Exact bound roundtrip restores one complete original native layer including reserved bytes, original physical IDs and scale. Modified CAD files need explicit metadata drop. Non-left-baseline/mirrored TEXT, blocks, paperspace and DWG remain outside verified scope."
+  },
+  {
+    "id": "native.subset",
+    "name": "后台原生部分保存",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_subset",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "file": "Saved WT/WL/WP",
+      "expected_sha256": "Current fingerprint",
+      "record_ids": "Ordered unique active physical IDs",
+      "template": {
+        "name": "selection.wt|wl|wp"
+      },
+      "request_id": "Unique ID",
+      "transform": {
+        "optional": true,
+        "translation": [
+          "dx",
+          "dy"
+        ],
+        "scale": [
+          "sx",
+          "sy"
+        ],
+        "rotation_degrees": "counterclockwise degrees about origin0",
+        "order": [
+          "scale",
+          "rotate",
+          "translate"
+        ],
+        "coordinate_frame": "source"
+      }
+    },
+    "preconditions": [
+      "Installed exact-build BAS60 and COM SDK; legacy process opt-in",
+      "Selected physical IDs exist; source is unchanged",
+      "Known WP arc/node attribute sections2/5 only; unique geometry/owner/endpoint mapping and verified16-bit node prefix"
+    ],
+    "output_checks": [
+      "Native CopyList returns source-to-output physical mapping",
+      "Primary attribute records are preserved byte-for-byte",
+      "Geometry, holes, annotation, graphic parameters and native map parameters agree",
+      "BAS60 saves and a different private process reopens",
+      "Atomic ledger publication and completed-child recovery",
+      "Optional original Tran_Par scale/rotation/translation in explicit order, including reflection; source-unit conversion, 128-ulp repeated-seam normalization and source attribute/style/header preservation",
+      "Known WP arc/node attribute schemas and raw records follow physical arc/node maps, including restoration of node IDs omitted by original CopyList; checked after BAS60 save"
+    ],
+    "help": {
+      "module": "editor",
+      "query": "部分保存 拷贝实体"
+    },
+    "validation_scope": "Saved WT/WL/WP subsets; no external GUI memory or arbitrary COM automation; auxiliary mapping rejects ambiguity, unknown nonempty tables and unverified node-prefix layouts; node prefix bound65535"
+  },
+  {
+    "id": "native.project.parameters",
+    "name": "后台工程地图参数编辑保存",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_project_parameters",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "file": "Portable saved MPJ",
+      "expected_sha256": "Source fingerprint",
+      "changes": "Nonempty subset of 29 native MapParam fields; use mapgis_native_project_parameters_info for exact names, raw encodings and enums",
+      "template": {
+        "name": "new.mpj"
+      },
+      "request_id": "Unique ID"
+    },
+    "preconditions": [
+      "Existing installed exact-build mapprj60 and Map_Para SDK; isolated legacy host opt-in",
+      "Portable sibling layer references; preserved source/member/library fingerprints",
+      "Metadata assignment only; no layer coordinate or CRS transformation"
+    ],
+    "output_checks": [
+      "All 29 fields persist through native save and fresh-process readback",
+      "Layer bytes, states, display limits, bounds and project layout remain unchanged",
+      "Relocated native reopen with the candidate directory hidden",
+      "Real coursework seven-layer and report eight-layer MSI projects output correctly",
+      "Completed native edit is not replayed after parent loss at native-save and file-copy boundaries"
+    ],
+    "validation_scope": "Native saved project map parameters only; external GUI unsaved memory and other proprietary layer types remain separate gaps"
+  },
+  {
+    "id": "native.legend",
+    "name": "后台原生图例目录与点线区版面",
+    "module": "cartography",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_legend",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "items": "Explicit point/line/region names, descriptions, class codes and styles",
+      "parameters": {
+        "name": "new.cln",
+        "title": "图例",
+        "bounds": [
+          10,
+          10,
+          150,
+          100
+        ],
+        "columns": 1
+      },
+      "request_id": "Unique ID"
+    },
+    "preconditions": [
+      "Existing exact-build mapleg60 and installed SDK; isolated legacy host opt-in",
+      "Drawing millimetres at map scale 1; explicit transform before mixing ground-coordinate layers",
+      "GBK strings, bounded original item names and legitimate nonempty title"
+    ],
+    "output_checks": [
+      "Original CLN saved and independently reopened in another native process",
+      "Native WT/WL/WP contain expected actual symbol counts and exact labels",
+      "Relocated native reopen with candidate directory hidden",
+      "Completed native generation is not replayed after parent loss"
+    ],
+    "validation_scope": "Native CLN item catalog and separate bound editable page layout; not all layout/device modules"
+  },
+  {
+    "id": "cartography.page.title",
+    "name": "原生版面标题",
+    "module": "cartography",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_map_frame",
+      "part": "page.title"
+    },
+    "parameters": {
+      "part": "page.title",
+      "view": "Exact native plotting bounds and physical paper size",
+      "anchor_mm": "Paper bottom-left millimetres",
+      "element_id": "Stable element identity",
+      "template": "Named local unknown-unit native frame, map_scale1, matching WT filename; optional native color/font selectors"
+    },
+    "preconditions": [
+      "Identity global project transform",
+      "All anchors and line geometry inside the fixed paper",
+      "Scale uses declared metres per native unit; direction is declared, not inferred geodetic north"
+    ],
+    "output_checks": [
+      "Physical page coordinates respect the actual native aspect fit and centring",
+      "Stable IDs, exact GBK labels and explicit length/direction metadata",
+      "BAS60 resave and independent native reopen",
+      "Actual sixteen-layer report MPJ and EPS/PDF/TIFF; independent 300dpi physical lengths"
+    ],
+    "validation_scope": "Editable native vector elements in a fixed plotted view. No geodetic accuracy, arbitrary native page-object store, multipage or driver-compatibility claim"
+  },
+  {
+    "id": "cartography.page.north_arrow",
+    "name": "原生版面声明方向箭头",
+    "module": "cartography",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_map_frame",
+      "part": "page.north_arrow"
+    },
+    "parameters": {
+      "part": "page.north_arrow",
+      "view": "Exact native plotting bounds and physical paper size",
+      "anchor_mm": "Paper bottom-left millimetres",
+      "element_id": "Stable element identity",
+      "template": "Named local unknown-unit native frame, map_scale1, matching WL filename; optional native color/font selectors"
+    },
+    "preconditions": [
+      "Identity global project transform",
+      "All anchors and line geometry inside the fixed paper",
+      "Scale uses declared metres per native unit; direction is declared, not inferred geodetic north"
+    ],
+    "output_checks": [
+      "Physical page coordinates respect the actual native aspect fit and centring",
+      "Stable IDs, exact GBK labels and explicit length/direction metadata",
+      "BAS60 resave and independent native reopen",
+      "Actual sixteen-layer report MPJ and EPS/PDF/TIFF; independent 300dpi physical lengths"
+    ],
+    "validation_scope": "Editable native vector elements in a fixed plotted view. No geodetic accuracy, arbitrary native page-object store, multipage or driver-compatibility claim"
+  },
+  {
+    "id": "cartography.page.north_label",
+    "name": "原生版面方向标记",
+    "module": "cartography",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_map_frame",
+      "part": "page.north_label"
+    },
+    "parameters": {
+      "part": "page.north_label",
+      "view": "Exact native plotting bounds and physical paper size",
+      "anchor_mm": "Paper bottom-left millimetres",
+      "element_id": "Stable element identity",
+      "template": "Named local unknown-unit native frame, map_scale1, matching WT filename; optional native color/font selectors"
+    },
+    "preconditions": [
+      "Identity global project transform",
+      "All anchors and line geometry inside the fixed paper",
+      "Scale uses declared metres per native unit; direction is declared, not inferred geodetic north"
+    ],
+    "output_checks": [
+      "Physical page coordinates respect the actual native aspect fit and centring",
+      "Stable IDs, exact GBK labels and explicit length/direction metadata",
+      "BAS60 resave and independent native reopen",
+      "Actual sixteen-layer report MPJ and EPS/PDF/TIFF; independent 300dpi physical lengths"
+    ],
+    "validation_scope": "Editable native vector elements in a fixed plotted view. No geodetic accuracy, arbitrary native page-object store, multipage or driver-compatibility claim"
+  },
+  {
+    "id": "cartography.page.scale_bar",
+    "name": "原生版面显式单位比例尺",
+    "module": "cartography",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_map_frame",
+      "part": "page.scale_bar"
+    },
+    "parameters": {
+      "part": "page.scale_bar",
+      "view": "Exact native plotting bounds and physical paper size",
+      "anchor_mm": "Paper bottom-left millimetres",
+      "element_id": "Stable element identity",
+      "template": "Named local unknown-unit native frame, map_scale1, matching WL filename; optional native color/font selectors"
+    },
+    "preconditions": [
+      "Identity global project transform",
+      "All anchors and line geometry inside the fixed paper",
+      "Scale uses declared metres per native unit; direction is declared, not inferred geodetic north"
+    ],
+    "output_checks": [
+      "Physical page coordinates respect the actual native aspect fit and centring",
+      "Stable IDs, exact GBK labels and explicit length/direction metadata",
+      "BAS60 resave and independent native reopen",
+      "Actual sixteen-layer report MPJ and EPS/PDF/TIFF; independent 300dpi physical lengths"
+    ],
+    "validation_scope": "Editable native vector elements in a fixed plotted view. No geodetic accuracy, arbitrary native page-object store, multipage or driver-compatibility claim"
+  },
+  {
+    "id": "cartography.page.scale_labels",
+    "name": "原生版面比例尺刻度注记",
+    "module": "cartography",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_map_frame",
+      "part": "page.scale_labels"
+    },
+    "parameters": {
+      "part": "page.scale_labels",
+      "view": "Exact native plotting bounds and physical paper size",
+      "anchor_mm": "Paper bottom-left millimetres",
+      "element_id": "Stable element identity",
+      "template": "Named local unknown-unit native frame, map_scale1, matching WT filename; optional native color/font selectors"
+    },
+    "preconditions": [
+      "Identity global project transform",
+      "All anchors and line geometry inside the fixed paper",
+      "Scale uses declared metres per native unit; direction is declared, not inferred geodetic north"
+    ],
+    "output_checks": [
+      "Physical page coordinates respect the actual native aspect fit and centring",
+      "Stable IDs, exact GBK labels and explicit length/direction metadata",
+      "BAS60 resave and independent native reopen",
+      "Actual sixteen-layer report MPJ and EPS/PDF/TIFF; independent 300dpi physical lengths"
+    ],
+    "validation_scope": "Editable native vector elements in a fixed plotted view. No geodetic accuracy, arbitrary native page-object store, multipage or driver-compatibility claim"
+  },
+  {
+    "id": "native.point.radius",
+    "name": "后台原生圆和圆弧半径编辑",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "point.radius",
+      "file": "Owned saved WT containing circle/arc physical records",
+      "expected_sha256": "Current source hash",
+      "parameters": {
+        "updates": [
+          {
+            "record_id": 1,
+            "radius_mm": 5
+          }
+        ]
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Exact BAS60 build and isolated legacy opt-in",
+      "Unique active circle/arc physical IDs; positive finite drawing-mm radii; projected or declared local drawing frame"
+    ],
+    "output_checks": [
+      "Original BAS60 point-info get/update calls regenerate conservative bounds",
+      "Centres, attributes and other graphic fields unchanged; every requested radius and per-record box read back",
+      "Native save and independent process reopen; actual native MPJ/EPS/PDF/TIFF",
+      "Actual MCP dirty/save/close and actual parent exit90 after native save reconcile without replay"
+    ],
+    "validation_scope": "Saved files and own unsaved native buffers; circle/arc native parameters, not arbitrary geodetic circles or ellipse geometry"
+  },
+  {
+    "id": "native.line.smooth",
+    "name": "后台线平滑并保存原生顶点",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "line.smooth",
+      "file": "Owned WL saved file",
+      "expected_sha256": "Current source hash",
+      "parameters": {
+        "record_ids": [
+          1
+        ],
+        "max_chord_error": 0.01
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Projected or declared local source coordinates; explicit active physical IDs",
+      "Positive source-unit chord error above coordinate precision",
+      "Existing isolated exact-build BAS60 opt-in"
+    ],
+    "output_checks": [
+      "SciPy natural open / periodic closed cubic interpolation; conservative second-derivative chord bound",
+      "Exact endpoints, native identities, primary and known arc/node attributes; valid WP signed walks/holes/shared ownership",
+      "Actual BAS60 save, different-process reopen; 42 MCP calls with two native MPJ/EPS/PDF/TIFF maps including real54-region report",
+      "Dirty-buffer save/close and native-worker loss recovery; actual parent exits91/92, 6 MCP recovery calls each without interpolation or edit replay"
+    ],
+    "validation_scope": "Native editable linearized vertices from declared interpolation, not proprietary spline-object or original GUI algorithm equivalence; no geographic frame or ellipse support"
+  },
+  {
+    "id": "native.arc.smooth",
+    "name": "后台共享弧段与闭合区边界平滑",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "arc.smooth",
+      "file": "Owned WP saved file",
+      "expected_sha256": "Current source hash",
+      "parameters": {
+        "arc_ids": [
+          1
+        ],
+        "max_chord_error": 0.01
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Projected or declared local source coordinates; explicit active physical IDs",
+      "Positive source-unit chord error above coordinate precision",
+      "Existing isolated exact-build BAS60 opt-in"
+    ],
+    "output_checks": [
+      "SciPy natural open / periodic closed cubic interpolation; conservative second-derivative chord bound",
+      "Exact endpoints, native identities, primary and known arc/node attributes; valid WP signed walks/holes/shared ownership",
+      "Actual BAS60 save, different-process reopen; 42 MCP calls with two native MPJ/EPS/PDF/TIFF maps including real54-region report",
+      "Dirty-buffer save/close and native-worker loss recovery; actual parent exits91/92, 6 MCP recovery calls each without interpolation or edit replay"
+    ],
+    "validation_scope": "Native editable linearized vertices from declared interpolation, not proprietary spline-object or original GUI algorithm equivalence; no geographic frame or ellipse support"
+  },
+  {
+    "id": "native.line.resize",
+    "name": "后台线端延长与缩短",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "line.resize",
+      "file": "Owned saved WL",
+      "expected_sha256": "Current source hash",
+      "parameters": {
+        "updates": [
+          {
+            "record_id": 1,
+            "start_delta": 2,
+            "end_delta": -1
+          }
+        ]
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Projected or declared local 2D source coordinates",
+      "Unique active physical IDs and finite signed deltas; the end remains after the start along the extended line"
+    ],
+    "output_checks": [
+      "GEOS substring preserves interior vertices; extension follows first/last nonzero segment tangent",
+      "Native physical IDs, attributes, style and unselected lines preserved; exact changed vertices after save and independent reopen",
+      "18 actual MCP calls including MPJ/EPS/PDF/TIFF, dirty-buffer save/close; 45 related tests",
+      "Actual parent exit93 after completed native edit; six recovery MCP calls, original candidate/log/PID unchanged"
+    ],
+    "validation_scope": "Source-unit arc-length endpoint editing, including intervals beyond the original line. No implicit snapping, target-boundary extension, geodetic or WP shared-node movement."
+  },
+  {
+    "id": "native.line.extend_to",
+    "name": "后台线端延伸到指定点线区边界",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "line.extend_to",
+      "file": "Owned saved WL",
+      "expected_sha256": "Current source hash",
+      "parameters": {
+        "updates": [
+          {
+            "record_id": 1,
+            "end": "end",
+            "max_distance": 10,
+            "boundary": {
+              "type": "LineString",
+              "coordinates": [
+                [
+                  0,
+                  7
+                ],
+                [
+                  6,
+                  7
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Explicit 2D source-unit endpoint and target geometry, projected or declared local frame",
+      "Positive maximum distance; first forward intersection or already-connected no-op; unreachable targets rejected before native edit"
+    ],
+    "output_checks": [
+      "GEOS ray intersection and nearest point, reused signed endpoint editor",
+      "Physical identity, attributes, style, unselected lines and native save/fresh reopen",
+      "18 actual MCP calls with point/line/polygon targets, dirty/save/close and native MPJ/EPS/PDF/TIFF",
+      "Actual parent exit94; six successful MCP recovery calls, original candidate/log/PID unchanged;55 related tests"
+    ],
+    "validation_scope": "Declared forward endpoint ray. No geodetic or WP shared-node relocation; explicit supplied target, not heuristic snapping."
+  },
+  {
+    "id": "raster.crop",
+    "name": "影像原像素窗口裁剪",
+    "module": "raster",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_crop",
+      "backend": "Rasterio/GDAL"
+    },
+    "parameters": {
+      "file": "Saved GDAL-readable raster; MSI first exports with native_raster to_tiff",
+      "expected_sha256": "Current source SHA256",
+      "window": "Integer [column,row,width,height], strictly inside source",
+      "template": {
+        "name": "crop.tif"
+      },
+      "expected_members": "Complete raster_source_info members when dependent files exist",
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "No rounding, resampling, padding or CRS guess",
+      "RPC/geolocation-array inputs require explicit rectification"
+    ],
+    "output_checks": [
+      "Independent saved raw-band samples and per-band masks equal the source window; palette/scaling/units/descriptions retained",
+      "Affine origin translated; GCP pixel positions shifted without changing world controls or CRS",
+      "63 actual MCP calls clip original eight-layer MSI/WT/WL/WP report; native MSI pixels, all29 MPJ parameters, order/state/limits/environment, save/reopen/EPS/PDF/TIFF checked",
+      "Actual parent exits96/97 after sealed raster/project candidates;15 MCP recovery calls, all candidate SHA256 and mtimes unchanged"
+    ],
+    "validation_scope": "Integer raster windows; compose file_operation overlay.clip and native_project_edit for same-plane vectors. Derived vector physical IDs are mapped, region structural indices regenerated; native auxiliary arc/node attributes are not copied. WT selection uses anchors; exact native circles/arcs require an explicit curve policy. No ground accuracy inferred."
+  },
+  {
+    "id": "native.point.style",
+    "name": "原生注记字体字号与符号尺寸笔宽",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "point.style",
+      "file": "Owned WT",
+      "expected_sha256": "Current source SHA256",
+      "parameters": {
+        "updates": [
+          {
+            "record_id": 1,
+            "style": {
+              "height": 6,
+              "width": 4,
+              "font_zh": 2,
+              "font_en": 1,
+              "font_style": 1,
+              "angle": 15
+            }
+          }
+        ]
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Ordinary annotation0 or symbol1; no type/content/geometry change",
+      "Known native numeric fields; positive height/width, nonnegative spacing/pen width, font IDs0..255 and symbol IDs0..32767; explicit caller font/library choice"
+    ],
+    "output_checks": [
+      "Normal BAS60 ordinal69/70 Get/UpdatePointInfo recomputes native bounds; all nontargeted62 saved graphic bytes, geometry, attributes and text retained",
+      "66 related native/workspace/radius/smoothing tests, including dirty child loss recovery",
+      "39 actual MCP calls on original report text and symbols; native MPJ/EPS/PDF/TIFF changes visible, restored TIFF pixels exactly match baseline",
+      "Actual parent exit98 before reply; six MCP recovery calls, original native PID/candidate/log SHA and mtime unchanged"
+    ],
+    "validation_scope": "Verified PNT_INFO annotation/symbol fields, not a complete font availability dictionary or extended point/text-layout subtype. Native dirty/save/recover supported; no mouse. Source coordinates and unselected records retained."
+  },
+  {
+    "id": "native.point.text",
+    "name": "原生注记内容替换并重算边界",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_operation",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "operation": "point.text",
+      "file": "Owned WT ordinary annotation0",
+      "expected_sha256": "Current source hash",
+      "parameters": {
+        "updates": [
+          {
+            "record_id": 1,
+            "text": "灰岩T#-2#=d"
+          }
+        ]
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Unique active ordinary annotation physical IDs; no symbol/image/text-box conversion",
+      "Nonempty GBK-representable text without NUL, at most32767 bytes per annotation and1MiB per batch; no truncation"
+    ],
+    "output_checks": [
+      "Original BAS60 raw Get1557/Update1560 ABI confirmed through retained IDA, normal native update recalculates bounds",
+      "Stored XYZ and all62 graphic bytes, attributes and unselected records remain unchanged; exact formatted GBK body after fresh native save/reopen",
+      "30 actual MCP calls on original report: grow/shrink formatted Chinese labels, native MPJ/EPS/PDF/TIFF, restoration produces pixel-identical TIFF",
+      "96 related tests; dirty checkpoint child loss recovery; actual parent exit99 then six recovery MCP calls, original PID/log/candidate unchanged"
+    ],
+    "validation_scope": "Native ordinary nonempty annotation content, signed-length legacy format and explicit encoding. Not every rich-text/embedded-object subtype or font is implemented; remove an annotation with feature.delete. No mouse input."
+  },
+  {
+    "id": "native.append",
+    "name": "向既有原生点线区追加选区",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_subset",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "file": "Source saved WT/WL/WP",
+      "expected_sha256": "Current source hash",
+      "record_ids": [
+        2,
+        4
+      ],
+      "target": {
+        "file": "Same-kind saved native target",
+        "expected_sha256": "Current target hash"
+      },
+      "template": {
+        "name": "merged.wp"
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Explicit ordered unique active source physical IDs; saved169-byte coordinate parameters and raw field layouts agree",
+      "Known primary and WP arc/node attribute tables; no implicit transform, snapping, deduplication or cross-file topology joining",
+      "Exact installed SDK plus previously authorized independent legacy x86 backend"
+    ],
+    "output_checks": [
+      "Original SDK CopyList into loaded target returns each new physical ID; preserve every existing active target ID",
+      "Primary and both sources known arc/node attribute rows retained byte-for-byte; geometry, annotation, supported graphic fields and complete map parameters checked",
+      "BAS60 save and independent native reopen; both input hashes remain guarded through atomic publication",
+      "31 real MCP calls rebuild four original report layers in an eight-layer MPJ; EPS/PDF/TIFF,300dpi TIFF pixel-identical to baseline",
+      "85 related regression tests; actual parent exit85 then4 MCP recovery calls without repeating CopyList",
+      "4 additional red-to-green tests cover target/source/both deleted WP layouts and empty active target; retained unowned arcs and inactive walks mapped"
+    ],
+    "validation_scope": "WT ordinary annotation/symbol/exact circle/arc, WL and verified WP node-prefix/known attribute layouts including native deletion tombstones. Unknown auxiliary headers or ambiguous coincident unowned arcs require explicit mapping. Preserves target active arc/node identities; native storage offsets can relocate. Produces a new branch and does not mutate an external GUI buffer."
+  },
+  {
+    "id": "native.workspace.append",
+    "name": "未保存原生会话内追加选区",
+    "module": "editor",
+    "validation": "TESTED_EXACT_BUILD",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_native_workspace",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "action": "edit",
+      "workspace_id": "Existing agent-owned buffer",
+      "parameters": {
+        "operation": "feature.append",
+        "parameters": {
+          "file": "Incoming saved same-kind native file",
+          "expected_sha256": "Current incoming hash",
+          "record_ids": [
+            1,
+            3
+          ]
+        }
+      },
+      "expected_revision": "Current workspace revision",
+      "request_id": "Stable edit ID"
+    },
+    "preconditions": [
+      "Same native coordinate parameters and compatible primary/known WP auxiliary schemas; ordered active source physical IDs",
+      "Agent-owned native workspace, or project_workspace edit with an explicit target layer index and source IDs"
+    ],
+    "output_checks": [
+      "Keep previous dirty edits, active physical IDs, primary/arc/node attributes and saved baseline",
+      "SDK CopyList result is frozen before adoption; replace only the owned native child, atomically commit revision/request/dirty state",
+      "Exact request retry reconciles, invalid source fails before stopping the buffer, input hashes checked until adoption",
+      "Child loss, finisher failure, state-commit failure and stale-source rollback covered;59 related tests including custom-schema deletion and zero-field tables",
+      "36 real MCP calls on original eight-layer report: four-layer multi-selection, delete+append, save/close/reopen and EPS/PDF/TIFF",
+      "Original ordering changes297 edge pixels;14 actual MCP calls with matching [2..n,1] drawing order yield pixel-identical TIFF",
+      "Actual parent exit85 after native copy before dirty adoption;7 successful MCP calls, original log/candidate/prior dirty checkpoint SHA+mtime unchanged"
+    ],
+    "validation_scope": "Saved selection copied into agent-owned dirty buffers; feature.append explicitly replaces its owned native child and returns buffer_restarted. Supports current project_workspaces, save, discard and recovery. Newly copied features follow normal appended physical/drawing order; no implicit topology joining. External GUI unsaved memory is not connected."
+  },
+  {
+    "id": "correction.control_fit",
+    "name": "控制点三四七参数及完整二维仿射求解",
+    "module": "correction",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_fit_control_transform",
+      "backend": "numpy_scipy_proj"
+    },
+    "parameters": {
+      "model": "translation2d|similarity2d|affine2d|translation3d|similarity3d",
+      "controls": [
+        {
+          "source": [
+            0,
+            0
+          ],
+          "target": [
+            10,
+            20
+          ]
+        }
+      ],
+      "coordinate_frame": {
+        "kind": "planar|cartesian|geocentric",
+        "unit": "metre|millimetre|centimetre|foot|inch|unknown",
+        "axis_order": "xy|xyz"
+      },
+      "max_fit_error": "Positive tolerance in declared common units",
+      "checkpoints": "Optional truly withheld source/target pairs",
+      "max_checkpoint_error": "Optional positive tolerance, requires supplied checks",
+      "points": "Optional max100000 forward/inverse Cartesian query points",
+      "direction": "forward|inverse"
+    },
+    "preconditions": [
+      "Explicit common Cartesian units and axis order; no geographic degrees or inferred Z",
+      "Unique finite fitting positions, model minimum1/2/3/1/3 controls, nondegenerate ranks and positive similarity scale",
+      "Fitting residual is distinct from withheld checks and surveyed accuracy"
+    ],
+    "output_checks": [
+      "Centered normalized NumPy least squares and existing affine solver; SciPy Kabsch for exact proper3D similarity",
+      "Homogeneous matrix and inverse, per-control residuals, degrees of freedom, independent checks, query and roundtrip results",
+      "2D native_subset_transforms reuses1 existing native operation for translation/similarity,2 for full affine via SVD including shear/reflection; raw attribute/topology checks retained",
+      "Metre PROJ pipelines verified against actual runtime rotation basis, with exact3D equations and explicit convention; no axis-angle/Euler confusion",
+      "17 cases cover independent PROJ small/large3D rotations, large-coordinate affine, noise, degeneracy, reflection and withheld errors;55 related checks before the two additional affine-chain cases",
+      "42 actual MCP calls transform original54WP/one frame WL/63labels with four-parameter and two-stage affine; native save/reopen/MPJ/EPS/PDF/TIFF, maximum geometry error1.63e-11 source units"
+    ],
+    "validation_scope": "Known synthetic Cartesian controls and declared illustrative report frame.3D parameter fitting/point calculations do not establish native3D-file edits or surveyed ground accuracy. No native MapGIS projection/coefficient-file writer, time-dependent datum model or high-order/piecewise vector correction."
+  },
+  {
+    "id": "raster.mosaic",
+    "name": "对齐格网影像拼接与重叠均值",
+    "module": "image",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_mosaic",
+      "backend": "rasterio_gdal"
+    },
+    "parameters": {
+      "sources": [
+        {
+          "file": "Aligned affine TIFF",
+          "expected_sha256": "Current hash",
+          "expected_members": "Complete external dependency hashes if any"
+        }
+      ],
+      "parameters": {
+        "method": "first|last|mean",
+        "bounds": [
+          "left",
+          "bottom",
+          "right",
+          "top"
+        ],
+        "resolution": [
+          "dx",
+          "dy"
+        ],
+        "crs": "Explicit common Earth CRS or named referenced local frame",
+        "dtype": "Optional safe widening; mean float64 default or explicit float32",
+        "nodata": "Optional exactly representable finite unused marker"
+      },
+      "template": {
+        "name": "mosaic.tif"
+      },
+      "request_id": "Stable ID"
+    },
+    "preconditions": [
+      "Same source band count/type/calibration/color semantics and north-up aligned resolution/grid phase; explicitly rectify first",
+      "Common binary source band validity; no implicit alpha blending, band-mask intersection or precision loss"
+    ],
+    "output_checks": [
+      "Reuse Rasterio merge with temporary coverage channel, preserving valid numeric zero separately from missing pixels; source order explicit",
+      "58 raster/artifact/native related tests before three local-frame and one floating-grid fix cases;33 related local/GCP cases after fixes",
+      "84 real MCP calls on890x892 old-report scan: first/last/mean tiles, five exact MSI roundtrips, four MPJ reopens and EPS/PDF/TIFF; first/last output pixels identical to unsplit rectified baseline",
+      "Parent exits100/101 then8 recovery MCP calls; sealed candidate/manifest hashes and mtimes unchanged, no algorithm replay"
+    ],
+    "validation_scope": "Explicit aligned whole-pixel first/last/equal mean, not feathering or fractional alpha. Embedded local grids require matching name, known units and east/north axes. Numeric MSI storage is distinct from true-color rendering; use the existing explicit byte RGB stretch display branch and retain numeric data."
+  },
+  {
+    "id": "raster.mask",
+    "name": "多边形与孔洞影像掩膜裁剪",
+    "module": "image",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_raster_mask",
+      "backend": "rasterio_gdal_geos"
+    },
+    "parameters": {
+      "file": "Affine TIFF",
+      "expected_sha256": "Current hash",
+      "parameters": {
+        "geometry": "Valid2D Polygon|MultiPolygon GeoJSON, including holes",
+        "crs": "Explicit matching frame",
+        "crop": "Default true; false retains full source grid including empty results",
+        "all_touched": "Default false, pixel-center rule",
+        "dtype": "Optional safe widening",
+        "nodata": "Optional finite unused marker"
+      },
+      "template": {
+        "name": "aoi.tif"
+      },
+      "request_id": "Stable ID",
+      "expected_members": "Complete dependency hashes if needed"
+    },
+    "preconditions": [
+      "No implicit geometry repair/reprojection; source affine may be rotated",
+      "Common binary band mask; output mask is source validity AND polygon selection; explicit marker must not collide with valid samples"
+    ],
+    "output_checks": [
+      "Exact original affine pixel grid, native samples/masks re-read; polygon holes and all_touched choice explicit",
+      "Real report AOI independently checked against Shapely centers; uint16 numeric MSI roundtrip exact",
+      "14 extra raster-only MCP calls exposed numeric multiband default grayscale;13 MCP calls reuse existing0..100 percentile byte RGB stretch and native reopen/output",
+      "224543 eroded hole/margin output pixels remain white;3686887 constant valid RGB pixels match declared display mapping within1 channel step; numeric source unchanged",
+      "Parent exit101 sealed AOI recovered without replay and original artifact hashes/mtimes retained"
+    ],
+    "validation_scope": "Known2D polygon rasterization and binary masks. No partial alpha, independent per-band validity, RPC geolocation or automatic datum changes. Color rendering uses an explicit quantized byte display copy,0..254 with255 reserved NoData; original numeric MSI preserved."
+  },
+  {
+    "id": "frame.sheets",
+    "name": "国家基本比例尺图幅编号与范围",
+    "module": "projection",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_map_sheets",
+      "backend": "adapted_mit_ovobj_grids"
+    },
+    "parameters": {
+      "action": "index|decode|cover",
+      "geographic_crs": "Explicit2D geographic degrees/xy, datum not inferred from code",
+      "parameters": {
+        "points": "index:1..5000 longitude/latitude pairs",
+        "codes": "decode:1..5000 canonical codes",
+        "scale": "index/cover:1m,500k,250k,100k,50k,25k,10k,5k,2k,1k,500 or denominator",
+        "geometry": "cover:valid2D Polygon|MultiPolygon",
+        "include_boundary_touch": "cover:boolean, default false means positive area"
+      }
+    },
+    "preconditions": [
+      "GB/T13989-2012 domestic unmerged72<=longitude<138,0<=latitude<56; geographic row/column scheme only",
+      "No automatic datum transform, official complete collar layout, high-latitude merged/global/historical/engineering-sheet format"
+    ],
+    "output_checks": [
+      "Pinned MIT ovobj-converter scalar/config kernel retained with license/patch; original source Git blob verified",
+      "Correct upstream2k384 table to576x576 and add1k/500 four-digit code; strict range validation and southwest corner ownership",
+      "45 cases include11 appendixB published examples, canonical floating boundary and adjacent-float neighbors, invalid codes, holes and explicit touch rules",
+      "73 related native/encoding/frame/catalog/package tests after new WL bounding-box factor fix",
+      "40 actual MCP calls:11 scale examples, decode, Fuzhou G50E012021 coverage, projected editable border/grid/labels/code, native save/reopen/4-layer MPJ/EPS/PDF/TIFF; corner error4.66e-10metres"
+    ],
+    "validation_scope": "Mathematical indexing in explicitly declared geographic coordinates. Existing mapgis_prepare_map_frame composes the returned bounds with caller projection and native writer. Original catalog status and relevant original standard sections/formulas were read; full official HTTP preview unavailable, mathematical text verified from a standard facsimile. No formal whole-standard conformance certification or surveyed location accuracy."
+  },
+  {
+    "id": "geology.borehole_trajectory",
+    "name": "钻孔最小曲率轨迹与测深查询",
+    "module": "geology",
+    "workflow": "boreholes.json",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_borehole_trajectory",
+      "backend": "pinned_wellpathpy_scipy"
+    },
+    "parameters": {
+      "survey": "2..10000 stations {md,inclination,azimuth}; MD0 first, strictly increasing",
+      "collar": "{easting,northing,elevation}",
+      "coordinate_frame": "Explicit projected/local metre CRS, named vertical datum, grid_north and vertical_down",
+      "query_mds": "Optional1..100000 original-order metre MDs within surveyed range",
+      "course_length": "Positive metre DLS normalization, default30"
+    },
+    "preconditions": [
+      "Literal finite measurements; no implicit magnetic north, unit, datum or axis conversion",
+      "Inclination0<=i<180 from vertical down, clockwise grid azimuth0<=a<360; reject near-antipodal direction pairs"
+    ],
+    "output_checks": [
+      "Unmodified LGPL wellpathpy0.5.2 numerical modules at ccbb7cd803485a74d2de83ef4dd5912bb7f9c2bd, existing SciPy spherical direction interpolation",
+      "Analytical vertical/horizontal/circular/oblique trajectories, query order, resampled station preservation, invalid frames and ambiguous directions covered",
+      "Actual MCP quarter-circle R=100/(pi/2), independent endpoint/midpoint equations; original XLSX unchanged"
+    ],
+    "validation_scope": "Model trajectory between supplied survey stations; not observed intermediate positions, magnetic correction, native3D-file editing or stratigraphic inference."
+  },
+  {
+    "id": "geology.apparent_dip",
+    "name": "指定剖面方向真倾角转视倾角",
+    "module": "geology",
+    "workflow": "boreholes.json",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_apparent_dip",
+      "backend": "analytic_trigonometry"
+    },
+    "parameters": {
+      "dip_direction": "Down-dip direction degrees clockwise from grid north, not strike",
+      "dip": "True dip degrees0..90",
+      "section_azimuth": "Oriented section direction degrees0..<360"
+    },
+    "preconditions": [
+      "Same explicit grid-north reference for both directions",
+      "Vertical bedding parallel/coincident with the section has no unique intersection and is rejected"
+    ],
+    "output_checks": [
+      "Signed apparent dip, horizontal/vertical and reversed section conventions checked analytically",
+      "Actual public MCP30degree true dip/45degree relative section checked against independent tangent equation"
+    ],
+    "validation_scope": "Projects supplied attitude only; no attitude extraction, magnetic conversion, inferred geology or cross-hole correlation."
+  },
+  {
+    "id": "geology.borehole_workbook",
+    "name": "钻孔孔口测斜分层表读取与行号核对",
+    "module": "geology",
+    "workflow": "boreholes.json",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_read_borehole_workbook",
+      "backend": "existing_openpyxl_tables"
+    },
+    "parameters": {
+      "file": "Saved XLSX",
+      "expected_sha256": "Current original workbook hash",
+      "tables": "Explicit collars/surveys/intervals mappings, each {sheet,columns:{field:exact_header}}",
+      "coordinate_frame": "Same explicit metre/grid-north/down conventions as trajectory",
+      "sort_by_depth": "Strict boolean false default; true sorts stations/top depths retaining source rows"
+    },
+    "preconditions": [
+      "Header in row1; exact string hole IDs; numeric literal used measurements; no formula-cache substitution",
+      "At most100 collars, unique IDs, known references, ordered non-overlapping in-range intervals"
+    ],
+    "output_checks": [
+      "Existing table reader reused; raw used cells checked for formulas, source SHA guarded and worksheet row lineage retained",
+      "Six XLSX cases plus actual MCP unsorted survey rows4/2, explicitly sorted, preserve30..40metre unlogged gap"
+    ],
+    "validation_scope": "Explicit three-table XLSX contract, not proprietary logging formats or automatic field/unit inference."
+  },
+  {
+    "id": "geology.borehole_chart",
+    "name": "可编辑钻孔柱状图与轨迹投影剖面",
+    "module": "geology",
+    "workflow": "boreholes.json",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_borehole_chart",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "data": "Inline {holes,coordinate_frame} or hash-bound {workbook:{file,expected_sha256,tables},coordinate_frame,sort_by_depth?}",
+      "parameters": "mode columns|section; title,vertical_scale,column_width_mm,font_mm,tick_interval_metres,lithology_styles; columns adds spacing; section adds horizontal_scale,reference_elevation,sample_step_md and explicit straight section plane/tolerance",
+      "template": "{name:lowercase_ASCII.wp}; sibling WL/WT/XLSX/JSON",
+      "request_id": "Stable request ID; apply and reconcile_artifact use existing atomic ledger"
+    },
+    "preconditions": [
+      "Explicit metre frame and source surveys; columns use MD down, section uses projected distance/elevation up with stated VE",
+      "Caller supplies unit-to-native-style mapping interpreted by chosen project system library; blank unlogged intervals; no automatic hole correlations",
+      "Compatible installed MapGIS6.7 original BAS60 and authorized isolated legacy backend"
+    ],
+    "output_checks": [
+      "Three editable native files are saved by original BAS60 and freshly read; output workbook verifies source/result rows and XYZ/MD/drawing coordinates",
+      "29 actual MCP calls complete analytical curved/vertical holes, columns and section, native file and MPJ reopen plus EPS/PDF/TIFF; final TIFF visually checked",
+      "Parent exits102/104/103 at first native save, workbook completion and sealed manifest;21 actual recovery calls preserve completed save PIDs/output hashes/mtimes and start only unissued stages",
+      "Dense pattern aliasing rechecked under identical pixel thresholds at300dpi; missing regions and changed colors remain errors"
+    ],
+    "validation_scope": "Editable2D engineering charts and literal result tables on labelled analytical test data. Ribbon width is graphic, not bore diameter. No native3D file, inter-hole stratigraphy, full original geology UI/module coverage or surveyed accuracy claim."
+  },
+  {
+    "id": "cartography.map_series",
+    "name": "原生工程多页分幅与可编辑源打包",
+    "module": "editor",
+    "workflow": "cartography-series.json",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_map_series",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "file": "Portable saved MPJ with sibling dependencies and optional bound system library",
+      "expected_sha256": "Current MPJ hash; complete dependencies/library frozen automatically",
+      "parameters": {
+        "pages": "1..100 ordered {name,view:{native_bounds,paper_mm,coordinate_frame:native}}",
+        "dpi": "Integer72..600, default300",
+        "include_tiff": "Strict boolean false default"
+      },
+      "request_id": "Stable request ID, apply/get/reconcile_artifact use existing ledger"
+    },
+    "preconditions": [
+      "Saved native MPJ, compatible original installed6.7 backend and explicit isolated legacy opt-in",
+      "Explicit native-coordinate views; names label indexes, not automatic native page titles; <=100M raster pixels per page",
+      "New output branch, original source/dependencies remain SHA guarded through publication"
+    ],
+    "output_checks": [
+      "Reuse original native project renderer and Ghostscript lossless PDF assembly; no new renderer or package dependency",
+      "Original native MPJ and all dependencies/system libraries copied, freshly reopened with every layer resolving in the new output folder",
+      "Every PDF page independently interpreted: count/order/physical size and marks against native EPS, including strict print-resolution fallback for screen aliases",
+      "16 actual MCP calls on original eight-layer report window: full/west/east views,3page PDF,EPS/PNG/300dpi TIFF,XLSX/CSV indexes,8layer reopen and relocated-folder reopen; all page preview comparisons exact",
+      "15 actual MCP recovery calls after owned exits107firstpage/108PDFcommitted/109sealed: completed native page PIDs/PS/logs/hashes/mtimes and existing PDF preserved; all output PNG/TIFF equal uninterrupted baseline",
+      "59 related checks after shared literal-workbook reuse cover page count/order defects, source/index/TIFF mutation, native recovery, borehole tables/charts and public catalog/package routes"
+    ],
+    "validation_scope": "Explicit fixed view pages with editable saved MPJ source and JSON view manifest, not a proprietary native multi-page layout object. The illustrated source has an authorized illustrative local frame; no geodetic accuracy or new geology. Other page objects, linked atlas coverage rules, printer devices and full native layout semantics remain separate gaps."
+  },
+  {
+    "id": "native.scene.create",
+    "name": "原生 DEM 与三维地形场景",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_scene",
+      "backend": "native_x86"
+    },
+    "parameters": {
+      "operation": "create",
+      "file": "保存的数值高程栅格及完整依赖摘要",
+      "parameters": "vertical_unit 必填；band、明确的 float32 高程误差限；mode、width/height、quality，可选成对 eye/target",
+      "template": "新 .scene.json 文件名和明确的投影米制或本地米制坐标对象",
+      "request_id": "稳定 ID；通过 apply/get/reconcile_artifact 发布和核对",
+      "texture": "可选同框架全覆盖 uint8 RGB，2..1024像素每轴；render继承/替换/remove_texture",
+      "line_overlay": "可选原生WL及hash，coordinate_frame=native_metres；可显式source_crs赋予已知源框架，不重投影；render继承/替换/remove_line_overlay",
+      "annotations": "可选普通文本WT及hash，coordinate_frame=native_metres、source_crs；统一场景font、height_offset_m、visible、max_view_distance_m；继承/替换/remove_annotations",
+      "region_overlay": "可选原WP/hash/native_metres/source_crs；CDT+原厂高程和调色+独立OpenGL组合实色区、孔洞和多部件；opacity/visible/height_offset_m/max_view_distance_m；继承/替换/remove_region_overlay"
+    },
+    "preconditions": [
+      "2..16384 行列、至多200万高程单元，北向上仿射栅格，无缺失高程",
+      "使用匹配版本的已安装 MapGIS；独立32位后端和既有 DEP 兼容授权",
+      "原生 DEM 头文件与数据子目录、校准后的 elevation.tif 一同保留"
+    ],
+    "output_checks": [
+      "原厂 DemArea 保存后，新进程逐单元读回，核对真实高程和范围",
+      "原厂三维绘制与原厂MSI编码分进程，另一个原生进程逐像素核对输出",
+      "实际 MCP 创建、换视角和旧目录隐藏后的迁移重开；原 DEM 字节与源文件摘要/mtime保持",
+      "RGB底图与原生WL附加/替换/移除、旧目录和源文件隐藏后的迁移重开；真实父进程退出120/122/123/121恢复",
+      "普通WT注记黑字/混色顺序/字体/隐藏旧源后重开/移除/飞行末帧；真实退出120122123121后12次恢复，原WT字节和原渲染保持",
+      "实色WP、孔洞、半透明、距离隐藏、迁移重开、源变化、飞行末帧37次实际MCP；四种真实退出后12次恢复，原WP和完成渲染保持"
+    ],
+    "scope": "原生可编辑DEM、单基瓦片RGB、WL逐顶点贴地和普通WT文字。实色WP用现有CDT、原厂高程和调色及标准OpenGL独立组合，含孔洞和多部件；不调用许可失败的原厂三角化器。原生XY须为米，源CRS赋值显式声明，矢量原字节保持。JSON为Agent清单，透视图为像素坐标。符号点、二维图案、每区纹理、其他模型和高分辨率纹理仍在接入。",
+    "workflow": "workflows/native-scene.json"
+  },
+  {
+    "id": "native.scene.render",
+    "name": "原生三维场景换视角与重开",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_scene",
+      "backend": "native_x86"
+    },
+    "parameters": {
+      "operation": "render",
+      "file": "已保存的 .scene.json 及绑定的相对路径依赖",
+      "parameters": "mode、width/height、quality，可选成对 eye/target；不重复指定高程校准",
+      "template": "新 .scene.json 文件名和明确的投影米制或本地米制坐标对象",
+      "request_id": "稳定 ID；通过 apply/get/reconcile_artifact 发布和核对",
+      "texture": "可选同框架全覆盖 uint8 RGB，2..1024像素每轴；render继承/替换/remove_texture",
+      "line_overlay": "可选原生WL及hash，coordinate_frame=native_metres；可显式source_crs赋予已知源框架，不重投影；render继承/替换/remove_line_overlay",
+      "annotations": "可选普通文本WT及hash，coordinate_frame=native_metres、source_crs；统一场景font、height_offset_m、visible、max_view_distance_m；继承/替换/remove_annotations",
+      "region_overlay": "可选原WP/hash/native_metres/source_crs；CDT+原厂高程和调色+独立OpenGL组合实色区、孔洞和多部件；opacity/visible/height_offset_m/max_view_distance_m；继承/替换/remove_region_overlay"
+    },
+    "preconditions": [
+      "2..16384 行列、至多200万高程单元，北向上仿射栅格，无缺失高程",
+      "使用匹配版本的已安装 MapGIS；独立32位后端和既有 DEP 兼容授权",
+      "原生 DEM 头文件与数据子目录、校准后的 elevation.tif 一同保留"
+    ],
+    "output_checks": [
+      "原厂 DemArea 保存后，新进程逐单元读回，核对真实高程和范围",
+      "原厂三维绘制与原厂MSI编码分进程，另一个原生进程逐像素核对输出",
+      "实际 MCP 创建、换视角和旧目录隐藏后的迁移重开；原 DEM 字节与源文件摘要/mtime保持",
+      "RGB底图与原生WL附加/替换/移除、旧目录和源文件隐藏后的迁移重开；真实父进程退出120/122/123/121恢复",
+      "普通WT注记黑字/混色顺序/字体/隐藏旧源后重开/移除/飞行末帧；真实退出120122123121后12次恢复，原WT字节和原渲染保持",
+      "实色WP、孔洞、半透明、距离隐藏、迁移重开、源变化、飞行末帧37次实际MCP；四种真实退出后12次恢复，原WP和完成渲染保持"
+    ],
+    "scope": "原生可编辑DEM、单基瓦片RGB、WL逐顶点贴地和普通WT文字。实色WP用现有CDT、原厂高程和调色及标准OpenGL独立组合，含孔洞和多部件；不调用许可失败的原厂三角化器。原生XY须为米，源CRS赋值显式声明，矢量原字节保持。JSON为Agent清单，透视图为像素坐标。符号点、二维图案、每区纹理、其他模型和高分辨率纹理仍在接入。",
+    "workflow": "workflows/native-scene.json"
+  },
+  {
+    "id": "native.scene.flight",
+    "name": "原厂三维路线飞行与无界面AVI录制",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_scene",
+      "backend": "native_x86"
+    },
+    "parameters": {
+      "operation": "flight",
+      "file": "已有.scene.json及完整相对依赖摘要",
+      "parameters": "可选width/height/quality，自动walk；保留原初始视图用于重复录制",
+      "flight": "points源XY、speed原厂空间步长、fps默认24、frame_start默认0、frame_count空为整条；float32XY误差限默认0",
+      "template": "新.scene.json文件名及匹配的米制源框架",
+      "request_id": "稳定ID；apply/get/reconcile_artifact",
+      "annotations": "可选普通文本WT及hash，coordinate_frame=native_metres、source_crs；统一场景font、height_offset_m、visible、max_view_distance_m；继承/替换/remove_annotations",
+      "region_overlay": "可选原WP/hash/native_metres/source_crs；CDT+原厂高程和调色+独立OpenGL组合实色区、孔洞和多部件；opacity/visible/height_offset_m/max_view_distance_m；继承/替换/remove_region_overlay"
+    },
+    "preconditions": [
+      "原生地形及贴图/线文件均可重开，明确的源框架和垂直单位",
+      "飞行速度在render.fly_speed_range内；原厂插值路径完整位于地形内",
+      "至多1000个总推进步骤，未压缩AVI小于1GiB；源及原始安装保持"
+    ],
+    "output_checks": [
+      "原厂SetFlyRoutin插值及逐帧绘制；每帧只推进一次，指定片段先推进前缀以保持高度历史",
+      "Windows VFW无压缩DIB24 AVI，新原生PID逐帧SHA核对；现有OpenCV独立核对全部RGB、末帧MSI/TIFF/PNG",
+      "15次实际MCP整条100帧/迁移重录/指定片段/末帧，另3次小数速度；实际exit120122123121后12次恢复保留录制，不重放",
+      "停止飞行前捕获末帧模型姿态；新进程静态重开和迁移逐像素相同，整片AVI字节保持不变",
+      "普通WT注记黑字/混色顺序/字体/隐藏旧源后重开/移除/飞行末帧；真实退出120122123121后12次恢复，原WT字节和原渲染保持",
+      "实色WP、孔洞、半透明、距离隐藏、迁移重开、源变化、飞行末帧37次实际MCP；四种真实退出后12次恢复，原WP和完成渲染保持"
+    ],
+    "scope": "原厂三维路线与渲染，Windows标准AVI写入，不调用带编码器弹窗的原厂Record接口。无重投影，不声明物理飞行速度或测量精度。末帧姿态保存、静态重开与迁移20次MCP及四处退出后12次恢复已验证；普通WT和独立网格实色WP可并用，含孔洞、半透明和距离隐藏；符号点、二维图案、每区纹理、其他模型仍在接入。",
+    "workflow": "workflows/native-scene.json"
+  },
+  {
+    "id": "native.scene.tin.create",
+    "name": "原生TIN三维渲染与保存",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_tin_scene",
+      "backend": "native_x86"
+    },
+    "parameters": {
+      "operation": "create",
+      "file": "原生WTIN及expected_sha256；有同名.tin.json时同时绑定并保留",
+      "parameters": "vertical_unit=metre；width/height、fov_degrees，可选scales和成对世界坐标eye/target",
+      "template": "新.scene.json名称及明确米制投影或本地crs",
+      "request_id": "稳定ID，通过apply/get/reconcile_artifact发布和恢复",
+      "texture": "可选全覆盖uint8 RGB2..1024像素及完整摘要，render继承/替换/remove_texture；世界TIFF与局部显示MSI并存",
+      "line_overlay": "原WL/hash/native_metres/source_crs?；height_offset_m默认0；原TIN面交点XYZ经原厂BAS60/Tin3DView绘制，继承/替换/remove_line_overlay"
+    },
+    "preconditions": [
+      "匹配的原厂Tin3DView/C3DView/COglDraw/W60_Tin及独立x86兼容后端",
+      "连续活动物理记录，3..100000点、1..200000三角形，拓扑与邻接有效",
+      "XY和Z为米，明确坐标系；透视输出是像素坐标"
+    ],
+    "output_checks": [
+      "原厂TIN读回，独立SDK显示区逐字段保留完整点和面记录，仅双精度平移XY",
+      "原厂三维绘制、原厂MSI编码及新PID逐像素回读",
+      "25次实际MCP验证平面、山脊、大坐标、垂直缩放、换FOV、旧源隐藏后的迁移重开",
+      "真实退出120/122/123/121后12次恢复，原渲染PID、成功编码和完成文件SHA/mtime保持",
+      "RGB四象限/继承/替换/移除/迁移/源变化拒绝20次实际MCP；带纹理120122123121四种真实退出后12次恢复",
+      "三维WL物理编号1、3、全部XYZ和图形参数回读、贴图并用、迁移/替换/移除/伪造拒绝19次实际MCP，四种真实退出后12次恢复"
+    ],
+    "scope": "原始TIN字节不变，独立原生局部显示区避免大坐标精度损失；camera.bin保留局部float32姿态和世界原点double，修正原厂GetEyePos的缩放Z读回语义。附MSI/TIFF/PNG与Agent清单；未转换DEM，不声明原厂专有场景格式或其他模型。TIN飞行另见native.scene.tin.flight。RGB纹理采用原厂MSI提取和显示插值，不调用对话框。WL原字节保持，GEOS/NumPy沿保存面片生成交点XYZ，再由原厂三维线接口绘制；不重新三角化，不声明全部二维复杂线型外观。",
+    "workflow": "workflows/native-tin-scene.json"
+  },
+  {
+    "id": "native.scene.tin.render",
+    "name": "原生TIN相机重开与换视角",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_native_tin_scene",
+      "backend": "native_x86"
+    },
+    "parameters": {
+      "operation": "render",
+      "file": "native-tin-scene清单及相对依赖，expected_sha256和可选expected_members",
+      "parameters": "默认恢复精确camera；可改width/height/FOV，或显式scales、eye/target、native_camera选择新视图",
+      "template": "新.scene.json名称和相同frame",
+      "request_id": "稳定ID，通过apply/get/reconcile_artifact发布和恢复",
+      "texture": "可选全覆盖uint8 RGB2..1024像素及完整摘要，render继承/替换/remove_texture；世界TIFF与局部显示MSI并存",
+      "line_overlay": "原WL/hash/native_metres/source_crs?；height_offset_m默认0；原TIN面交点XYZ经原厂BAS60/Tin3DView绘制，继承/替换/remove_line_overlay"
+    },
+    "preconditions": [
+      "整个场景目录可读，所有成员摘要一致，相机原点匹配原生TIN",
+      "render不重复设置vertical_unit；显式eye/target均为世界米制坐标"
+    ],
+    "output_checks": [
+      "大坐标与平移前模型逐像素一致，世界Z按实际显示scale还原",
+      "隐藏原场景和原输入目录，迁移重开逐像素一致",
+      "依赖修改、相机原点和坐标系不匹配时拒绝执行",
+      "RGB四象限/继承/替换/移除/迁移/源变化拒绝20次实际MCP；带纹理120122123121四种真实退出后12次恢复",
+      "三维WL物理编号1、3、全部XYZ和图形参数回读、贴图并用、迁移/替换/移除/伪造拒绝19次实际MCP，四种真实退出后12次恢复"
+    ],
+    "scope": "精确静态相机、FOV30..120、32..2048像素每轴；视角不承诺自动容纳任意长宽比或任意距离。原始TIN与完整拓扑保留。 WL原字节保持，GEOS/NumPy沿保存面片生成交点XYZ，再由原厂三维线接口绘制；不重新三角化，不声明全部二维复杂线型外观。",
+    "workflow": "workflows/native-tin-scene.json"
+  },
+  {
+    "id": "native.scene.tin.flight",
+    "name": "原生TIN路径飞行与逐帧AVI",
+    "module": "three_d",
+    "validation": "BACKEND_TESTED",
+    "execution": {"kind": "mcp", "tool": "mapgis_prepare_native_tin_scene", "backend": "native_x86"},
+    "parameters": {
+      "operation": "flight",
+      "file": "完整已保存TIN场景及expected_sha256，可选expected_members",
+      "parameters": "使用已保存精确相机，可改width/height/FOV；要改eye/target/scales先render保存",
+      "flight": "points为2..100个世界XYZ米；speed为原厂PAT空间速度参数，并非米每秒；fps1..60，frame_start0..999，frame_count1..1000或整条，max_coordinate_error_m明确允许的原厂坐标量化误差，默认0",
+      "template": "新.scene.json名称和相同米制crs",
+      "request_id": "稳定请求ID，通过apply/get/reconcile_artifact发布和恢复"
+    },
+    "preconditions": ["整个场景及依赖摘要一致，XY/Z均为米", "原厂路径插值的预计算容量与实际结果均不超过1000，AVI不超过1GiB", "路径行满足原厂文本读取边界，世界坐标先扣除双精度原点再按真实显示比例换算"],
+    "output_checks": ["原厂PAT插值和OnTimer每帧只前进一步，原厂TIN/贴图/WL渲染", "新进程Windows VFW逐帧精确读回，独立OpenCV验证114帧；最后一帧与保存MSI及静态重开逐像素一致", "25次实际MCP：重复请求、片段与完整视频对应帧一致，隐藏旧目录后的迁移重开和重录一致，退化路径及伪造初始相机/路径绑定拒绝"],
+    "scope": "有界原厂TIN飞行。保留初始及末帧精确相机；render默认末帧，flight重录默认初始视角。原始TIN/纹理/WL保持，标准Windows VFW无压缩AVI；不调用存在缺陷的原厂路径保存函数或录制对话框，不承诺物理飞行速度、自动避障或专有场景格式。",
+    "workflow": "workflows/native-tin-scene.json"
   }
 ]

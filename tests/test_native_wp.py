@@ -96,3 +96,39 @@ def test_topology_error_retains_specific_wrong_type_diagnostic(tmp_path):
     source=tmp_path/'point.wt';Writer(gpd.GeoDataFrame({'ID':[1]},geometry=[Point(1,2)])).to_file(source)
     with pytest.raises(BridgeError,match='TOPOLOGY: WP required'):
         validate_wp_topology(source)
+
+
+@pytest.mark.parametrize('workspace',[False,True])
+@pytest.mark.parametrize('kind',['wp','wt','wl'])
+def test_delete_does_not_recalculate_defaults_over_other_regions_string_fields(tmp_path,workspace,kind):
+    from mapgis_agent.workspace import NativeWorkspaces
+    from shapely.geometry import Point,LineString
+    bridge=Bridge(tmp_path);enable_native(bridge)
+    fields=[]
+    for i in range(1,9):
+        geometry=box(10*i,0,10*i+10,10) if kind=='wp' else Point(10*i,0) if kind=='wt' else LineString([(10*i,0),(10*i+10,10)])
+        fields.append({'type':'Feature','id':str(i),'geometry':mapping(geometry),
+            'properties':{'ID':i,'CLASS':'hdn5_2','QA':'linework_rebuilt','REGION':i,'SOURCE':'6-1.JPG',
+                          '周长':40.+i*.125,'地层编号':i+10,'面积':100.+i*.25}})
+    prepare_creation(bridge,{'type':'FeatureCollection','features':fields},{'name':'defaults.'+kind,'map_scale':1000,'crs':LOCAL},'create')
+    source=Path(bridge.apply('create')['output']);before=source.read_bytes()
+    if workspace:
+        work=NativeWorkspaces(bridge)
+        try:
+            work.execute('open','buffer',{'source':str(source),'expected_sha256':sha(before)})
+            result=work.execute('edit','buffer',{'operation':'feature.delete','parameters':{'record_ids':[1]}},0,'delete')
+            output=Path(result['checkpoint'])
+        finally:work.close_all()
+    else:
+        prepare_native_operation(bridge,'feature.delete',str(source),sha(before),{'record_ids':[1]},'delete')
+        output=Path(bridge.apply('delete')['output'])
+    old,new=read_native(source)[1],read_native(output)[1]
+    assert native_ids(new)==list(range(2,9)) and new.data.to_dict('records')==old.data.iloc[1:].to_dict('records')
+    from mapgis_agent.native_com import _table
+    a,ar,sa=read_native(source);b,br,sb=read_native(output)
+    _,_,start,count,width=_table(a,ar,sa);_,_,values,number,length=_table(b,br,sb)
+    assert (count,width)==(number,length) and b[values+width]==0
+    for identity in range(count):
+        original=a[start+identity*width:start+(identity+1)*width];actual=b[values+identity*width:values+(identity+1)*width]
+        assert actual==(b'\0'+original[1:] if identity==1 else original)
+    assert source.read_bytes()==before

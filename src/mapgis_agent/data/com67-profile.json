@@ -1,0 +1,546 @@
+{
+  "schema": "mapgis-agent/com67-profile/1",
+  "files": [
+    {
+      "name": "MapGisBasCom1.DLL",
+      "sha256": "dbad827ed7e1586d358a8d56ec8873be3f3a7ab005797c3c57460636747077d2",
+      "typelib": "{82E60E0D-D83A-44D1-9971-D96DCB1781BC}",
+      "version": "1.0",
+      "classes": [
+        {
+          "name": "D_Dot",
+          "clsid": "{767CBC9D-7E73-46D8-B74F-60B50025F7EC}"
+        },
+        {
+          "name": "L_Dot",
+          "clsid": "{BA6D28A4-BA52-406E-91DE-58263F12E02A}"
+        },
+        {
+          "name": "D_3Dot",
+          "clsid": "{8BFBEBC0-9235-40DF-BD3B-A3BBB42F164E}"
+        },
+        {
+          "name": "L_3Dot",
+          "clsid": "{7F165483-5CEA-4BF8-B20A-F3F62D7FDFCC}"
+        },
+        {
+          "name": "D_Rect",
+          "clsid": "{AFF21083-4908-47AD-A892-D1BC938390EF}"
+        },
+        {
+          "name": "D_RectSet",
+          "clsid": "{5AB2B61F-7263-49E3-9562-8F4DCCB2A10C}"
+        },
+        {
+          "name": "D_DotSet",
+          "clsid": "{48744C31-35FC-47F9-8A7B-978E97C54045}"
+        },
+        {
+          "name": "L_DotSet",
+          "clsid": "{E1058E9A-0F77-4CAE-930F-95F2EC111473}"
+        },
+        {
+          "name": "D_3DotSet",
+          "clsid": "{03F583F7-C1E8-4C29-9981-D2833083C6DE}"
+        },
+        {
+          "name": "L_3DotSet",
+          "clsid": "{080886FC-8538-4CA8-8E82-B93CB6EA2480}"
+        },
+        {
+          "name": "Win_Org",
+          "clsid": "{018B4574-47D6-495B-8EA7-A8E5F03760B6}"
+        },
+        {
+          "name": "Date_Stru",
+          "clsid": "{117FD486-EC39-4CB5-A304-C55CB4474C4E}"
+        },
+        {
+          "name": "Time_Stru",
+          "clsid": "{EFE708BB-B129-4171-B96B-5C176FCC6568}"
+        },
+        {
+          "name": "TimeStamp_Stru",
+          "clsid": "{E7896085-D793-4F9A-8412-FC4B05FB98C6}"
+        },
+        {
+          "name": "Field_ExtHead",
+          "clsid": "{1245DCFC-0981-4F0E-8648-549046D659C0}"
+        },
+        {
+          "name": "Field_Head",
+          "clsid": "{EA31FFD2-353D-403A-9B8B-7902D0441A13}"
+        },
+        {
+          "name": "Record_Head",
+          "clsid": "{9EFA4B8A-13B0-4AE9-92C2-F7D2359E0B5B}"
+        },
+        {
+          "name": "Field",
+          "clsid": "{FD06B433-B4C8-4330-AC6D-ECC0C4802939}"
+        },
+        {
+          "name": "Record",
+          "clsid": "{174CDE10-A0E6-4EEB-B67C-F2E175B69C52}"
+        },
+        {
+          "name": "RecordSet",
+          "clsid": "{E3048A6C-D2B0-4F54-A9B7-1E86E6AD4379}"
+        },
+        {
+          "name": "GisEnv",
+          "clsid": "{FF24390D-5332-41ED-A9A3-1B7284E8C45A}"
+        },
+        {
+          "name": "Tran_Par",
+          "clsid": "{82C0FAD5-05CC-4CD1-BC8A-0D8F9390C950}"
+        },
+        {
+          "name": "Map_Para",
+          "clsid": "{86167651-8AE5-4C1D-8910-42421077E919}"
+        },
+        {
+          "name": "Pnt_Info_Sub",
+          "clsid": "{A6E221D1-14DE-47CE-95EB-E8FAB9E8EC07}"
+        },
+        {
+          "name": "Pnt_Info_Note",
+          "clsid": "{BD99A7C4-A6B5-4D05-8622-1E70DA0BEAA4}"
+        },
+        {
+          "name": "Pnt_Info_Cir",
+          "clsid": "{77551E6D-5594-4F70-86CC-A6CFD3DC8CA8}"
+        },
+        {
+          "name": "Pnt_Info_Arc",
+          "clsid": "{B901B13D-DE23-40D0-94E4-18830D43948E}"
+        },
+        {
+          "name": "Pnt_Info_Image",
+          "clsid": "{5AEBA1AB-74FB-493E-A92E-5A8697936B21}"
+        },
+        {
+          "name": "Pnt_Info_Text",
+          "clsid": "{1F937242-D88C-4492-9D6A-9D04BFF7186B}"
+        },
+        {
+          "name": "Pnt_Info",
+          "clsid": "{01D55128-6611-49AB-972D-0B0E7574E4BC}"
+        },
+        {
+          "name": "Pnt_Pad_Note",
+          "clsid": "{C178569A-D042-46AE-B0DC-2BB36DA67EC0}"
+        },
+        {
+          "name": "Pnt_Pad_Sub",
+          "clsid": "{9D21693E-6A10-435F-B835-285AA961237D}"
+        },
+        {
+          "name": "Pnt_Pad_Cir",
+          "clsid": "{EE232D25-EADE-4831-B75A-FF58FF0E5334}"
+        },
+        {
+          "name": "Pnt_Pad_Arc",
+          "clsid": "{95786995-B9DC-436D-AD3B-A5D08B2B0B56}"
+        },
+        {
+          "name": "Pnt_Pad_Image",
+          "clsid": "{153E6883-9BCA-4711-BBBE-B5E2EBC43F0D}"
+        },
+        {
+          "name": "Pnt_Pad_Text",
+          "clsid": "{31DA730C-345E-4129-B4BC-5475DF360589}"
+        },
+        {
+          "name": "Pnt_Pad",
+          "clsid": "{68C724F3-3432-4BD1-8C22-04C12C06A3BA}"
+        },
+        {
+          "name": "Lin_Info",
+          "clsid": "{72FC1102-D61F-40BD-9332-39D670420F02}"
+        },
+        {
+          "name": "Lin_Pad",
+          "clsid": "{7845B6BA-77F5-4B97-BE73-16BDABCCD6A2}"
+        },
+        {
+          "name": "Lin_Top",
+          "clsid": "{D074199C-95A1-4485-9C7A-7227F09EB70A}"
+        },
+        {
+          "name": "Arc_Alloc_Info",
+          "clsid": "{04610E7F-0F84-42A4-A303-BE5A54FC1917}"
+        },
+        {
+          "name": "Reg_Info",
+          "clsid": "{8865D679-20FD-4BB9-ADBC-79D2E7509D51}"
+        },
+        {
+          "name": "Reg_Pad",
+          "clsid": "{003EEC07-E690-49DF-B0F5-660B0891BCDA}"
+        },
+        {
+          "name": "Net_Info",
+          "clsid": "{03EB9F18-996B-4E2E-901D-72CF59C4A771}"
+        },
+        {
+          "name": "Net_Pad",
+          "clsid": "{90217A55-FBEA-4E3D-AC9E-94B037075908}"
+        },
+        {
+          "name": "Nod_Center_Info",
+          "clsid": "{30DE22DB-0E32-4515-A67C-161E45499281}"
+        },
+        {
+          "name": "Nod_Stop_Info",
+          "clsid": "{C1FE56F3-0302-47A1-812B-1DAC8B90A9B7}"
+        },
+        {
+          "name": "Nod_Barrier_Info",
+          "clsid": "{D2E4E954-DDDC-4143-B4D9-F58270DBA97D}"
+        },
+        {
+          "name": "Pnt",
+          "clsid": "{38C012B6-9A84-4B8A-AA0F-FFC28D57AB4A}"
+        },
+        {
+          "name": "PntSet",
+          "clsid": "{37AB16B6-87D7-4977-BEE9-731FD60582B0}"
+        },
+        {
+          "name": "Lin",
+          "clsid": "{45906B52-B32B-410F-94CE-F2926047A60B}"
+        },
+        {
+          "name": "LinSet",
+          "clsid": "{695C42B7-976F-4A21-8DF4-62C733C74CA1}"
+        },
+        {
+          "name": "Lin3D",
+          "clsid": "{3E358455-FE81-47D0-98FE-05A5F1BB9212}"
+        },
+        {
+          "name": "Lin3DSet",
+          "clsid": "{B2DF439B-8697-4EFA-A845-1700E7C73886}"
+        },
+        {
+          "name": "Reg",
+          "clsid": "{FC19F4FC-08B5-4568-9764-01BBC48EA67C}"
+        },
+        {
+          "name": "RegSet",
+          "clsid": "{DC7631C5-2A68-4E83-97D1-313F356D0FFE}"
+        },
+        {
+          "name": "Net",
+          "clsid": "{69825A44-D14F-464A-B444-CB7ABD52E8C1}"
+        },
+        {
+          "name": "NetSet",
+          "clsid": "{4D68AB4B-1334-47EC-8935-00BC41ED9F36}"
+        },
+        {
+          "name": "Path",
+          "clsid": "{1394AB7F-C0F4-4472-A8EC-C397AEEDF23D}"
+        },
+        {
+          "name": "PathSet",
+          "clsid": "{0706E34A-8493-4DD0-97C9-6D3402A94A31}"
+        },
+        {
+          "name": "GeoPnt",
+          "clsid": "{4C59D9FF-C3E3-4DFB-AE34-7EEC97090345}"
+        },
+        {
+          "name": "GeoPntSet",
+          "clsid": "{6E50D585-2F12-42FE-B688-DD890A358B58}"
+        },
+        {
+          "name": "GeoLin",
+          "clsid": "{32EC79CA-F7B5-4AAF-A900-235D22585A9C}"
+        },
+        {
+          "name": "GeoLinSet",
+          "clsid": "{4EFBD77A-AC2D-4580-A7C7-CEBCA6EEA601}"
+        },
+        {
+          "name": "GeoLin3D",
+          "clsid": "{F8CB6CE8-B439-485E-A590-1AF0027C491A}"
+        },
+        {
+          "name": "GeoLin3DSet",
+          "clsid": "{1621CDB5-EB91-457A-96F5-11477760BD98}"
+        },
+        {
+          "name": "GeoReg",
+          "clsid": "{E9C62A80-92FE-4FC2-8CF6-9759CDB5D0EB}"
+        },
+        {
+          "name": "GeoRegSet",
+          "clsid": "{20CA9848-A724-4E57-9F3C-BC57C3C8AE7E}"
+        },
+        {
+          "name": "GeoNet",
+          "clsid": "{A42AB2EF-272A-48B7-B4F6-DAF5B4F965B6}"
+        },
+        {
+          "name": "GeoNetSet",
+          "clsid": "{844C1AFE-96DE-4923-8AF3-8DCEAC6CC896}"
+        },
+        {
+          "name": "GeoPath",
+          "clsid": "{60C87919-F27D-4F18-A17C-5F97F36526A0}"
+        },
+        {
+          "name": "GeoPathSet",
+          "clsid": "{65664812-B40C-4E7C-A766-0707772F8C9A}"
+        },
+        {
+          "name": "LayerOnOffPad",
+          "clsid": "{44335D3C-DA27-4A69-9C12-570EDE533874}"
+        },
+        {
+          "name": "LayerPad",
+          "clsid": "{69F0D4A3-39BA-46A6-A8D5-0628796B03C8}"
+        },
+        {
+          "name": "IDList",
+          "clsid": "{79F124E7-8354-4294-AC76-2F0EF13710A8}"
+        },
+        {
+          "name": "LONGList",
+          "clsid": "{C361C9BE-F1D0-40CA-B68E-96295D62F8F7}"
+        },
+        {
+          "name": "RepFldFlag",
+          "clsid": "{31E9AB5C-1F41-41C0-AB21-531C20ED8799}"
+        },
+        {
+          "name": "Tic_Dot",
+          "clsid": "{AB3AC98C-39BA-4D1D-997A-0BFE5F3278D3}"
+        },
+        {
+          "name": "Tic_DotSet",
+          "clsid": "{04A4BFE5-3378-4EDB-8EF6-3E56D5E48877}"
+        },
+        {
+          "name": "Ask_Db_Rcd",
+          "clsid": "{769C86FD-C00D-493B-8CA8-CF9EFF14DFE4}"
+        },
+        {
+          "name": "Ext_Link_Db_Info",
+          "clsid": "{B37B957F-316C-488E-A34C-9418EF2C3EA2}"
+        },
+        {
+          "name": "Rad",
+          "clsid": "{641FDA0C-BF9E-46A4-8433-9CCE566978C3}"
+        },
+        {
+          "name": "RadSet",
+          "clsid": "{6CF2D626-1F7C-4322-A431-E0432B835983}"
+        },
+        {
+          "name": "WorkArea",
+          "clsid": "{3ECB6564-8DC5-4480-93F2-0FFDFF1132A9}"
+        },
+        {
+          "name": "VectWorkArea",
+          "clsid": "{F9A4A1F0-0BB2-4678-A229-3E14176648D7}"
+        },
+        {
+          "name": "TblArea",
+          "clsid": "{C398C95F-B378-455C-89F1-8404CA007DF6}"
+        },
+        {
+          "name": "ExtDbTool",
+          "clsid": "{93906582-AC9F-4D40-A72E-5273A8DAA6A0}"
+        },
+        {
+          "name": "layer",
+          "clsid": "{623742B8-CDDB-4157-B450-2E869B6D9C7D}"
+        },
+        {
+          "name": "PntAtt",
+          "clsid": "{A62F760D-ACD6-4F78-B06E-1E7D76422DE7}"
+        },
+        {
+          "name": "LinAtt",
+          "clsid": "{D5AFBC34-7F35-4E93-8248-E90B256E664A}"
+        },
+        {
+          "name": "RegAtt",
+          "clsid": "{6C25E54E-B8A6-4608-A8C9-D1143DA88C81}"
+        },
+        {
+          "name": "NodAtt",
+          "clsid": "{BA756261-30D2-4AAD-9249-311DF86E93C8}"
+        },
+        {
+          "name": "NetAtt",
+          "clsid": "{F0766021-547D-4DEA-9FF2-2C6782CF35DD}"
+        },
+        {
+          "name": "NodData",
+          "clsid": "{590746A7-B8C2-4F9B-BF6F-A8DFE7B533BE}"
+        },
+        {
+          "name": "LinData",
+          "clsid": "{3070E632-5A63-45F6-A3F6-7EF3945409D1}"
+        },
+        {
+          "name": "PathData",
+          "clsid": "{40E684E8-03A9-411E-A8BA-F3884DC434EA}"
+        },
+        {
+          "name": "PntArea",
+          "clsid": "{815B7C63-500E-4D86-BFFD-35677B9CEC53}"
+        },
+        {
+          "name": "LinArea",
+          "clsid": "{C18776C2-9AF5-4A6F-88C9-7F96F2E6DDF8}"
+        },
+        {
+          "name": "RegArea",
+          "clsid": "{6F5430C6-5A6D-4D4C-88C4-CAFFAFF66AF1}"
+        },
+        {
+          "name": "NetArea",
+          "clsid": "{6E94D263-D368-4B54-B25D-D9284DCFF1B4}"
+        },
+        {
+          "name": "ExpObj",
+          "clsid": "{FB8F3C03-C0E5-4EB0-A8C1-0A2E70D44536}"
+        },
+        {
+          "name": "Query",
+          "clsid": "{AB059D37-81C4-4FB2-9EDB-F6C216F08330}"
+        },
+        {
+          "name": "MapGis",
+          "clsid": "{8CFA9957-4A0F-4986-8B8F-0E46CFF871FE}"
+        },
+        {
+          "name": "Analysis",
+          "clsid": "{9F9D6574-EFB8-4470-9E6E-E33EBDBF3E50}"
+        },
+        {
+          "name": "TraceDEM",
+          "clsid": "{62D06D3C-711B-4140-A9BA-B75D1D548ED5}"
+        }
+      ]
+    },
+    {
+      "name": "MapGisMapCom.dll",
+      "sha256": "f01519451e70e2a1ae4c419d7e4f42cfe447a85afcb8cda5a8d1449c248562df",
+      "typelib": "{A060DC63-A02B-476A-8D94-089205E445F5}",
+      "version": "1.0",
+      "classes": [
+        {
+          "name": "Map",
+          "clsid": "{F2FE2977-230D-48E5-BEEB-D8DBD5C507E2}"
+        },
+        {
+          "name": "MapLayout",
+          "clsid": "{BEBC6176-B318-4EB1-B1D4-B847B5C56E69}"
+        },
+        {
+          "name": "MapSurround",
+          "clsid": "{8479628E-F577-4C17-94B6-90DA3109CD49}"
+        },
+        {
+          "name": "MapScaleBar",
+          "clsid": "{F4C8C2D2-0E15-4A92-B18B-CBB0192724AC}"
+        },
+        {
+          "name": "MapScaleText",
+          "clsid": "{F473FECC-B607-43C7-A4D6-70B3D11E0EC6}"
+        },
+        {
+          "name": "MapLegend",
+          "clsid": "{E823F1D0-8E0B-420B-B175-03A6D10D97FE}"
+        },
+        {
+          "name": "LegendItem",
+          "clsid": "{65D93E7E-491B-4188-A344-E8C1D52123B5}"
+        },
+        {
+          "name": "MapNorthArrow",
+          "clsid": "{8BC12BA4-9579-4B33-A511-13249842BB5C}"
+        },
+        {
+          "name": "PntLegendItem",
+          "clsid": "{EFD4D2DA-D622-4DCA-9A44-82547C00F3DF}"
+        },
+        {
+          "name": "LinLegendItem",
+          "clsid": "{DA882A9A-4E75-46F2-99AE-1EA446E67399}"
+        },
+        {
+          "name": "RegLegendItem",
+          "clsid": "{50568263-8235-49A0-8B91-A15DA11917D1}"
+        },
+        {
+          "name": "MapPrintParam",
+          "clsid": "{250FBB0A-CD9F-49AE-B39F-519377C49EC4}"
+        }
+      ]
+    },
+    {
+      "name": "MapgisLayerCom.dll",
+      "sha256": "b9daa169cddaed2b26e7f20944a56088fb3fbebdf51b9c7c396f143483d90a2c",
+      "typelib": "{24C7282E-D6A3-4BCC-B5A5-A7732FFAFC81}",
+      "version": "1.0",
+      "classes": [
+        {
+          "name": "MapLayer",
+          "clsid": "{114B79C7-8E18-4CA5-9020-5B14D1D6444A}"
+        },
+        {
+          "name": "VectorLayer",
+          "clsid": "{F8B65E18-EC06-4564-A544-473068A8DD31}"
+        },
+        {
+          "name": "LinLayer",
+          "clsid": "{DF67BCD7-3C89-4E8C-BD53-2B376EDDA3BA}"
+        },
+        {
+          "name": "PntLayer",
+          "clsid": "{2EAA1CAE-5305-46E3-A187-D38459CD16F5}"
+        },
+        {
+          "name": "RegLayer",
+          "clsid": "{AD3B4AAF-46F6-4403-8B36-61CFB057C191}"
+        },
+        {
+          "name": "NetLayer",
+          "clsid": "{E98BB258-FC6C-4E4B-B625-98BF81D76793}"
+        },
+        {
+          "name": "GroupLayer",
+          "clsid": "{4125FD2D-8149-4F9A-948E-1357CFF054DB}"
+        },
+        {
+          "name": "SelectItem",
+          "clsid": "{F1BEA485-73F5-446B-8D70-50C9431E986E}"
+        },
+        {
+          "name": "SelectSet",
+          "clsid": "{A58BA9E0-F742-4E4C-98EB-C501AE8D9B86}"
+        }
+      ]
+    },
+    {
+      "name": "MapGisDspCom.dll",
+      "sha256": "af330ddf5320fa6bf1f0a4c915a188664e2e21c345c861aaa3c16205035f09aa",
+      "typelib": "{2B4164B5-18E8-4156-B227-AD5942B09721}",
+      "version": "1.0",
+      "classes": [
+        {
+          "name": "MapGisDC",
+          "clsid": "{E52DF8C3-C699-49C9-AA2D-38B1B58FFF2A}"
+        }
+      ]
+    }
+  ],
+  "scope": "Installed exact-build SDK identities only; no binary or license material"
+}

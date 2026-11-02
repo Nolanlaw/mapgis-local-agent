@@ -1,0 +1,63 @@
+{
+  "id": "native-tin-scene",
+  "schema_version": 1,
+  "title": "原生TIN三维视图",
+  "execution": "mapgis_prepare_native_tin_scene调用原厂Tin3DView和W60_Tin；自有私有桌面的隐藏OpenGL上下文，不发送键鼠事件。",
+  "native_module": "three_d",
+  "validation": "LOCAL_SAMPLE_TESTED",
+  "validation_scope": "25次实际MCP已验证山脊、平面、零高程、大坐标、相机缩放、FOV、重复请求、隐藏旧目录后的迁移重开与三种明确拒绝；RGB贴图创建/继承/替换/移除和源变化拒绝20次实际MCP通过。静态及带纹理均经真实退出120/122/123/121后12次恢复，不重放原渲染，成功编码沿用原PID，失败编码另起文件，原TIN/相机/日志SHA与mtime保持。 TIN三维线19次实际MCP及12次真实退出恢复通过；物理ID1、3、原XYZ/图形参数回读、贴图并用与移除还原、迁移及伪造拒绝均验证。",
+  "inputs": [
+    "原生WTIN，最多10万点20万面，连续活动物理记录；明确米制XY/Z和frame",
+    "可选.tin.json绑定原生TIN摘要、坐标与高程单位；仅读取其数据，不追溯source_file路径"
+  ],
+  "steps": [
+    {
+      "id": "create",
+      "action": "operation=create，parameters.vertical_unit=metre，template.name以.scene.json结尾，template.crs明确米制投影或本地坐标。原厂逐记录检查TIN，建立独立局部显示区，再原厂渲染；原始model.tin完整保留。",
+      "tools": [
+        "mapgis_prepare_native_tin_scene",
+        "mapgis_apply_patch",
+        "mapgis_get_request"
+      ]
+    },
+    {
+      "id": "view",
+      "action": "operation=render读取清单，parameters={}恢复精确相机；width/height32..2048，fov_degrees30..120。scales为正三分量，eye/target成对指定世界XYZ米；显式这些参数选择新视图。native_camera保持返回的原点、局部向量和比例，不和eye/target/scales混用。",
+      "tools": [
+        "mapgis_prepare_native_tin_scene",
+        "mapgis_apply_patch"
+      ]
+    },
+    {
+      "id": "texture",
+      "action": "texture指定全覆盖uint8 RGB2..1024像素及摘要，可附expected_members。保留世界坐标texture.tif与局部显示texture.msi，原厂提取器生成128..1024显示纹理，按原厂插值显示。render默认继承，可替换或remove_texture移除；不调用原厂参数对话框。",
+      "tools": [
+        "mapgis_prepare_native_tin_scene",
+        "mapgis_apply_patch",
+        "mapgis_reconcile_artifact"
+      ]
+    },
+    {
+      "id": "lines",
+      "action": "line_overlay指定原WL/hash/native_metres和必要的source_crs；沿用原TIN面及每个交点计算XYZ，原厂BAS60存储和Tin3DView绘制，原WL字节/物理编号保持。height_offset_m默认0；继承、替换或remove_line_overlay移除。缺失TIN域拒绝跨接，不重新三角化，不调用受限求解器；不承诺全部二维复杂线型。",
+      "tools": [
+        "mapgis_prepare_native_tin_scene",
+        "mapgis_apply_patch",
+        "mapgis_reconcile_artifact"
+      ]
+    },
+    {
+      "id": "flight",
+      "action": "operation=flight读取已保存场景，flight.points为2..100个世界XYZ米，speed为原厂PAT空间速度参数，fps1..60，可选frame_start/frame_count及max_coordinate_error_m（默认0）。使用已保存精确相机；视角/比例改动先render保存。原厂预计算容量和实际路径均最多1000，AVI小于1GiB。输出flight.avi/flight.pat/flight.txt/initial-camera.bin；render恢复末帧，重录默认初始相机。25次实际MCP已验证114帧逐帧读回、片段、静态末帧、迁移重开与重录；原始模型/纹理/WL保持。",
+      "tools": ["mapgis_prepare_native_tin_scene", "mapgis_apply_patch", "mapgis_get_request", "mapgis_reconcile_artifact"]
+    },
+    {
+      "id": "reopen",
+      "action": "保留整个目录，含model.tin、可选model.tin.json、camera.bin、可选texture.tif/texture.msi、overlay.wl/lines.xyz、MSI/TIFF/PNG及清单。相机使用双精度世界原点和局部float32，避免大坐标量化；Z除以真实垂直比例。JSON为Agent清单，透视图不赋地面CRS。",
+      "tools": [
+        "mapgis_get_request",
+        "mapgis_reconcile_artifact"
+      ]
+    }
+  ]
+}

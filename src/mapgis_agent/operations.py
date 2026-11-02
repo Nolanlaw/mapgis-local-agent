@@ -5,8 +5,15 @@ import json
 from pathlib import Path
 
 
+# Freeze descriptions with the Python revision that registered the tools.
+# The legacy base remains byte-identical for already-running older servers;
+# Only a runtime importing this revision discovers the additive family catalogs.
+_CATALOG = [item for name in ('operations.json','volume-operations.json','raster-operations.json','exchange-operations.json','geochemistry-operations.json','database-operations.json','multimedia-operations.json','sdk-operations.json','private-control-operations.json')
+            for item in json.loads(Path(__file__).with_name(name).read_text(encoding='utf8'))]
+
+
 def _catalog() -> list[dict]:
-    return json.loads(Path(__file__).with_name("operations.json").read_text(encoding="utf-8"))
+    return list(_CATALOG)
 
 
 def _workflow(relative: str) -> dict:
@@ -33,12 +40,24 @@ def describe_operation(root: str | Path, operation_id: str) -> dict:
         availability = ("NOT_CONFIGURED" if not program else
                         "LEGACY_HOST_DISABLED" if config.get("native_backend_legacy_dep_compatibility") is not True else
                         "EXACT_BUILD_AND_LICENCE_CHECKED_PER_CALL")
+    if operation_id=='native.private_control':
+        availability=('PRIVATE_UI_AUTHORIZATION_REQUIRED' if config.get('native_general_private_ui') is not True else
+                      'NOT_CONFIGURED' if not program else 'EXACT_BUILD_CHECKED_PER_OPEN')
     result = {**item, "availability": availability,
             "executable_path": str(exe) if exe and exe.is_file() else None,
             "executable_by_mcp": not native,
             "coverage_scope": item.get("validation_scope",item.get("scope","See output_checks and parameters")),
             "version": "6.7; live editor requires exact supported build",
             "licence": "Native module access must be checked in the actual session" if native else None}
+    if native and config.get('native_general_private_ui') is True:
+        from .private_control import _profile
+        match=next((key for key,value in _profile()['modules'].items()
+                    if value['executable'].casefold()==item['executable'].casefold()),None)
+        if match:
+            result.update(reference_execution=item['execution'],
+                execution={'kind':'mcp','tool':'mapgis_private_control','module':match,
+                           'backend':'mapgis_owned_private_ui','requires_observation':True},
+                executable_by_mcp=True,availability='EXACT_BUILD_CHECKED_PER_OPEN' if program else 'NOT_CONFIGURED')
     if item.get("workflow"):
         result["workflow_knowledge"] = _workflow(item["workflow"])
     return result

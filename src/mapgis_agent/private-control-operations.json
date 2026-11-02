@@ -1,0 +1,13 @@
+[
+  {
+    "id": "native.private_control",
+    "name": "本机非服务器模块的私有进程调用",
+    "module": "native",
+    "validation": "NATIVE_LOCAL_WORKFLOWS_SAVE_FRESH_REOPEN_VERIFIED",
+    "execution": {"kind":"mcp","tool":"mapgis_private_control","backend":"mapgis_owned_private_ui"},
+    "parameters": {"policy":"只读精确安装模块及权限开关","open":"任务副本及明确输入/输出绑定，创建自有私有进程","observe":"观察真实菜单和控件，返回一次性token","act":"按观察执行文本/按钮/菜单/选择/复选框/树目录分页与选择/客户区消息/非全局按键；同一自有作业内独立重绘PNG","close":"正常关闭；明确discard=true时可收回无响应的自有作业"},
+    "output_checks": ["启动前校验模块摘要，排除服务器依赖入口","私有桌面和KILL_ON_JOB_CLOSE作业，只创建新进程","观察token、窗口PID、命令ID、完整请求和幂等回执","原始输入不改，所有输入和结果位于任务副本中","菜单消息投递不等于运算或保存已完成，需另行实际读回"],
+    "scope": "本机开关已启用。报表BB、分幅图库DBS、高程库Inf/Hdr/Dem、网络WN、测量SUV均有原厂生成、保存、全新进程重开及结果读回。原有SDK/COM/文件和3BN/3DM继续复用。其余模块由真实菜单/控件调用机制补足；不将单个样本称为每种参数组合已验证。DTM6x是缺少载荷的解包壳，原厂DTM3DFly另有精确入口，三维图像导出优先既有原厂SDK。详见本机调用范围表。",
+    "evidence": ["docs/LOCAL67-ROUTES.md","docs/PRIVATE-CALLS-PROPOSAL.md","work/full-implementation-20261101/local67-calling/general-private-ui-authorization.json","work/full-implementation-20261101/local67-calling/reports-native-result.json","work/full-implementation-20261101/local67-calling/library-native-result.json","work/full-implementation-20261101/local67-calling/dem-library-native-result.json","work/full-implementation-20261101/local67-calling/network-native-result.json","work/full-implementation-20261101/local67-calling/survey-native-result.json"]
+  }
+]

@@ -112,6 +112,12 @@ def _grid(xy,z,tri,settings):
 
 
 def prepare_terrain(bridge:Bridge,file:str,expected_sha256:str,parameters:dict,template:dict,request_id:str)->dict:
+    if parameters.get('operation')=='native.tin':
+        from .native_tin import prepare_native_tin
+        return prepare_native_tin(bridge,file,expected_sha256,parameters,template,request_id)
+    if parameters.get('operation')=='native.idw':
+        from .native_terrain import prepare_native_idw
+        return prepare_native_idw(bridge,file,expected_sha256,parameters,template,request_id)
     operation=parameters.get('operation')
     allowed={'tin':{'operation','height_field'},'grid':{'operation','height_field','bounds','step'},
              'contours':{'operation','height_field','levels','grid'}}

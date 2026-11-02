@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+os.environ.setdefault('OPENBLAS_NUM_THREADS','1')
 import argparse
 import asyncio
 import json

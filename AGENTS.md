@@ -10,6 +10,13 @@
   as local and do not claim geodetic accuracy. Review scan-derived geology and
   classifications against the source before treating a draft as a finished map.
 - Saved WT/WL/WP file operations use the existing Python stdio/CLI server.
+- If this client's mapgis_local MCP transport is closed, use the existing formal
+  CLI with the same registered tool and arguments: the checkout's .venv/Scripts/python.exe
+  -s -B -X utf8 scripts/mapgis_cli.py --root TASK_ROOT call --arguments CALL.json.
+  CALL.json is {"tool":"mapgis_TOOL_NAME","arguments":{...}}. Read tools/describe
+  for current schemas, bind real hashes, and reconcile stable request IDs. This
+  is an executable fallback, not a repaired MCP connection. Do not restart
+  other sessions or change global provider/MCP security to recover one transport.
 - With explicit native_backend_legacy_dep_compatibility opt-in, prefer the isolated
   x86 backend for native_file_info, resave, point.move, WT/WL/WP deletion,
   native_workspace dirty/save/discard/recover, MSI, MPJ and native EPS composition.
@@ -39,6 +46,13 @@
   module profile. A matching binary profile is not a licence or Sky-host test.
 - Live MapGIS 6.7 observations use scripts/native_session.mjs with the documented
   `@oai/sky` object in node_repl. Do not replace this with another UI driver.
+- User-authorized exception expanded on 2026-11-02: the private Win32 route may
+  control other installed MapGIS6.7 NON-SERVER modules, only newly owned private
+  processes and task copies, without the user's mouse/keyboard/foreground or
+  existing windows, and without installation/licence changes. See
+  evidence/release-070/authorization.json (local provenance, not shipped).
+  Use the exact-build module policy and native_general_private_ui local opt-in.
+  The Sky rule above remains applicable to external/user-desktop observations.
 - Bind the full native MPJ path, editor PID/start time, four module digests, loaded
   code guards and current Sky window. captureLive binds the observed MDI title to
   one native project view; duplicate basenames require 工程项目属性's full path.

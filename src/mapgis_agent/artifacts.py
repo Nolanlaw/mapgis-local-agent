@@ -21,13 +21,67 @@ def _file_sha(path):
     with Path(path).open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
 
 
+def _check_source(source):
+    # An offline database's main-file hash does not capture a later WAL/lock.
+    # Existing sources keep their original hash contract. Only new explicit
+    # absence references add this condition, until immutable publication.
+    if source.get('must_be_absent') is True:
+        if set(source)!={'file','must_be_absent'}:raise BridgeError('ARTIFACT_SOURCE_GUARD')
+        if os.path.lexists(source['file']):raise BridgeError('STALE_SOURCE: previously absent database companion appeared')
+    elif _file_sha(source['file'])!=source['sha256']:raise BridgeError('STALE_SOURCE')
+
+
+def _member_parts(name):
+    if not isinstance(name,str):raise BridgeError('ARTIFACT_FILENAME')
+    parts=name.split('/')
+    if any(not part or part in {'.','..'} or any(c in part for c in '\\:<>"|?*')
+           or any(ord(c)<32 for c in part) or part.endswith((' ','.')) for part in parts):
+        raise BridgeError('ARTIFACT_FILENAME')
+    return parts
+
+
+def _member_directories(names):
+    files=set();directories=set()
+    for name in names:
+        parts=_member_parts(name);key=name.casefold() if os.name=='nt' else name
+        if key in files:raise BridgeError('ARTIFACT_FILENAME')
+        files.add(key)
+        directories.update('/'.join(parts[:i]) for i in range(1,len(parts)))
+    keys={v.casefold() if os.name=='nt' else v for v in directories}
+    if files & keys:raise BridgeError('ARTIFACT_FILENAME')
+    return directories
+
+
+def _disk_tree(root):
+    """Regular owned files only; never follow a symlink or Windows junction."""
+    root=Path(root);files={};directories=set()
+    if not root.exists():return files,directories
+    if not root.is_dir() or root.is_symlink() or root.is_junction():raise BridgeError('ARTIFACT_MEMBER_TYPE')
+    resolved=root.resolve();pending=[root]
+    while pending:
+        folder=pending.pop()
+        for path in folder.iterdir():
+            name=path.relative_to(root).as_posix();_member_parts(name)
+            if path.is_symlink() or path.is_junction() or not path.resolve().is_relative_to(resolved):raise BridgeError('ARTIFACT_MEMBER_TYPE')
+            if path.is_dir():directories.add(name);pending.append(path)
+            elif path.is_file():files[name]=path
+            else:raise BridgeError('ARTIFACT_MEMBER_TYPE')
+    return files,directories
+
+
+def _tree_matches(root,members):
+    try:
+        actual,directories=_disk_tree(root);expected=_member_directories(m['name'] for m in members)
+        return bool(members) and set(actual)=={m['name'] for m in members} and directories==expected and all(
+            _file_sha(actual[m['name']])==m['digest'] for m in members)
+    except (BridgeError,OSError):return False
+
+
 def bundle_status(db, row):
     receipt=json.loads(row['receipt'])
     output=Path(receipt['output'])
     members=_members(db,row['id'])
-    actual={p.name for p in output.parent.iterdir()} if output.parent.is_dir() else set()
-    matches=bool(members) and actual=={m['name'] for m in members} and all(
-        (output.parent/m['name']).is_file() and _file_sha(output.parent/m['name'])==m['digest'] for m in members)
+    matches=_tree_matches(output.parent,members)
     return receipt|{'state':'OUTPUT_CHANGED' if row['state']=='APPLIED' and not matches else row['state'],
                     'output_exists':output.exists(),'output_matches':matches}
 
@@ -40,24 +94,27 @@ def apply_bundle(bridge,db,row):
         return receipt|{'state':'APPLIED','reconciled_existing_output':True}
     if row['state']=='APPLIED':raise BridgeError('OUTPUT_MISSING: use a new request')
     for source in receipt['sources']:
-        if _file_sha(source['file'])!=source['sha256']:raise BridgeError('STALE_SOURCE')
+        _check_source(source)
     if not members or not any(m['name']==output.name for m in members):raise BridgeError('ARTIFACT_MEMBERS_MISSING')
     output.parent.parent.mkdir(parents=True,exist_ok=True)
     staging=output.parent.with_name('.'+output.parent.name+'.publishing')
     staging=bridge.destination_path(staging)
     staging.mkdir(exist_ok=True)
     expected={m['name']:m for m in members}
-    for path in staging.iterdir():
-        if path.name not in expected or path.is_symlink() or not path.is_file() or _file_sha(path)!=expected[path.name]['digest']:
+    directories=_member_directories(m['name'] for m in members)
+    actual,actual_directories=_disk_tree(staging)
+    if not actual_directories<=directories:raise BridgeError('ARTIFACT_PUBLICATION_CONFLICT')
+    for name,path in actual.items():
+        if name not in expected or _file_sha(path)!=expected[name]['digest']:
             raise BridgeError('ARTIFACT_PUBLICATION_CONFLICT')
     for member in members:
-        target=staging/member['name']
+        target=staging.joinpath(*_member_parts(member['name']))
         if target.exists():continue
+        target.parent.mkdir(parents=True,exist_ok=True)
         with target.open('xb') as stream,db.blobopen('artifact_members','data',member['rowid'],readonly=True) as blob:
             while chunk:=blob.read(1024*1024):stream.write(chunk)
             stream.flush();os.fsync(stream.fileno())
-    if {p.name for p in staging.iterdir()}!={m['name'] for m in members} or any(
-        not (staging/m['name']).is_file() or _file_sha(staging/m['name'])!=m['digest'] for m in members):
+    if not _tree_matches(staging,members):
         raise BridgeError('INCOMPLETE_ARTIFACT_PUBLICATION: inspect the owned staging directory')
     os.rename(staging,output.parent)
     if not bundle_status(db,row)['output_matches']:raise BridgeError('ARTIFACT_READBACK_FAILED')
@@ -79,9 +136,9 @@ def begin_bundle(bridge:Bridge,payload:dict,request_id:str,sources:list[dict],pr
             if old['payload_hash']!=fingerprint:raise BridgeError('REQUEST_ID_CONFLICT')
             return stage,bridge._receipt(old),False
         for item in sources:
-            path=Path(item['file']).resolve(strict=True)
-            if _file_sha(path)!=item['sha256']:raise BridgeError('STALE_SOURCE')
+            path=Path(item['file']).resolve(strict=item.get('must_be_absent') is not True)
             item['file']=str(path)
+            _check_source(item)
         if not sources:raise BridgeError('ARTIFACT_SOURCE_REQUIRED')
         if stage.exists():raise BridgeError('ARTIFACT_STAGE_CONFLICT')
         stage.mkdir(parents=True)
@@ -101,10 +158,9 @@ def finish_bundle(bridge:Bridge,request_id:str,files:Path,metadata:dict)->dict:
     receipt=bridge._receipt(row);stage=bridge.destination_path(receipt['stage'])
     files=bridge.destination_path(files)
     if files.parent!=stage or files.name!='files':raise BridgeError('ARTIFACT_STAGE_IDENTITY')
-    members=[]
-    for path in sorted(files.iterdir()):
-        if not path.is_file() or path.is_symlink() or path.resolve().parent!=files:raise BridgeError('ARTIFACT_MEMBER_TYPE')
-        members.append({'name':path.name,'sha256':_file_sha(path)})
+    actual,directories=_disk_tree(files)
+    if directories!=_member_directories(actual):raise BridgeError('ARTIFACT_MEMBER_TYPE')
+    members=[{'name':name,'sha256':_file_sha(path)} for name,path in sorted(actual.items())]
     record={'members':members,'metadata':metadata}
     temporary=stage/'complete.tmp'
     with temporary.open('x',encoding='utf8') as stream:
@@ -125,12 +181,15 @@ def reconcile_bundle(bridge:Bridge,request_id:str)->dict:
         stage=bridge.destination_path(receipt['stage']);complete=stage/'complete.json'
         if not complete.is_file():raise BridgeError('ARTIFACT_INCOMPLETE: no producing operation was replayed')
         record=json.loads(complete.read_text(encoding='utf8'));members=record['members'];paths={}
+        _member_directories(member['name'] for member in members)
         for source in receipt['sources']:
-            if _file_sha(source['file'])!=source['sha256']:raise BridgeError('STALE_SOURCE')
+            _check_source(source)
+        actual,_=_disk_tree(stage/'files')
         for member in members:
             name=member['name']
-            if Path(name).name!=name or any(c in name for c in '/\\:<>"|?*') or name in paths:raise BridgeError('ARTIFACT_FILENAME')
-            path=bridge.owned_path(stage/'files'/name)
+            if name in paths:raise BridgeError('ARTIFACT_FILENAME')
+            path=bridge.owned_path((stage/'files').joinpath(*_member_parts(name)))
+            if name not in actual:raise BridgeError('ARTIFACT_CANDIDATE_CHANGED')
             if _file_sha(path)!=member['sha256']:raise BridgeError('ARTIFACT_CANDIDATE_CHANGED')
             paths[name]=path
         primary=Path(receipt['output']).name

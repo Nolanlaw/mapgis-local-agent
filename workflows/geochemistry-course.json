@@ -1,0 +1,17 @@
+{
+  "id":"geochemistry-course","schema_version":1,
+  "title":"地球化学原始数据、异常下限、MapGIS 原生格网与单元素异常图",
+  "execution":"Agent uses public stdio MCP tools; no mouse, GUI focus or Excel instance is required.",
+  "validation":"NATIVE_COURSE_FIXTURE_TESTED",
+  "scope":"Two coursework flows: all 19 element backgrounds and raw sample preservation; W/Sn native all-point IDW, two threshold schemes, portable editable MPJ and actual native EPS/PDF/TIFF/JPEG. Not full DTM-module coverage.",
+  "steps":[
+    {"id":"inspect","tools":["mapgis_table_info"],"action":"Bind the original workbook SHA and choose the actual sheet/XY/element columns. Do not infer a datum or target element from a file name."},
+    {"id":"statistics","tools":["mapgis_prepare_geochemistry","mapgis_apply_patch"],"action":"Iterate upper Q3+1.5IQR outliers with inclusive linear quartiles, sample SD and C=mean+2SD. Preserve original rows separately. Report C/2C/4C and C/4C/16C; screening is not a normality test."},
+    {"id":"raw-points","tools":["mapgis_prepare_table_points","mapgis_native_file_info"],"action":"Import all raw observations to WT with explicit local/Earth frame and scale. Do not use screened background rows for interpolation. Native reopen and compare every selected attribute."},
+    {"id":"grid","tools":["mapgis_prepare_terrain","mapgis_native_grid_info"],"action":"Set operation=native.idw, node-centre bounds, shape, integer power and explicit anisotropy. Native all-point search uses search_radius/1e8 only as coincidence tolerance. Validate saved GRD independently through GDAL and a new native PID."},
+    {"id":"vectors","tools":["mapgis_prepare_grid_vectors","mapgis_prepare_native_operation"],"action":"Generate contours and bands from that GRD, with explicit thresholds and optional raw-point convex-hull mask. Record empty levels. Native-resave derived WL/WP and reopen."},
+    {"id":"page","tools":["mapgis_prepare_creation","mapgis_prepare_system_library","mapgis_prepare_native_project"],"action":"Build editable comparison panels, legends, frame and labels. Inspect the real Pcolor palette; do not assume a color number is black. Bind an explicit project library if stable colors are required. Native text font/width parameters must be verified on the actual page."},
+    {"id":"output","tools":["mapgis_prepare_project_plot","mapgis_prepare_plot_export","mapgis_native_project_info"],"action":"Native Level 2 PS/EPS, then Ghostscript PDF/TIFF/JPEG. Verify physical page/dpi, actual pixels and a fresh native MPJ reopen. Project-bound sibling libraries survive agent edits and relocation."},
+    {"id":"recovery","tools":["mapgis_get_request","mapgis_reconcile_artifact"],"action":"After a lost MCP response, inspect the stable request first. Completed native IDW is reconciled from its actual child receipt and reopened, not computed again. Incomplete generation is not claimed as complete."}
+  ]
+}

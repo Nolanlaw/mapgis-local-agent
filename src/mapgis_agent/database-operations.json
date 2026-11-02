@@ -1,0 +1,63 @@
+[
+  {
+    "id": "database.join",
+    "name": "离线SQLite、Access和DBF表关联及显式NULL状态",
+    "module": "attributes",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_database_join",
+      "backend": "task_snapshot_existing_native_attribute_encoder"
+    },
+    "parameters": {
+      "database": "文件/哈希、sqlite或access及原表名；dbf须table=null并明确encoding；本机已有驱动，无远程凭据",
+      "parameters": "原生/表键、text/numeric、重复原生键保留、未匹配规则、每字段类型/宽度/转换/NULL及未匹配替代值",
+      "nulls": "源NULL须另给null_flag字段；1=NULL、0=非NULL、-1=无表行。二进制hex、布尔0/1、日期分量转换均显式"
+    },
+    "output_checks": [
+      "全体原始物理编号和非属性数据保持",
+      "原始数据库只读快照、主文件及无WAL/锁文件条件绑定发布",
+      "原生属性及来源JSON、literal XLSX；原厂保存重开/出图另验"
+    ],
+    "scope": "原生主属性表限定范围：离线SQLite/Access/经典DBF表关联，NULL/空文本/有效0/空二进制/未匹配分开；同一属性键的所有物理图元保留。 46项相关检查及1项最小MCP环境针对性检查，319次累计实际MCP，3原生输入、9关联+9显示+3注记原厂保存重开，另1份17位双精度重开；3数据库回写由独立SQL/GDAL/ACE原始日期/货币/二进制/float64读取，3套MPJ/EPS/PDF/TIFF直接看图并核对30个位置。预览限行/限体积；MCP少CommonProgramFiles由Windows目录API只补本工具进程。SQLite后生WAL、真实事务回滚、DBF精度失败不发布均实测。外部服务器/凭据、原生弧结点外部表关联、复杂/带memo的DBF和整个Access对象级同步仍有范围，未覆盖原库或改许可。",
+    "reference": "https://docs.python.org/3.12/library/sqlite3.html",
+    "evidence": [
+      "work/full-implementation-20261101/mcp-database-01/result.json",
+      "work/full-implementation-20261101/mcp-database-01/edge-acceptance.json",
+      "work/full-implementation-20261101/mcp-database-01/visual-review.json",
+      "work/full-implementation-20261101/database-related-tests-11.log",
+      "work/full-implementation-20261101/access-minimal-environment-green-16.log"
+    ]
+  },
+  {
+    "id": "database.writeback",
+    "name": "原生属性写回新数据库分支与事务/精度验证",
+    "module": "attributes",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_database_writeback",
+      "backend": "task_copy_sqlite_ace_dbf"
+    },
+    "parameters": {
+      "mapping": "不可变目标键、明确字段映射/转换/null_flag、未匹配error/ignore、重复原生键error/identical",
+      "sqlite": "完整任务副本、事务及声明表/字段写入范围，失败回滚",
+      "dbf": "经典固定字段逐字节更新，位宽/小数精度不合则拒绝，保留删除槽、头和所有未改字节",
+      "access": "必须明确access_output=isolated_table_copy；新ACCDB仅本表标量数据/类型/大小，其他对象及默认/索引/关系等不复制，原库保留；日期须datetime_iso"
+    },
+    "output_checks": [
+      "原数据库与原生源摘要不变",
+      "匹配数/重复键/NULL状态和更新全表读回一致，失败不发布",
+      "SQLite事务回滚、DBF精度/无损字节、Access日期不偏移分别实测"
+    ],
+    "scope": "新分支写回限定范围：SQLite完整副本事务和精确读回；DBF固定字段精度/字节保持；Access仅明确isolated_table_copy的本表标量数据，不复制查询/宏/默认/索引/关系/其他属性。 46项相关检查及1项最小MCP环境针对性检查，319次累计实际MCP，3原生输入、9关联+9显示+3注记原厂保存重开，另1份17位双精度重开；3数据库回写由独立SQL/GDAL/ACE原始日期/货币/二进制/float64读取，3套MPJ/EPS/PDF/TIFF直接看图并核对30个位置。预览限行/限体积；MCP少CommonProgramFiles由Windows目录API只补本工具进程。SQLite后生WAL、真实事务回滚、DBF精度失败不发布均实测。外部服务器/凭据、原生弧结点外部表关联、复杂/带memo的DBF和整个Access对象级同步仍有范围，未覆盖原库或改许可。",
+    "reference": "https://learn.microsoft.com/en-us/office/client-developer/access/desktop-database-reference/begintrans-committrans-and-rollbacktrans-methods-ado",
+    "evidence": [
+      "work/full-implementation-20261101/mcp-database-01/result.json",
+      "work/full-implementation-20261101/mcp-database-01/edge-acceptance.json",
+      "work/full-implementation-20261101/mcp-database-01/visual-review.json",
+      "work/full-implementation-20261101/database-related-tests-11.log",
+      "work/full-implementation-20261101/access-minimal-environment-green-16.log"
+    ]
+  }
+]

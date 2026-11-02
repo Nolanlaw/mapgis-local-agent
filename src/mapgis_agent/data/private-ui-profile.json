@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "scope": "Exact installed6.7 non-server task entries and its original DTM3DFly submodule. The DTM6x main-menu file is an extractor whose payload is absent; use the existing native scene tools and terrain_flight. Permission requires local opt-in.",
+  "modules": {
+    "survey": {
+      "label": "数字测量/测图",
+      "executable": "MapSuvL67.exe",
+      "sha256": "b5e0e920045d483e755b6afc9d7366f7155e92bfcae1b0a92dc57222ecfde483"
+    },
+    "editor": {
+      "label": "图形编辑",
+      "executable": "mdiedit6x.exe",
+      "sha256": "34e34d198cce7a10bfa16ddf11e74dbd6afb85d68ac0a8e7f8561a136d052504"
+    },
+    "output": {
+      "label": "输出",
+      "executable": "mapout60.exe",
+      "sha256": "f8044436e4ae43a9fa0d0762aeca9c93ca486efc53788f89509c2757eafa4e4f"
+    },
+    "conversion": {
+      "label": "文件转换",
+      "executable": "W60_Conv.exe",
+      "sha256": "293ed19e349989d03845c894522ba99c1b8f83a7b6ab34d1602824dc21f4f1c9"
+    },
+    "attributes": {
+      "label": "属性管理",
+      "executable": "W60_Att.exe",
+      "sha256": "3e28d5252dbb29843add73bc3a53baa785234967a21e663faf07f9b28c6405ec"
+    },
+    "library": {
+      "label": "分幅图库",
+      "executable": "W60_Dbs.exe",
+      "sha256": "fbd671d0a0272c04e6c90c968c79dd3589d7b76b652e91b789a96296d02c5238"
+    },
+    "image_library": {
+      "label": "影像库",
+      "executable": "MsiDb60.exe",
+      "sha256": "a2cd4fed9f7a5f2b0ccc6d5e2efebf0ddac5d27333c75ef61ebf457439b0530d"
+    },
+    "analysis": {
+      "label": "空间分析",
+      "executable": "W60_Anly.exe",
+      "sha256": "ec91e2b3d8fc0b48c2ff008f150dfc07344d672a0df9447ad500296f2bf60e61"
+    },
+    "terrain": {
+      "label": "数字地面模型",
+      "executable": "W60_DTM.exe",
+      "sha256": "a270d68469b7514fc34edda2e1c33952276c73bbe88cbb5a586cc3c8197b6c2e"
+    },
+    "network_legacy": {
+      "label": "网络输入编辑",
+      "executable": "n60_edit.exe",
+      "sha256": "6c291b75c390c13121177fb5ba829ff852c7ebae168fb2a703ccd54fabf8e2cf"
+    },
+    "network": {
+      "label": "网络分析",
+      "executable": "Netanaly.exe",
+      "sha256": "d03d840dc1f145ad2a11bd767b3546a45c4521fb57fdbceed9fb4921046ac037"
+    },
+    "raster": {
+      "label": "影像处理",
+      "executable": "msiProc60.exe",
+      "sha256": "4269cc9abe7f8a7f08fecc22b9f15113697bf81fbe3689c1eca8ce225a62ba0b"
+    },
+    "terrain_3d": {
+      "label": "三维入口解包壳（本机缺少载荷）",
+      "executable": "DTM6x.exe",
+      "sha256": "39a36b85e90620d60a66bb1ef56a864b1e8547897639e164728f451736f2d2b4",
+      "entry_role": "archive_extractor",
+      "required_payload": "_dtmsfx.exe",
+      "alternative_routes": [
+        "mapgis_prepare_native_scene",
+        "mapgis_prepare_native_tin_scene",
+        "terrain_flight"
+      ]
+    },
+    "terrain_flight": {
+      "label": "原厂三维飞行子模块",
+      "executable": "DTM3DFly.exe",
+      "sha256": "2a1011c9afd79b66f64819fb5301291f9cf11e8a2cdf59cfb4d5c4c8df6dedff"
+    },
+    "dem_library": {
+      "label": "高程库",
+      "executable": "W60_DemDb.exe",
+      "sha256": "69f4826f83bdfd565f8264c456c6a9c586d6da73a42a7529df880e4bf399c29b"
+    },
+    "correction": {
+      "label": "误差校正",
+      "executable": "w60_chg.exe",
+      "sha256": "7603d1e12117fce0705bf5d8aec1ae34a790f7f3209816c92023cd9223198c2f"
+    },
+    "projection": {
+      "label": "投影变换",
+      "executable": "w60_proj.exe",
+      "sha256": "dd6c91864c1059cd098d3792b546ceb6097a9a412fb8eedc1f34797e4647ca13"
+    },
+    "reports": {
+      "label": "报表",
+      "executable": "w60_bb.exe",
+      "sha256": "d85397a5827237462f4e102be3920636696ebee1329700f1caeaf9bc67deddf2"
+    },
+    "clip": {
+      "label": "裁剪",
+      "executable": "w60_clip.exe",
+      "sha256": "c9dfad998085f9eefa73a4b829c870fe292ec749ce0834c61cac3ce0a805dc80"
+    },
+    "image_view": {
+      "label": "图像浏览",
+      "executable": "MapSee6x.exe",
+      "sha256": "006d669ea163c9ce0b171dafef2b9bf716ce43ddef204dee62b2d7a87319b5fc"
+    }
+  }
+}

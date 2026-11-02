@@ -69,3 +69,56 @@ def test_native_feature_identity_and_limits_are_validated(native_points):
     for offset, limit in ((True, 1), (-1, 1), (0, False), (0, 0), (0, 101)):
         with pytest.raises(BridgeError, match="PAGING"):
             read_features(str(source), digest, offset=offset, limit=limit)
+
+
+def test_annotation_readback_can_be_reused_without_null_symbol_parameters(tmp_path):
+    bridge=Bridge(tmp_path)
+    template={'name':'text.wt','map_scale':1000,'crs':{'kind':'local','name':'annotation grid','axis_order':'xy','unit':'metre','reference_sha256':'0'*64}}
+    collection={'type':'FeatureCollection','features':[{'type':'Feature','id':'1','geometry':{'type':'Point','coordinates':[10,20]},
+        'properties':{'ID':1},'text':'T#-2#=d','style':{'height':5,'width':4,'font_zh':1,'font_en':0,'color':1}}]}
+    prepare_creation(bridge,collection,template,'text');original=bridge.apply('text')
+    snapshot=read_features(original['output'],original['candidate_sha256'])['collection']
+    assert all(v is not None for v in snapshot['features'][0]['style'].values())
+    prepare_creation(bridge,snapshot,{**template,'name':'copy.wt'},'copy')
+    copied=bridge.apply('copy')
+    assert read_features(copied['output'],copied['candidate_sha256'])['collection']==snapshot
+
+
+def test_symbol_point_readback_and_clipping_keep_nondefault_pen_width(tmp_path):
+    bridge=Bridge(tmp_path)
+    template={'name':'symbol.wt','map_scale':1000,'crs':{'kind':'local','name':'symbol grid','axis_order':'xy','unit':'metre','reference_sha256':'0'*64}}
+    collection={'type':'FeatureCollection','features':[{'type':'Feature','id':'a','geometry':{'type':'Point','coordinates':[10,20]},
+        'properties':{'ID':7},'style':{'point_type':1,'symbol_no':2,'height':5,'width':4,'color':2,'pen_width':.37}}]}
+    prepare_creation(bridge,collection,template,'symbol');original=bridge.apply('symbol')
+    snapshot=read_features(original['output'],original['candidate_sha256'])['collection']
+    assert snapshot['features'][0]['style']['pen_width']==pytest.approx(.37,abs=1e-7)
+    prepared=prepare_file_operation(bridge,'overlay.clip',original['output'],original['candidate_sha256'],
+        {**template,'name':'clip.wt'},{'mask':{'type':'Polygon','coordinates':[[[0,0],[30,0],[30,30],[0,30],[0,0]]]}},'clip-symbol')
+    saved=bridge.apply('clip-symbol')
+    assert read_features(saved['output'],saved['candidate_sha256'])['collection']==snapshot
+
+
+def test_symbol_pen_width_matches_original_sdk_legend_and_survives_native_patch_undo(tmp_path):
+    import struct
+    from mapgis_agent.native_legend import prepare_native_legend
+    from mapgis_agent.native_backend import prepare_native_operation
+    from mapgis_agent.core import read_native,native_ids
+    from test_native_raster import native_settings
+    bridge=Bridge(tmp_path);native_settings(tmp_path)
+    prepare_native_legend(bridge,[{'kind':'point','name':'笔宽样本','code':7,'style':{'pen_width':.37}}],
+        {'name':'pen.cln','title':'笔宽','bounds':[0.,0.,100.,100.],'columns':1},'legend')
+    original=Path(bridge.apply('legend')['output']).with_suffix('.wt')
+    blob,reader,sections=read_native(original)
+    rid=next(rid for rid,kind in zip(native_ids(reader),reader.point_params['point_type']) if kind==1)
+    assert struct.unpack_from('<f',blob,sections[0][0]+rid*93+49)[0]==pytest.approx(.37,abs=1e-7)
+    expected=read_features(str(original),sha(blob),record_ids=[rid])['collection']['features'][0]
+    assert expected['style']['pen_width']==pytest.approx(.37,abs=1e-7)
+    bridge.prepare(str(original),sha(blob),[rid],'pen-width',style={'pen_width':.8})
+    patched=bridge.apply('pen-width')
+    prepare_native_operation(bridge,'resave',patched['output'],patched['candidate_sha256'],{},'native-pen')
+    saved=bridge.apply('native-pen')
+    actual=read_features(saved['output'],saved['candidate_sha256'],record_ids=[rid])['collection']['features'][0]
+    assert actual['style']['pen_width']==pytest.approx(.8,abs=1e-7)
+    assert actual['geometry']==expected['geometry'] and actual['properties']==expected['properties']
+    bridge.recover('pen-width',patched['output'],patched['candidate_sha256'],'undo-pen')
+    assert Path(bridge.apply('undo-pen')['output']).read_bytes()==blob

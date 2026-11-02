@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import math
-from numbers import Integral
+from numbers import Integral, Real
 from pathlib import Path
 import struct
 import tempfile
@@ -17,7 +17,7 @@ from .raster import explicit_crs, crs_metadata
 
 
 PARAMS = {
-    "POINT":{"point_type","symbol_no","height","width","spacing","angle","color","layer","font_zh","font_en","font_style"},
+    "POINT":{"point_type","symbol_no","height","width","spacing","angle","color","layer","font_zh","font_en","font_style","pen_width","radius_mm","border_color","filled","start_angle","end_angle"},
     "LINE":{"linetype","aux_linetype","aux_flag","color","width","x_coef","y_coef","aux_color","layer","transparent"},
     "POLYGON":{"fill_color","pattern","pattern_height","pattern_width","pattern_color","layer"},
 }
@@ -56,13 +56,15 @@ def _new_region_arc_index(blob: bytes, sections: list, geometries: list, factor:
         count,offset=struct.unpack_from("<2i",blob,sections[0][0]+aid*57+10)
         points=[struct.unpack_from("<2d",coords,offset+i*16) for i in range(count)]
         arc_sizes[aid]=count
+        owners=set(struct.unpack_from('<2i',blob,sections[3][0]+aid*24+8))-{0}
         for a,b in zip(points,points[1:]):
             if a==b:
                 continue
-            if (a,b) in edges or (b,a) in edges:
-                raise BridgeError("NATIVE_REGION_INDEX: duplicate arc segment")
-            edges[a,b]=aid
-            edges[b,a]=-aid
+            for owner in owners:
+                if (owner,a,b) in edges or (owner,b,a) in edges:
+                    raise BridgeError("NATIVE_REGION_INDEX: ambiguous duplicate arc segment within one region")
+                edges[owner,a,b]=aid
+                edges[owner,b,a]=-aid
     for pid,geometry in enumerate(geometries,1):
         parts=list(geometry.geoms) if geometry.geom_type=="MultiPolygon" else [geometry]
         rings=[]
@@ -75,7 +77,7 @@ def _new_region_arc_index(blob: bytes, sections: list, geometries: list, factor:
                 for a,b in zip(points,points[1:]):
                     if a==b:
                         continue
-                    signed=edges.get((a,b))
+                    signed=edges.get((pid,a,b))
                     if signed is None:
                         raise BridgeError("NATIVE_REGION_INDEX: source ring does not match encoded arcs")
                     if not walk or walk[-1]!=signed:
@@ -131,6 +133,7 @@ def _new_point_boxes(blob: bytes, sections: list, texts: list, crs, scale: float
         x,y=struct.unpack_from('<2d',blob,pos+7)
         height,width=struct.unpack_from('<2f',blob,pos+(33 if text is not None else 37))
         radius=math.hypot(height,width*max(1,len(text or '')))
+        if blob[pos+31] in (2,3):radius=struct.unpack_from('<d',blob,pos+33)[0]
         rx=ry=radius
         if crs is not None and crs.is_geographic:
             # Symbol dimensions are drawing millimetres. Geographic coordinates
@@ -156,7 +159,8 @@ def _new_point_boxes(blob: bytes, sections: list, texts: list, crs, scale: float
     return bytes(result)
 
 
-def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id: str) -> dict:
+def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id: str,
+                     sources: list[dict] | None = None) -> dict:
     request_id = bridge.request_id(request_id)
     name = template.get("name", "")
     if not name or Path(name).name != name or any(c in name for c in '/\\:<>"|?*') or name.rstrip(". ") != name:
@@ -166,6 +170,11 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
         raise BridgeError("INVALID_EXTENSION: WT/WL/WP required")
     output = bridge.destination_path(bridge.root / "deliverables/creation" / request_id / name)
     payload = {"format_version":5,"kind":"CREATE", "features":features,"template":template}
+    if sources is not None:
+        sources=[{'file':str(Path(item['file']).resolve(strict=True)),'sha256':item['sha256']} for item in sources]
+        if not sources or any(sha(Path(item['file']).read_bytes())!=item['sha256'] for item in sources):
+            raise BridgeError('STALE_SOURCE: native operation input changed')
+        payload['sources']=sources
     encoded = json_text(payload).encode("utf-8")
     payload_hash = sha(encoded)
     with bridge.connect() as db:
@@ -209,6 +218,7 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
             if not isinstance(key,str) or len(key.encode("gbk",errors="strict")) > 19:
                 raise BridgeError("FIELD_NAME: must fit the native GBK descriptor without truncation")
         style = {**template.get("style",{}),**feature.get("style",{})}
+        if isinstance(style.get('filled'),bool):style['filled']=int(style['filled'])
         if set(style)-PARAMS[kind]:
             raise BridgeError("UNKNOWN_STYLE_FIELD: " + ",".join(sorted(set(style)-PARAMS[kind])))
         if any(isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) for v in style.values()):
@@ -218,11 +228,16 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
             raise BridgeError("NATIVE_TEXT: text belongs to a point feature")
         if kind == "POINT":
             style.setdefault("point_type",0 if text is not None else 1)
-            if style["point_type"] not in (0,1) or (text is None)!=(style["point_type"]==1):
-                raise BridgeError("POINT_KIND: text requires point_type=0; symbols require point_type=1")
+            if style["point_type"] not in (0,1,2,3) or (text is not None)!=(style["point_type"]==0):
+                raise BridgeError("POINT_KIND: text requires0, symbol1, circle2 or arc3")
+            from .point_primitives import validate_style
+            validate_style(style,crs)
         if style and kind == "LINE":
             style.setdefault("linetype",1)
-        rows.append({**properties,**style})
+        from .point_primitives import FIELDS
+        encoded_style={k:v for k,v in style.items() if k not in FIELDS}
+        if kind=='POINT' and style['point_type'] in (2,3):encoded_style={'point_type':1}
+        rows.append({**properties,**encoded_style})
         styles.append(style)
         attributes.append(properties)
         texts.append(text)
@@ -257,8 +272,12 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
             path.write_bytes(_new_annotation_pool(raw,sections,texts))
         if kind=="POINT":
             raw,_,sections=read_native(path)
+            from .point_primitives import encode
+            path.write_bytes(encode(raw,sections,styles));raw,_,sections=read_native(path)
             path.write_bytes(_new_point_boxes(raw,sections,texts,crs,scale))
         blob, parsed, _ = read_native(path)
+        if crs is not None and (not parsed.crs or not parsed.crs.equals(crs,ignore_axis_order=True)):
+            raise BridgeError("UNSUPPORTED_NATIVE_CRS_ENCODING: native readback changes the declared datum, ellipsoid or projection; no coordinate reference substitution is allowed")
         if len(parsed.geom) != len(geometries):
             raise BridgeError("NATIVE_READBACK_COUNT_MISMATCH")
         for source, actual in zip(geometries,parsed.geom):
@@ -274,7 +293,12 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
             for key,value in properties.items():
                 actual=parsed.data[key].iloc[i] if key in parsed.data else None
                 if isinstance(value,int) and not isinstance(value,bool):
-                    equal=isinstance(actual,Integral) and value==actual
+                    # A mixed numeric column is stored as floating point. Accept
+                    # integer inputs only when native readback is exactly equal;
+                    # int(actual) also avoids NumPy coercing a large input integer.
+                    equal=(isinstance(actual,Integral) and int(actual)==value) or (
+                        isinstance(actual,Real) and math.isfinite(actual)
+                        and float(actual).is_integer() and int(actual)==value)
                 elif isinstance(value,float):
                     equal=actual is not None and math.isfinite(value) and math.isfinite(actual) and math.isclose(value,float(actual),rel_tol=2e-7,abs_tol=1e-6)
                 else:
@@ -295,6 +319,9 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
                "native_point_boxes":"encoded" if kind=="POINT" else None,
                "input_preserved":True,"changes":[],"changed_bytes":len(blob),
                "qa":template.get("qa",{}),"provenance":template.get("provenance",{})}
+    if sources is not None:
+        if any(sha(Path(item['file']).read_bytes())!=item['sha256'] for item in sources):raise BridgeError('STALE_SOURCE: native input changed while preparing')
+        receipt['sources']=sources
     with bridge.connect() as db:
         db.execute("BEGIN IMMEDIATE")
         existing = db.execute("SELECT * FROM commands WHERE id=?",(request_id,)).fetchone()

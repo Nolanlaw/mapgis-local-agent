@@ -55,8 +55,11 @@ def read_native(path: Path) -> tuple[bytes, Reader, list[tuple[int, int]]]:
     for offset, length in sections:
         if offset < 0 or length < 0 or offset + length > len(blob):
             raise BridgeError("Native section is outside the file")
-    reader = Reader(path, make_valid=False, read_graphic_params=True)
+    from .attribute_codec import Reader as AttributeReader
+    reader = AttributeReader(path, make_valid=False, read_graphic_params=True)
     _filter_deleted_rows(blob, reader, sections)
+    from .point_primitives import decode
+    decode(blob,reader,sections)
     if path.read_bytes() != blob:
         raise BridgeError("STALE_DURING_READ: native file changed while it was inspected")
     if len(reader.geom) != len(reader.data):
@@ -267,7 +270,8 @@ class Bridge:
         return receipt
 
     def _build_patch(self, path: Path, expected_sha256: str, record_ids: list[int],
-                     attributes: dict, style: dict) -> tuple[bytes, bytes, list[dict]]:
+                     attributes: dict, style: dict, attribute_updates: dict | None = None,
+                     style_updates: dict | None = None) -> tuple[bytes, bytes, list[dict]]:
         before, reader, entries = read_native(path)
         if sha(before) != expected_sha256:
             raise BridgeError("STALE_SOURCE: read this file again before preparing a change")
@@ -276,8 +280,25 @@ class Bridge:
         active = native_ids(reader)
         if any(type(i) is not int or i not in active for i in record_ids):
             raise BridgeError("A requested physical record ID does not exist")
-        if not attributes and not style:
+        if not attributes and not style and not attribute_updates and not style_updates:
             raise BridgeError("Provide an attribute or style change")
+        if attribute_updates is not None and not isinstance(attribute_updates, dict):
+            raise BridgeError('ATTRIBUTE_UPDATES: map canonical string physical IDs to field/value objects')
+        field_changes = [(name, value, record_ids) for name, value in attributes.items()]
+        selected_keys = {str(rid) for rid in record_ids}
+        for key, values in (attribute_updates or {}).items():
+            if (not isinstance(key, str) or key not in selected_keys
+                    or not isinstance(values, dict) or not values):
+                raise BridgeError('ATTRIBUTE_UPDATES: only selected physical IDs and nonempty fields allowed')
+            if set(values) & set(attributes):
+                raise BridgeError('ATTRIBUTE_UPDATE_CONFLICT: uniform and per-record values overlap')
+            field_changes.extend((name, value, [int(key)]) for name, value in values.items())
+        if style_updates is not None and not isinstance(style_updates,dict):
+            raise BridgeError('STYLE_UPDATES: map canonical string physical IDs to graphic field/value objects')
+        for key,values in (style_updates or {}).items():
+            if not isinstance(key,str) or key not in selected_keys or not isinstance(values,dict) or not values:
+                raise BridgeError('STYLE_UPDATES: only selected physical IDs and nonempty fields allowed')
+            if set(values)&set(style):raise BridgeError('STYLE_UPDATE_CONFLICT: uniform and per-record graphic values overlap')
         mutable = bytearray(before)
         changes = []
 
@@ -288,8 +309,6 @@ class Bridge:
             original = before[offset:end]
             if original == value:
                 return
-            if any(offset < c["offset"] + len(bytes.fromhex(c["after"])) and end > c["offset"] for c in changes):
-                raise BridgeError("Overlapping patch fields are not supported")
             mutable[offset:end] = value
             changes.append({"record_id": rid, "group": group, "field": field,
                             "offset": offset, "before": original.hex(), "after": value.hex()})
@@ -297,19 +316,24 @@ class Bridge:
         attr_index = native._ATTR_HEADER_INDEX[reader.shapeType]
         attr_start, attr_size = entries[attr_index]
         stream = io.BytesIO(before)
-        count, record_length, fields = native._read_attribute_header(stream, attr_start)
+        from .attribute_codec import read_header
+        count, record_length, fields = read_header(stream, attr_start)
         table_start = stream.tell()
         if count < 1 or record_length <= 0 or table_start + count * record_length > attr_start + attr_size:
             raise BridgeError("Unsupported attribute storage layout")
         field_map = {f.name: f for f in fields}
         if len(field_map) != len(fields):
             raise BridgeError("Duplicate attribute field names require a native SDK")
-        for name, value in attributes.items():
+        for name, value, targets in field_changes:
             if name not in field_map:
                 raise BridgeError(f"Unknown existing attribute: {name}")
             field = field_map[name]
-            next_offsets = [f.offset for f in fields if f.offset > field.offset]
-            storage = min(next_offsets, default=record_length) - field.offset
+            descriptor = attr_start + 348 + fields.index(field) * 39
+            storage = struct.unpack_from('<h', before, descriptor + 25)[0]
+            # Original external-database keys carry a trailing 2-byte link
+            # number. Editing the scalar value must preserve that marker.
+            if before[descriptor + 30] & 0x40:
+                storage -= 2
             if field.offset < 0 or storage <= 0 or field.offset + storage > record_length:
                 raise BridgeError("Invalid attribute field span")
             if field.type_code == 0:
@@ -322,20 +346,34 @@ class Bridge:
                 if len(encoded) >= storage:
                     raise BridgeError("Attribute exceeds fixed native field capacity; no truncation performed")
                 encoded = encoded.ljust(storage, b"\x00")
+            elif field.type_code in (6, 7, 8, 9, 10, 11, 12, 13):
+                from pymapgis.writer import _FieldSpec
+                from .attributes import _convert
+                width = {6: 4, 7: 10, 8: 1}.get(field.type_code, 256)
+                if width > storage:
+                    raise BridgeError('FIELD_STORAGE: date/time field is too small')
+                encoded = _convert(value, _FieldSpec(name, field.type_code, field.offset,
+                    width, field.length, field.decimals, name))
             else:
                 fmt = {1: "B", 2: "h", 3: "i", 4: "f", 5: "d"}.get(field.type_code)
                 if fmt is None:
-                    raise BridgeError("Date/time field editing is not yet verified")
+                    raise BridgeError('FIELD_TYPE: unsupported existing native attribute type')
                 encoded = pack_number(fmt, value)
                 if len(encoded) > storage:
                     raise BridgeError("Numeric field storage is too small")
-            for rid in record_ids:
+            for rid in targets:
                 if rid >= count:
                     raise BridgeError("Attribute row for this record is missing")
                 change(table_start + rid * record_length + field.offset, encoded, rid, "attributes", name)
 
         for rid in record_ids:
-            for name, value in style.items():
+            row_style=style|((style_updates or {}).get(str(rid),{}))
+            if reader.shapeType=='POINT' and before[entries[0][0]+rid*93+31] in (2,3) and row_style:
+                from .comparison import _extract_style
+                from .point_primitives import validate_style
+                merged=_extract_style(reader,active.index(rid))|row_style
+                validate_style(merged,reader.crs)
+            for name, value in row_style.items():
                 if name != "angle" and isinstance(value, (int, float)) and value < 0:
                     raise BridgeError("Style indexes and widths must be nonnegative")
                 section, size, offset, fmt = style_location(reader.shapeType, name, before, entries, rid)
@@ -343,6 +381,11 @@ class Bridge:
                     raise BridgeError("Graphic parameter record is missing")
                 encoded = pack_number(fmt, value)
                 change(entries[section][0] + rid * size + offset, encoded, rid, "style", name)
+        # Check the complete set once. Per-row values can produce large batches;
+        # scanning every preceding change while encoding would be quadratic.
+        ordered = sorted(changes, key=lambda c: c['offset'])
+        if any(a['offset'] + len(bytes.fromhex(a['after'])) > b['offset'] for a,b in zip(ordered, ordered[1:])):
+            raise BridgeError("Overlapping patch fields are not supported")
         after = bytes(mutable)
         if len(before) != len(after) or layout_signature(before) != layout_signature(after):
             raise BridgeError("Patch unexpectedly changed the native storage layout")
@@ -357,11 +400,16 @@ class Bridge:
         return before, after, changes
 
     def prepare(self, file: str, expected_sha256: str, record_ids: list[int],
-                request_id: str, attributes: dict | None = None, style: dict | None = None) -> dict:
+                request_id: str, attributes: dict | None = None, style: dict | None = None,
+                attribute_updates: dict | None = None, style_updates: dict | None = None) -> dict:
         path = self.owned_path(file)
         request_id = self.request_id(request_id)
         payload = {"kind": "PATCH", "file": str(path), "source_sha256": expected_sha256,
                    "record_ids": record_ids, "attributes": attributes or {}, "style": style or {}}
+        if attribute_updates is not None:
+            payload['attribute_updates'] = attribute_updates
+        if style_updates is not None:
+            payload['style_updates'] = style_updates
         payload_hash = sha(json_text(payload).encode())
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -371,7 +419,7 @@ class Bridge:
                     raise BridgeError("REQUEST_ID_CONFLICT: use a new request_id for different parameters")
                 return self._receipt(existing)
             before, after, changes = self._build_patch(path, expected_sha256, record_ids,
-                                                        attributes or {}, style or {})
+                                                        attributes or {}, style or {}, attribute_updates, style_updates)
             receipt = {"id": request_id, "kind": "PATCH", "source": str(path),
                        "source_sha256": sha(before), "candidate_sha256": sha(after),
                        "output": str(self.root / "deliverables" / "patches" / request_id / path.name),
@@ -428,9 +476,9 @@ class Bridge:
                 raise BridgeError("OUTPUT_MISSING: previously applied output was removed; use a new request")
             if sha(Path(row["source"]).read_bytes()) != sha(row["before_blob"]):
                 raise BridgeError("STALE_SOURCE: source changed after preview")
-            if receipt.get("kind") == "NATIVE_PLOT":
+            if receipt.get("sources"):
                 if any(sha(Path(item["file"]).read_bytes()) != item["sha256"] for item in receipt["sources"]):
-                    raise BridgeError("STALE_SOURCE: plot layer changed after preview")
+                    raise BridgeError("STALE_SOURCE: bound input changed after preview")
             output.parent.parent.mkdir(parents=True, exist_ok=True)
             if output.parent.exists():
                 raise BridgeError("INCOMPLETE_OUTPUT: inspect the existing request directory")
@@ -576,7 +624,8 @@ class Bridge:
                 raise BridgeError('STRUCTURAL_CONFLICT: changed or ambiguous record identity')
         attr_start, attr_size = entries[native._ATTR_HEADER_INDEX[reader.shapeType]]
         stream = io.BytesIO(later)
-        count, length, fields = native._read_attribute_header(stream, attr_start)
+        from .attribute_codec import read_header
+        count, length, fields = read_header(stream, attr_start)
         table_start = stream.tell()
         if length <= 0 or table_start + count * length > attr_start + attr_size:
             raise BridgeError('STRUCTURAL_CONFLICT: invalid attribute storage')
@@ -634,6 +683,12 @@ def style_location(kind: str, name: str, blob: bytes, entries: list, rid: int) -
                    "layer": (native._POINT_LAYER_OFFSET, "B")}
         if point_kind == 1:
             mapping["symbol_no"] = (native._POINT_SYMBOL_NO_OFFSET, "h")
+            mapping["pen_width"] = (49, "f")
+        elif point_kind in (2,3):
+            mapping={'color':(75,'i'),'layer':(83,'h')}
+            if point_kind==2:mapping|={'border_color':(41,'i'),'pen_width':(45,'f'),'filled':(49,'B')}
+            else:mapping|={'start_angle':(41,'f'),'end_angle':(45,'f'),'pen_width':(49,'f')}
+            if name=='radius_mm':raise BridgeError('POINT_PRIMITIVE: use native operation point.radius with updates/record_id/radius_mm so BAS60 updates the bounds')
         elif point_kind != 0:
             raise BridgeError("Unknown native point kind")
         location = (0, 93)

@@ -47,8 +47,24 @@
       "version": "0.4.6"
     },
     {
+      "name": "contourpy",
+      "version": "1.3.3"
+    },
+    {
       "name": "cryptography",
       "version": "50.0.2"
+    },
+    {
+      "name": "et_xmlfile",
+      "version": "2.0.0"
+    },
+    {
+      "name": "ezdxf",
+      "version": "1.4.5"
+    },
+    {
+      "name": "fonttools",
+      "version": "4.68.0"
     },
     {
       "name": "geopandas",
@@ -87,6 +103,10 @@
       "version": "2025.9.1"
     },
     {
+      "name": "llvmlite",
+      "version": "0.50.0"
+    },
+    {
       "name": "mapgis2shp",
       "version": "2.6.0"
     },
@@ -95,12 +115,24 @@
       "version": "1.30.0"
     },
     {
+      "name": "networkx",
+      "version": "3.5"
+    },
+    {
+      "name": "numba",
+      "version": "0.68.1"
+    },
+    {
       "name": "numpy",
       "version": "2.5.4"
     },
     {
       "name": "opencv-python-headless",
       "version": "4.13.0.92"
+    },
+    {
+      "name": "openpyxl",
+      "version": "3.1.5"
     },
     {
       "name": "packaging",
@@ -135,12 +167,20 @@
       "version": "2.50.1"
     },
     {
+      "name": "pyflwdir",
+      "version": "0.5.12"
+    },
+    {
       "name": "Pygments",
       "version": "2.21.0"
     },
     {
       "name": "PyJWT",
       "version": "2.15.1"
+    },
+    {
+      "name": "pyogrio",
+      "version": "0.13.0"
     },
     {
       "name": "pyparsing",
@@ -189,6 +229,10 @@
     {
       "name": "rpds-py",
       "version": "2026.9.1"
+    },
+    {
+      "name": "scipy",
+      "version": "1.16.2"
     },
     {
       "name": "shapely",
@@ -349,11 +393,73 @@
       }
     ]
   },
-  "runtime_scope": "20 MapGIS tools; Rasterio/GDAL raster reader, libvips and a separate GPL-2.0 help-indexing tool included; optional pyogrio vector conversion excluded",
+  "runtime_scope": "MapGIS MCP tools (exact names verified on restored startup); isolated exact-build x86 native buffers, WP topology deletion, MSI/MPJ/EPS; CDT native TIN storage, SciPy/ContourPy/NetworkX open algorithms; Pyogrio/GDAL vector exchange and Rasterio/GDAL rasters, libvips and separate GPL-2.0 help indexing; analysis-only pefile excluded",
   "sources": {
     "ghostscript-10.08.0.tar.xz": "c20492bc8ebb96c87fa2e52a0926e1cda8cde95d66145e018ac713fed5da38cf",
     "geos-3.14.1.tar.bz2": "3c20919cda9a505db07b5216baa980bacdaa0702da715b43f176fb07eff7e716"
   },
+  "backend_sources": [
+    {
+      "name": "scipy",
+      "version": "1.16.2",
+      "file": "scipy-1.16.2.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/4c/3b/546a6f0bfe791bbb7f8d591613454d15097e53f906308ec6f7c1ce588e8e/scipy-1.16.2.tar.gz",
+      "metadata_url": "https://pypi.org/pypi/scipy/1.16.2/json",
+      "sha256": "af029b153d243a80afb6eabe40b0a07f8e35c9adc269c019f364ad747f826a6b",
+      "bytes": 30580599,
+      "role": "Open backend source; original license retained in sdist and wheel"
+    },
+    {
+      "name": "contourpy",
+      "version": "1.3.3",
+      "file": "contourpy-1.3.3.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/58/01/1253e6698a07380cd31a736d248a3f2a50a7c88779a1813da27503cadc2a/contourpy-1.3.3.tar.gz",
+      "metadata_url": "https://pypi.org/pypi/contourpy/1.3.3/json",
+      "sha256": "083e12155b210502d0bca491432bb04d56dc3432f95a979b429f2848c3dbe880",
+      "bytes": 13466174,
+      "role": "Open backend source; original license retained in sdist and wheel"
+    },
+    {
+      "name": "networkx",
+      "version": "3.5",
+      "file": "networkx-3.5.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/6c/4f/ccdb8ad3a38e583f214547fd2f7ff1fc160c43a75af88e6aec213404b96a/networkx-3.5.tar.gz",
+      "metadata_url": "https://pypi.org/pypi/networkx/3.5/json",
+      "sha256": "d4c6f9cf81f52d69230866796b82afbccdec3db7ae4fbd1b65ea750feed50037",
+      "bytes": 2471065,
+      "role": "Open backend source; original license retained in sdist and wheel"
+    },
+    {
+      "name": "pyogrio",
+      "version": "0.13.0",
+      "file": "pyogrio-0.13.0.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/de/3c/d2268615e8b749ba59f278b14a495883562e961fa3ad55a9def222bfbd4a/pyogrio-0.13.0.tar.gz",
+      "metadata_url": "https://pypi.org/pypi/pyogrio/0.13.0/json",
+      "sha256": "9614f27a1891113f80653e0b76b4233ea1fb3beeb1ac46d118ab22e1670f8f13",
+      "bytes": 313103,
+      "role": "Open backend source; original license retained in sdist and wheel"
+    },
+    {
+      "name": "ezdxf",
+      "version": "1.4.5",
+      "file": "ezdxf-1.4.5.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/53/50/b7668adf1b6c244ad9c3cfdfeeb5925de0e76218eac33470752e38457a00/ezdxf-1.4.5.tar.gz",
+      "metadata_url": "https://pypi.org/pypi/ezdxf/1.4.5/json",
+      "sha256": "a6c3bbc1a65ce764d97c5beafe6ae693d8ed14c6cdae366b50e1974a79d4a00a",
+      "bytes": 1875857,
+      "role": "DXF backend public source; unmodified sdist and original license retained"
+    },
+    {
+      "name": "fonttools",
+      "version": "4.68.0",
+      "file": "fonttools-4.68.0.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/0c/b5/672312ae80ce8b8eb9779c56052a24c8f36652aa7293a1a420553bcf03e5/fonttools-4.68.0.tar.gz",
+      "metadata_url": "https://pypi.org/pypi/fonttools/4.68.0/json",
+      "sha256": "73294e233070f71e2b3653b6bd8564af676d57f26d075761fb06d1ab2e4a7a5d",
+      "bytes": 3848583,
+      "role": "DXF backend public source; unmodified sdist and original license retained"
+    }
+  ],
   "base_bundle_sha256": "dd1766249ed6498a6bd127f34f053f2c4c2784e52e1068d06841e1eb532c7982",
   "licences": "See docs/THIRD-PARTY.md, dependency dist-info/licenses and included source archives."
 }

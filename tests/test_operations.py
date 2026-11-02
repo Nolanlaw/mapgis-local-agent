@@ -31,12 +31,20 @@ def test_unsupported_module_is_explicit(tmp_path):
     from mapgis_agent.operations import find_operations, describe_operation
 
     assert not find_operations(tmp_path, "", module="absent")["operations"]
-    item = describe_operation(tmp_path, "style.library")
+    item = describe_operation(tmp_path, "scan.interactive_trace")
     assert item["availability"] == "NOT_CONFIGURED"
     assert item["validation"] == "DISCOVERED"
     assert item["executable_by_mcp"] is False
     with pytest.raises(ValueError, match="UNKNOWN_OPERATION"):
         describe_operation(tmp_path, "run_arbitrary_script")
+
+
+def test_system_library_is_available_with_its_verified_subset_explicit(tmp_path):
+    from mapgis_agent.operations import describe_operation
+    item=describe_operation(tmp_path,'style.library')
+    assert item['validation']=='BACKEND_TESTED' and item['executable_by_mcp']
+    assert item['execution']['tool']=='mapgis_prepare_system_library'
+    assert 'Font/color-table' in item['validation_scope'] and 'unimplemented' in item['validation_scope']
 
 
 def test_backend_description_keeps_legacy_workflow_and_distinguishes_the_backend(tmp_path):

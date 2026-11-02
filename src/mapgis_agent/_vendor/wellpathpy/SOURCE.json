@@ -1,0 +1,44 @@
+{
+  "project": "wellpathpy",
+  "version": "0.5.2",
+  "commit": "ccbb7cd803485a74d2de83ef4dd5912bb7f9c2bd",
+  "license": "LGPL-3.0",
+  "files": [
+    {
+      "name": "mincurve.py",
+      "git_blob": "e8e8fb71a88ed183629d946389649468820d777b",
+      "source": "https://github.com/Zabamund/wellpathpy/blob/ccbb7cd803485a74d2de83ef4dd5912bb7f9c2bd/wellpathpy/mincurve.py",
+      "sha256": "1a63c3518a779dde3d3170bf590ee2afb02e5cd83147a8ce57faf7b3c3893ab7",
+      "bytes": 4777
+    },
+    {
+      "name": "geometry.py",
+      "git_blob": "e38d484b65b0da7b3d3a0b60ce15abf0024795eb",
+      "source": "https://github.com/Zabamund/wellpathpy/blob/ccbb7cd803485a74d2de83ef4dd5912bb7f9c2bd/wellpathpy/geometry.py",
+      "sha256": "310bfb456f344b659999c6b97f5913ce3a7a4bb2a867f25c562aebda4cd9766b",
+      "bytes": 9124
+    },
+    {
+      "name": "checkarrays.py",
+      "git_blob": "ceeda7233f9c4cfa61987121aa413f6b7971cde3",
+      "source": "https://github.com/Zabamund/wellpathpy/blob/ccbb7cd803485a74d2de83ef4dd5912bb7f9c2bd/wellpathpy/checkarrays.py",
+      "sha256": "498154741a62ad19770043f66c79bdcd72dec39fc143d6ecbcb4dbe4d38b3e85",
+      "bytes": 3148
+    },
+    {
+      "name": "LICENSE.LGPL3",
+      "git_blob": "0a041280bd00a9d068f503b8ee7ce35214bd24a1",
+      "source": "https://github.com/Zabamund/wellpathpy/blob/ccbb7cd803485a74d2de83ef4dd5912bb7f9c2bd/LICENSE",
+      "sha256": "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118",
+      "bytes": 7652
+    },
+    {
+      "name": "COPYING.GPL3",
+      "git_blob": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+      "source": "https://github.com/emacs-mirror/emacs/blob/master/COPYING",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "bytes": 35149
+    }
+  ],
+  "application_adapter": "Only the three numerical modules are copied from the fixed wellpathpy commit, without modifications. The local __init__.py exposes no CSV/header/plotting application entrypoints. They are ordinary replaceable Python source modules with LGPL3 and the incorporated GPL3 text present. Original authors Robert Leckenby, Brendon Hall and Jorgen Kvalsvik are credited in the upstream README. This project wrapper in borehole.py uses existing NumPy/SciPy and explicit metre/grid-north/vertical-down input conventions; no additional package/dependency or license bypass. Source station integration reuses wellpathpy; query direction resampling uses SciPy geometric_slerp. Original third-party tests and docs are not claimed as this adapter acceptance.\n"
+}

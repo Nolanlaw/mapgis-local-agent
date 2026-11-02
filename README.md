@@ -1,70 +1,51 @@
-# MapGIS Local Agent
+# MapGIS Local Agent 0.7.0
 
-把 MapGIS 6.7 的点、线、区和工程交给 Agent 处理。通过本地 MCP 或命令行调用，日常文件处理和已接通的原生操作不需要鼠标。
+让Agent通过本机MapGIS6.7执行操作，使用MCP或CLI。日常任务由Agent选择专用SDK/文件接口，或在新建私有进程中调用原厂菜单、控件和画布，完成处理、保存、导出与结果检查。用户可继续使用自己的桌面键鼠。
 
-支持 Windows 10/11 x64。分享包自带 Python、开放地理算法和输出运行时；MapGIS 及其许可由使用者提供。
+范围是当前适配的MapGIS6.7非服务器功能；本机安装、合法许可、字体和系统库由使用者提供。对应入口及实际限制见[本机调用范围](docs/LOCAL67-ROUTES.md)。
 
-## 功能
+## 下载与配置
 
-- 读取 WT/WL/WP 的几何、属性、注记和图形参数；按物理编号查询、修改、创建和恢复。
-- 在独立原生进程里移动点、删除点线区，检查 WP 共享弧段与孔洞，保存后用新进程重开。
-- 维护 Agent 自己的原生编辑会话：未保存状态、修订检查、保存、放弃和进程中断恢复。
-- 从扫描件提取可复核的点线区候选，执行仿射配准、GDAL 校正和原生 TIFF/MSI 转换。
-- 新建带相对图层路径的 MPJ，迁移后重开，输出含矢量与 MSI 背景的原生 EPS，再导出 PDF/RGB TIFF。
-- 用 GEOS/PROJ 造区、结点化、叠加、缓冲、简化、接边、转换坐标和生成图框；用 SciPy/ContourPy 生成地形 TIN、格网、等值线与切填方量；用 NetworkX 求路径和可达路段。
-- 用只读 SQL 查询属性，导出 CSV/JSON 报表，交换 GeoJSON、GPKG 和 Shapefile。
+前往[最新Release](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest)，下载 **MapGIS-Agent-0.7.0-Windows-x64-Share.zip**。完整解压后使用包内Python，无需安装Python依赖。仓库保持私有，访问与下载需要相应权限。
 
-实际范围见[功能说明](docs/CAPABILITIES.md)。原生符号库编辑、专有图库/影像数据库、完整三维地形与地质剖面尚未接通。
-
-## 下载与安装
-
-当前源码为 0.6.0，Windows 0.6.0 分享包已在本机完成独立解压和原生自检；Release 资产尚待上传。[Releases](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest) 当前保留 0.5.0 稳定包。以下步骤适用于取得本版本分享包后。
-
-1. 将 `MapGIS-Agent-0.6.0-Windows-x64-Share.zip` 完整解压到可写目录。
-2. 运行 `01-Setup.cmd`，填写本机 MapGIS 根目录；只用文件工具时直接回车。
-3. 运行 `02-SelfTest.cmd`。看到 `PASS` 后，把生成的 `mcp-config.local.json` 加入 MCP 客户端。
-
-原生后端默认关闭。旧版 BAS60 需要本包独立 x86 进程采用 DEP 兼容构建；接受这一进程的取舍后，在解压目录运行：
+先运行01-Setup.cmd配置安装路径，再运行02-SelfTest.cmd。启用原厂SDK兼容宿主及私有进程操作时执行：
 
 ```powershell
-./runtime/python/python.exe -s -B -X utf8 scripts/portable.py setup --mapgis D:/MapGIS67 --enable-native-legacy-host
-./runtime/python/python.exe -s -B -X utf8 scripts/self_test_native.py
-./runtime/python/python.exe -s -B -X utf8 scripts/self_test_modules.py --native
+./runtime/python/python.exe -s -B -X utf8 scripts/portable.py setup --mapgis 'D:/MapGIS67' --enable-native-legacy-host --enable-private-ui
 ```
 
-这个开关只影响本包的独立子进程，不改 Windows DEP 或 MapGIS 安装文件。移动解压目录后重新运行安装入口，更新本地路径。
+两个开关只授权包自身的子进程和任务副本；安装程序、许可和系统DEP设置保持。私有界面开关也启用已有3BN/3DM专用调用。移动目录后重新setup，已授权开关保留，独立手改的客户端配置会保护。
 
-## 使用
+将生成的mcp-config.local.json加入MCP客户端，或让Agent使用MapGIS-CLI.cmd。CLI与MCP调用同一工具注册表。完整安装说明见[Windows包说明](docs/SHARE.md)。
 
-MCP 入口是 `scripts/launch_mcp.py`。49 个工具使用类型化参数，57 项任务说明通过 `mapgis_find_operations` 和 `mapgis_describe_operation` 查询。
+## 已接通的调用
 
-已有文件：`inspect_file → make_work_copy → prepare_* → apply_patch → get_request`。
+- 原生WT/WL/WP、属性/样式/辅助表、工程与工作区的读取、编辑、保存、新进程重开及请求恢复。
+- 原厂SDK类型发现与组合调用；影像、格网、TIN、场景、飞行、体数据，以及已有投影、裁剪、统计和数据交换工具。
+- mapgis_private_control：原厂非服务器模块的菜单、中文控件、目录树、画布消息、保存和导出，全程在任务自有私有进程中执行。
+- 原厂BB报表、DBS分幅图库、Inf/Hdr/Dem高程库、WN网络编辑及SUV数字测量均已有保存、新进程重开与结果读回。
+- 原厂EPS、PDF/TIFF/JPEG、可迁移MPJ以及现有本地SQLite/Access/DBF文件工具。
 
-持续编辑：`native_workspace(open) → edit → status → save → close`；中断后用 `recover`。
+当前注册123个工具、158项操作说明，用find_operations和describe_operation查询；原厂功能可先调用private_control的policy并检索本机帮助。数量用于核对加载版本，实际业务结果仍按任务参数检查。
 
-工具名均带 `mapgis_` 前缀。准备操作返回来源指纹、候选与检查结果，提交后才产生交付文件。重复请求用同一个 request_id 对账；编辑会话带回 expected_revision，避免重复执行或覆盖后来修改。参数见[后台接口](docs/NATIVE.md)。
+## 使用方式
 
-也可以直接使用 CLI：
+给Agent数据路径和业务参数，例如“保留原件，裁剪指定图层，修改属性，另存工程，再导出PDF和TIFF”。文件操作通过prepare/apply与请求账本提交；私有界面通过open/observe/act/close执行。中断后先对账，不盲目重做。
 
-```powershell
-./MapGIS-CLI.cmd tools
-./MapGIS-CLI.cmd capabilities
-```
+本版本使用同一套本机6.7验证。原厂DTM6x启动文件是缺少载荷的解包壳，实际三维功能使用DTM3DFly及原厂场景SDK；已观察到的GUI导出错误保留，三维图像走已验证SDK路线。MapSuv示例WT的属性一致性检查失败，SUV与文本坐标/高程读回通过；检查保持。详见[私有调用说明](docs/PRIVATE-CALLS-PROPOSAL.md)。
 
-## 从扫描件到出图
+## 开发与验证
 
-登记扫描件 → 分块预览 → 明确控制点和坐标框架 → 配准/校正 → 生成并复核候选 → 建立 WT/WL/WP → 创建 MPJ → 原生 EPS → PDF/TIFF。开放断层、孔洞、共享边界、颜色、中文与符号需要分别核对。
-
-缺少真实坐标资料时可以用明确标注的本地演示坐标。颜色候选需要专业地质复核，示意控制点也不能证明地理精度。
-
-## 开发
-
-需要 Python 3.12；依赖见 `pyproject.toml` 和 `requirements.lock.txt`。原生宿主源码在 `native/`，使用 MSVC x86 构建。源码包不附带 MapGIS DLL、许可、字体或专有系统库。
+源码包不附MapGIS安装、许可、私人数据或Python环境。开发使用Python3.12和requirements.lock.txt；原生宿主源码位于native/。Windows分享包另附独立Python、开放运行库、对应源码及许可。
 
 ```powershell
-./.venv/Scripts/python.exe -s -B -X utf8 -m pytest -q
+./.venv/Scripts/python.exe -s -B -X utf8 scripts/mapgis_cli.py tools
 ./.venv/Scripts/python.exe -s -B -X utf8 scripts/self_test.py
+./.venv/Scripts/python.exe -s -B -X utf8 scripts/self_test_native.py
+./.venv/Scripts/python.exe -s -B -X utf8 scripts/self_test_workspace.py
 ./.venv/Scripts/python.exe -s -B -X utf8 scripts/self_test_modules.py --native
 ```
 
-[验证记录](docs/VALIDATION.md) · [分享说明](docs/SHARE.md) · [来源与复用](docs/SOURCES.md) · [第三方许可](docs/THIRD-PARTY.md)
+发行检查包含包实际解压、全部文件核对、包内解释器与新stdio、原厂调用及保存/读回。此前31项真实私有控件检查和启动回执丢失恢复已通过；本版安装开关和打包变更另行回归。发布回执对应这台验证电脑，不推断其他实体电脑的许可或真实地质精度。
+
+[能力说明](docs/CAPABILITIES.md) · [接口](docs/NATIVE.md) · [SDK调用](docs/SDK-CALLS.md) · [第三方来源与许可](docs/THIRD-PARTY.md)

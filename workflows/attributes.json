@@ -1,0 +1,36 @@
+{
+  "id": "attributes",
+  "schema_version": 1,
+  "title": "属性结构、查询和批量计算",
+  "execution": "MCP file/native tools; no desktop input",
+  "native_module": "attributes",
+  "validation": "LOCAL_SAMPLE_TESTED",
+  "validation_scope": "WT/WL/WP schema and per-record calculation, native save/reopen; tombstone identity and conflict-aware recovery tested. External DB drivers and arbitrary SQL writes are not implemented.",
+  "inputs": [
+    "保存的原生文件与当前SHA256",
+    "完整目标字段结构；保留或改名需明确source，新字段需type/default",
+    "按物理__record_id定位，ID字段允许重复"
+  ],
+  "steps": [
+    {
+      "id": "inspect",
+      "action": "mapgis_inspect_file读取fields、count与SHA256。需要源保护时先make_work_copy。"
+    },
+    {
+      "id": "schema",
+      "action": "mapgis_prepare_attribute_schema提供完整fields列表，省略字段即从新表删除；apply_patch并检查结果。非属性段保持原字节，结构变化不重编码几何。"
+    },
+    {
+      "id": "calculate",
+      "action": "mapgis_query_attributes使用只读SELECT计算，结果包含__record_id与待赋值字段，例如SELECT __record_id, ELEV*2 AS result FROM features。"
+    },
+    {
+      "id": "values",
+      "action": "把结果整理为attribute_updates={\"1\":{\"result\":...},...}，同时传入相同物理record_ids和来源SHA256，prepare_patch/apply_patch。不合并有歧义的统一赋值。"
+    },
+    {
+      "id": "native",
+      "action": "prepare_native_operation(resave)检查新表在BAS60中保存并由不同PID重开，apply_patch后读取结果；保留原文件与请求账本恢复入口。"
+    }
+  ]
+}

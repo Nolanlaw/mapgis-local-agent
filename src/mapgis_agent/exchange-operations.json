@@ -1,0 +1,41 @@
+[
+  {
+    "id": "exchange.dxf_layout",
+    "name": "DXF嵌套块阵列、显式裁剪和二维纸空间视口转原生文件",
+    "module": "exchange",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_dxf_import",
+      "backend": "ezdxf_geos_native_encoder"
+    },
+    "parameters": {
+      "inspection": "mapgis_dxf_source_info可显式layout，读取所选布局根实体/图层和块定义；默认Model",
+      "parameters": "既有kind/layers/source_units/curve_tolerance/restore_bound_metadata，加layout默认Model、expand_blocks默认false、max_expanded_entities默认200000及max_block_depth默认16",
+      "selection": "layers选择该布局的根实体图层；所选INSERT的内容完整展开，块内0图层继承插入图层，原始非0图层保留",
+      "paper": "显式paper_coordinate_units_confirmed=true确认source_units表示纸空间绘图坐标；输出必须使用单独本地坐标系，不能从打印设置猜测地理坐标",
+      "template": "新的WT/WL/WP、明确坐标系与map_scale；源文件和完整成员哈希保持",
+      "composition": "apply_block_clipping=true启用普通二维块裁剪；compose_viewports=true和viewport_model_layers显式选择纸空间视口中的模型根图层；默认均false，原协议2/3指纹保持",
+      "text": "text_mode=outline、明确font_bindings(style,file,expected_sha256,face_index)及curve_tolerance，输出line轮廓或polygon字形；原单行TEXT/ATTRIB/常量ATTDEF保留对齐和完整变换，原文字和字库哈希进来源表；未开启时保持原协议2/3/4"
+    },
+    "output_checks": [
+      "原块基点、嵌套矩阵、非均匀缩放、镜像和MINSERT全部行列经独立标量变换核对",
+      "每个输出记录保留根INSERT句柄、原叶实体句柄及唯一虚拟路径；不以空虚拟句柄冒充源身份",
+      "曲线先进行真实DXF几何变换，再按显式源绘图单位容差离散；非均匀圆可转椭圆",
+      "共享区边界和孔洞、未选图层及源字节保留；原厂保存重开/出图另验",
+      "循环/超深/爆炸阵列、外部XREF、未启用的有效XCLIP、反向/深度/未验证OCS过滤器、三维/透视视口和裁剪文字锚点明确拒绝",
+      "凹多边形裁成多个部分时保留源句柄/虚拟路径与CAD_PART；各部分独立原生记录并经原厂保存重开",
+      "按Autodesk定义将DCS视中心、WCS目标、旋转及模型/纸空间比例显式合成；冻结/关闭/不打印图层和非矩形边界另核对"
+    ],
+    "scope": "复用已安装ezdxf1.4.5的逐叶复制矩阵、multi_insert及GEOS二维相交；普通块裁剪逐层相交并完整覆盖阵列每个实例，二维顶视视口支持比例/旋转/目标和DCS中心、冻结层、矩形/非矩形裁剪。6组先前块/纸空间原生验收及10组本轮裁剪/视口验收完成，分别91+30和151次实际MCP。原CAD编辑器渲染等价、三维透视、复杂空间过滤器、反向裁剪、XCLIP边框显示、CAD打印样式和复杂文字/字体/属性仍有独立缺口。未启用新增选项的原模型空间协议2及原块/布局协议3请求均已实际沿用。 单行字形轮廓另通过12组原厂读回、181次实际MCP和15个独立字体/几何测试，包含真实黑体中文。复用已安装fontTools/ezdxf，无FontManager回退；原始字体和DXF均未修改。富MTEXT、SHX、复杂脚本、可变字体和原CAD渲染等价仍未验收。",
+    "reference": "https://ezdxf.readthedocs.io/en/stable/transform.html",
+    "evidence": [
+      "work/full-implementation-20261101/mcp-cad-layout-01/result.json",
+      "work/full-implementation-20261101/mcp-cad-layout-01/plot-margins.json",
+      "work/full-implementation-20261101/mcp-cad-clipping-01/result.json",
+      "work/full-implementation-20261101/mcp-cad-clipping-01/visual-review.json",
+      "work/full-implementation-20261101/mcp-cad-text-01/result.json",
+      "work/full-implementation-20261101/mcp-cad-text-01/visual-review.json"
+    ]
+  }
+]

@@ -66,6 +66,9 @@ def _dms(value,longitude):
 
 
 def prepare_map_frame(bridge:Bridge,part:str,parameters:dict,template:dict,request_id:str)->dict:
+    if part.startswith('page.'):
+        from .page_elements import prepare_page_element
+        return prepare_page_element(bridge,part,parameters,template,request_id)
     if part not in {'border','grid','labels'}:raise BridgeError('UNKNOWN_PART')
     suffix='.wt' if part=='labels' else '.wl'
     if Path(template.get('name','')).suffix.lower()!=suffix:raise BridgeError('INVALID_EXTENSION')

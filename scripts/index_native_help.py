@@ -7,6 +7,7 @@ No proprietary help or generated index is part of the distributed package.
 from __future__ import annotations
 
 import argparse
+import codecs
 import hashlib
 from html.parser import HTMLParser
 import json
@@ -19,6 +20,12 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from mapgis_agent.environment import MODULES
+
+# This installed Chinese report HLP declares only ANSI. Apply its known code
+# page by exact source digest, never by filename or a language guess.
+HLP_ENCODING_PROFILES = {
+    '81d9b00979a8e29f2690dc075f204a9533317d015dd7c8f387ada1127c9ee951': 'gb18030',
+}
 
 
 class TextOnly(HTMLParser):
@@ -41,13 +48,31 @@ class TextOnly(HTMLParser):
             self.parts.append(data)
 
 
-def index_module(module: str, source: Path, folder: Path) -> dict:
+def index_module(module: str, source: Path, folder: Path, *, hlp_encoding: str | None = None) -> dict:
     baseline = hashlib.sha256(source.read_bytes()).hexdigest()
+    encoding_source = 'explicit' if hlp_encoding is not None else 'source-metadata'
+    if hlp_encoding is None and baseline in HLP_ENCODING_PROFILES:
+        hlp_encoding = HLP_ENCODING_PROFILES[baseline]
+        encoding_source = 'exact-source-profile'
     errors = []
     if source.suffix.casefold() == '.hlp':
         sys.path.insert(0, str(ROOT / 'third_party/winhlp/src'))
         from winhlp.lib.hlp import HelpFile
-        document = HelpFile(filepath=str(source))
+        if hlp_encoding is not None:
+            # Some Chinese HLP files declare only ANSI. Override decoding before
+            # phrase/topic parsing, explicitly; never rewrite the installed file
+            # or guess another language from a garbled Unicode result.
+            codecs.lookup(hlp_encoding)
+
+            class EncodedHelpFile(HelpFile):
+                def _guess_undeclared_code_page(self):
+                    if self.system is None:
+                        raise ValueError('HLP_SYSTEM_MISSING_FOR_ENCODING_OVERRIDE')
+                    self.system.encoding = hlp_encoding
+
+            document = EncodedHelpFile(filepath=str(source))
+        else:
+            document = HelpFile(filepath=str(source))
         topics = [{'id': str(i), 'title': t.title, 'text': t.get_plain_text(),
                    'contexts': t.context_names} for i, t in enumerate(document.topic.get_all_topics())]
         errors = document.parse_errors
@@ -100,6 +125,10 @@ def index_module(module: str, source: Path, folder: Path) -> dict:
         raise RuntimeError('HELP_CHANGED_DURING_INDEXING')
     result = {'module': module, 'source': str(source.resolve()), 'source_sha256': baseline,
               'parser': parser, 'parse_errors': errors, 'topics': topics}
+    if source.suffix.casefold() == '.hlp':
+        result['encoding'] = document.system.encoding if document.system else None
+        result['encoding_override'] = hlp_encoding
+        result['encoding_source'] = encoding_source
     target = folder / (module + '.json')
     temporary = target.with_suffix('.tmp')
     temporary.write_text(json.dumps(result, ensure_ascii=False, default=str), encoding='utf8')
@@ -111,6 +140,7 @@ def index_module(module: str, source: Path, folder: Path) -> dict:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--module', choices=list(MODULES))
+    parser.add_argument('--hlp-encoding', help='Explicit HLP code page, e.g. gb18030 for an ANSI-tagged Chinese help file')
     args = parser.parse_args()
     config = json.loads((ROOT / 'config.local.json').read_text(encoding='utf8'))
     program = Path(config['mapgis_installation']) / 'program'
@@ -125,7 +155,7 @@ def main():
             result.append({'module': module, 'status': 'HELP_NOT_INSTALLED'})
             continue
         try:
-            result.append(index_module(module, source, folder))
+            result.append(index_module(module, source, folder, hlp_encoding=args.hlp_encoding))
         except Exception as exc:
             result.append({'module': module, 'status': 'ERROR', 'error': str(exc)})
     print(json.dumps(result, ensure_ascii=False, default=str))

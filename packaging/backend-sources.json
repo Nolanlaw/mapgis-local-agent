@@ -38,5 +38,25 @@
     "sha256": "9614f27a1891113f80653e0b76b4233ea1fb3beeb1ac46d118ab22e1670f8f13",
     "bytes": 313103,
     "role": "Open backend source; original license retained in sdist and wheel"
+  },
+  {
+    "name": "ezdxf",
+    "version": "1.4.5",
+    "file": "ezdxf-1.4.5.tar.gz",
+    "url": "https://files.pythonhosted.org/packages/53/50/b7668adf1b6c244ad9c3cfdfeeb5925de0e76218eac33470752e38457a00/ezdxf-1.4.5.tar.gz",
+    "metadata_url": "https://pypi.org/pypi/ezdxf/1.4.5/json",
+    "sha256": "a6c3bbc1a65ce764d97c5beafe6ae693d8ed14c6cdae366b50e1974a79d4a00a",
+    "bytes": 1875857,
+    "role": "DXF backend public source; unmodified sdist and original license retained"
+  },
+  {
+    "name": "fonttools",
+    "version": "4.68.0",
+    "file": "fonttools-4.68.0.tar.gz",
+    "url": "https://files.pythonhosted.org/packages/0c/b5/672312ae80ce8b8eb9779c56052a24c8f36652aa7293a1a420553bcf03e5/fonttools-4.68.0.tar.gz",
+    "metadata_url": "https://pypi.org/pypi/fonttools/4.68.0/json",
+    "sha256": "73294e233070f71e2b3653b6bd8564af676d57f26d075761fb06d1ab2e4a7a5d",
+    "bytes": 3848583,
+    "role": "DXF backend public source; unmodified sdist and original license retained"
   }
 ]

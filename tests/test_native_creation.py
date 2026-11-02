@@ -8,7 +8,7 @@ from mapgis_agent.core import Bridge, BridgeError
 from mapgis_agent.server import build_server
 
 
-CRS = {"definition":"EPSG:4549", "axis_order":"xy"}
+CRS = {"definition":"+proj=tmerc +lat_0=0 +lon_0=120 +k=1 +x_0=500000 +y_0=0 +datum=WGS84 +units=m +no_defs", "axis_order":"xy"}
 
 
 def collection(geometries, ids=None):
@@ -44,6 +44,19 @@ def test_creation_uses_existing_request_ledger_and_never_overwrites_inputs(tmp_p
 def features_geometry(features, index):
     from shapely.geometry import shape
     return shape(features["features"][index]["geometry"])
+
+
+def test_measurement_column_roundtrips_mixed_integer_and_decimal_values(tmp_path):
+    from mapgis_agent.creation import prepare_creation
+    bridge = Bridge(tmp_path)
+    features = collection([Point(1, 2), Point(3, 4)])
+    for feature, value in zip(features["features"], [2, 2.5]):
+        feature["properties"]["W"] = value
+    preview = prepare_creation(bridge, features,
+        {"name": "samples.wt", "crs": CRS, "map_scale": 1000}, "mixed-measurements")
+    assert preview["state"] == "PREPARED"
+    reader = Reader(bridge.apply("mixed-measurements")["output"])
+    assert reader.data["W"].tolist() == [2.0, 2.5]
 
 
 def test_shared_boundaries_and_holes_roundtrip(tmp_path):
@@ -89,6 +102,18 @@ def test_projection_not_representable_in_6x_is_not_silently_changed(tmp_path):
     with pytest.raises(BridgeError, match="UNREPRESENTABLE_NATIVE_CRS"):
         prepare_creation(Bridge(tmp_path),collection([Point(500000,3500000)]),
             {"name":"utm.wt","crs":{"definition":"EPSG:32650","axis_order":"xy"},"map_scale":50000}, "utm")
+
+
+def test_creation_rejects_silent_ellipsoid_substitution_before_ledger(tmp_path):
+    from mapgis_agent.creation import prepare_creation
+    bridge = Bridge(tmp_path)
+    with pytest.raises(BridgeError, match="UNSUPPORTED_NATIVE_CRS_ENCODING"):
+        prepare_creation(bridge, collection([Point(500000, 3000000)]),
+            {"name":"cgcs.wt", "crs":{"definition":"EPSG:4549", "axis_order":"xy"},
+             "map_scale":1000}, "cgcs-no-substitution")
+    with bridge.connect() as db:
+        assert db.execute("SELECT * FROM commands WHERE id=?", ("cgcs-no-substitution",)).fetchone() is None
+    assert not (tmp_path / "deliverables/creation/cgcs-no-substitution/cgcs.wt").exists()
 
 
 def test_symbol_point_kind_and_rotation_survive_native_roundtrip(tmp_path):
@@ -149,11 +174,21 @@ def test_creation_rejects_native_parameter_wrapping_or_coercion(tmp_path,style):
             {'name':'points.wt','crs':CRS,'map_scale':50000,'style':style},'bad-style')
 
 
-def test_creation_does_not_advertise_reserved_point_bytes_as_print_width(tmp_path):
+def test_annotation_font_bytes_are_not_advertised_as_symbol_pen_width(tmp_path):
     from mapgis_agent.creation import prepare_creation
+    features=collection([Point(500000,3500000)]);features['features'][0]['text']='annotation'
     with pytest.raises(BridgeError,match='STYLE'):
-        prepare_creation(Bridge(tmp_path),collection([Point(500000,3500000)]),
+        prepare_creation(Bridge(tmp_path),features,
             {'name':'points.wt','crs':CRS,'map_scale':50000,'style':{'pen_width':2.5}},'reserved-point')
+
+
+def test_symbol_pen_width_uses_its_own_float_field(tmp_path):
+    from mapgis_agent.creation import prepare_creation
+    bridge=Bridge(tmp_path)
+    prepare_creation(bridge,collection([Point(500000,3500000)]),
+        {'name':'points.wt','crs':CRS,'map_scale':50000,'style':{'pen_width':2.5}},'symbol-pen')
+    actual=Reader(bridge.apply('symbol-pen')['output'],read_graphic_params=True)
+    assert actual.point_params['point_type'].tolist()==[1] and actual.point_params['pen_width'].tolist()==[2.5]
 
 
 def test_creation_does_not_silently_drop_z_coordinates(tmp_path):

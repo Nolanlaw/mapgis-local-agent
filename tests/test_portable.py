@@ -31,6 +31,23 @@ def test_legacy_native_host_needs_explicit_package_local_opt_in(tmp_path):
     assert portable.load(root/'config.local.json')['native_backend_legacy_dep_compatibility'] is True
 
 
+def test_private_ui_opt_in_survives_package_move_and_requires_installation(tmp_path):
+    root=tmp_path/'package';root.mkdir()
+    with pytest.raises(ValueError,match='licensed MapGIS'):
+        portable.configure(root,root/'python.exe',private_ui=True)
+    assert not(root/'config.local.json').exists()
+    native=tmp_path/'mapgis';(native/'program').mkdir(parents=True)
+    (native/'program/mdiedit6x.exe').write_bytes(b'fixture')
+    portable.configure(root,root/'python.exe',str(native))
+    assert portable.load(root/'config.local.json').get('native_general_private_ui')is not True
+    portable.configure(root,root/'python.exe',private_ui=True)
+    moved=tmp_path/'moved';root.rename(moved)
+    result=portable.configure(moved,moved/'python.exe')
+    config=portable.load(moved/'config.local.json')
+    assert config['native_general_private_ui']is True and config['native_volume_private_ui']is True
+    assert result['private_ui_enabled']is True
+
+
 def test_setup_rebinds_its_own_config_after_folder_moves_and_preserves_external_edits(tmp_path):
     first = tmp_path / 'first'
     first.mkdir()

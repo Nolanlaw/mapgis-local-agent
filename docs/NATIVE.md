@@ -1,10 +1,12 @@
 # 后台接口
 
-0.6.0 的日常执行入口是本地 MCP/CLI。Python 地理库处理文件，独立 x86 进程调用本机 MapGIS 6.7。原生库加载在自有私有桌面，不发送键鼠事件，不切换用户桌面。
+0.7.0 的日常执行入口是本地 MCP/CLI。Python 地理库处理文件，独立 x86 进程调用本机 MapGIS 6.7。原生库加载在自有私有桌面，不发送键鼠事件，不切换用户桌面。
 
 ## 运行条件
 
 分享包先运行 scripts/portable.py setup。原生后端需要额外传入 --enable-native-legacy-host，接受本包独立子进程的旧版 DEP 兼容构建。系统 DEP、原 DLL 和其他应用不变。BAS60、mapprj60、msibase、mapdsp60、winout60 按实际用途逐项校验固定指纹。
+
+原厂菜单/控件通过mapgis_private_control调用，setup时显式传--enable-private-ui。协议、模块名单、原厂错误与专用替代路线见[本机调用范围](LOCAL67-ROUTES.md)。
 
 普通文件工具无需 MapGIS。原生操作需要匹配版本、合法许可和所用字体/符号库；未知构建会返回错误。
 

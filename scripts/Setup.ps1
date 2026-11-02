@@ -59,7 +59,7 @@ if ($LASTEXITCODE -ne 0) { throw 'pip setup failed' }
 & $EnvironmentPython -m pip install -r (Join-Path $ProjectRoot 'requirements.lock.txt')
 if ($LASTEXITCODE -ne 0) { throw 'dependency installation failed' }
 # Normal wheels avoid Python 3.12/CP936 editable-path decoding failures.
-& $EnvironmentPython -m pip install --no-deps (Join-Path $ProjectRoot 'vendor\mapgis2shp')
+& $EnvironmentPython -m pip install --no-deps --force-reinstall (Join-Path $ProjectRoot 'vendor\mapgis2shp')
 if ($LASTEXITCODE -ne 0) { throw 'native reader installation failed' }
 & $EnvironmentPython -m pip install --no-deps $ProjectRoot
 if ($LASTEXITCODE -ne 0) { throw 'bridge installation failed' }

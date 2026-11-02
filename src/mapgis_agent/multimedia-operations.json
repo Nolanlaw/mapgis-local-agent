@@ -1,0 +1,32 @@
+[
+  {
+    "id": "attributes.multimedia",
+    "name": "原生多媒体字段及相对资源完整打包",
+    "module": "attributes",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_multimedia",
+      "backend": "exact_native_field_abi_and_existing_schema_bundle"
+    },
+    "parameters": {
+      "fields": "完整主表多媒体字段，类型为文本、图像、地图、声音或视频；普通字段保留",
+      "assets": "有归属任务文件、稳定ASCII标识和真实SHA256；只复制字节，不播放或执行",
+      "links": "物理图元编号、字段及asset标识；未声明的链接成为本分支空单元格",
+      "native_resave": "可选原厂隔离SDK保存和新进程重开，再把全部资源放入同一原子成果包"
+    },
+    "output_checks": [
+      "原厂枚举代码8..13与BASROOT存储尺寸分别核对",
+      "主属性、源文件摘要、每个资源摘要和物理编号逐项核对",
+      "资源相对路径和空目录在成果搬移后仍能解析",
+      "播放/界面激活和复杂二进制类型不由文件存读代证"
+    ],
+    "scope": "真实原生多媒体引用和资源携带；原始副本不改。辅助表媒体、嵌入二进制/表格和原生外部数据库激活保留缺口。不得把普通字符串字段或资源查看器截图当作原生多媒体执行证明。",
+    "evidence": [
+      "work/full-implementation-20261101/native-mm-01/types-and-evidence.json",
+      "work/full-implementation-20261101/multimedia-tests-05.log",
+      "work/full-implementation-20261101/mcp-multimedia-01/result.json",
+      "work/full-implementation-20261101/mcp-multimedia-01/visual-review.json"
+    ]
+  }
+]

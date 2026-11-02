@@ -1,0 +1,40 @@
+{
+  "id": "cartography-series",
+  "schema_version": 1,
+  "title": "原生工程多页视图与分幅输出",
+  "execution": "Use public MCP on a portable saved MPJ. Each page reuses the original native project renderer; Ghostscript assembles the checked EPS pages. No desktop input.",
+  "native_module": "editor",
+  "validation": "BACKEND_TESTED",
+  "validation_scope": "An original eight-layer report window printed as three explicit views with unchanged scale, ordered PDF pages, EPS/PNG/300dpi TIFF, XLSX/CSV index and relocated editable MPJ.16 actual workflow calls,15 recovery calls after exits107/108/109;59 related tests. This is not a proprietary native multi-page layout format or complete page-object/printer support.",
+  "inputs": [
+    "原生工程及同目录依赖；工程系统库副本与绑定摘要",
+    "每页唯一名称、原生坐标范围、实际纸张毫米尺寸和页序",
+    "显式输出dpi和是否需要TIFF；打印页不自动赋地理坐标"
+  ],
+  "steps": [
+    {
+      "id": "source",
+      "tools": ["mapgis_native_project_info"],
+      "action": "Bind the saved MPJ and inspect layer order/state/display limits, native bounds and system library. Use a portable project with sibling dependencies.",
+      "checks": ["工程/依赖/系统库摘要", "原生坐标单位和项目环境", "图层状态与显示比例限制"]
+    },
+    {
+      "id": "pages",
+      "tools": ["mapgis_prepare_map_series", "mapgis_apply_patch"],
+      "action": "Pass explicitly ordered pages with unique names and existing native view schema. Each page draws the same saved project at its declared extent/paper size. Page names label the index; add native title/page graphics in the source when needed.",
+      "checks": ["PDF实际页数、页序、纸张尺寸和逐页像素对照", "单页EPS与实际PDF预览", "可选TIFF尺寸、样本和DPI元数据", "原生保存工程副本与全部依赖"]
+    },
+    {
+      "id": "readback",
+      "tools": ["mapgis_table_info", "mapgis_native_project_info", "mapgis_raster_source_info"],
+      "action": "Read pages.xlsx/图幅 through the existing XLSX API, reopen the copied MPJ and verify all dependencies resolve inside its output folder. series.json retains exact views and hashes; pages.csv is also available for plain-data consumers.",
+      "checks": ["页码名称与视图一致", "工程可迁移重开，图层和文件内容相同", "最终图件可见、图面关系正确", "原始数据未修改"]
+    },
+    {
+      "id": "recovery",
+      "tools": ["mapgis_get_request", "mapgis_reconcile_artifact", "mapgis_apply_patch"],
+      "action": "Inspect the existing request after interruption. Adopt completed native page plots and a committed combined PDF, then continue only not-yet-issued pages and necessary format conversion. Changed source, frozen context/index/TIFF or PDF is rejected.",
+      "checks": ["已完成原生页PID/PS/日志/摘要与mtime保持", "合成PDF已完成时不重写", "恢复页PNG/TIFF与不中断基准一致"]
+    }
+  ]
+}

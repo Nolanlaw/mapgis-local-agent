@@ -1,0 +1,90 @@
+{
+  "project": "https://github.com/artem-ogre/CDT",
+  "version": "2.0.1",
+  "commit": "53eff288a4e77ad1c0afe1a10f60bd2b57f877b8",
+  "archive_sha256": "9ccfb86a1e388b48af1401007734bad984591b0928c52c6ef51b2fcd9686b0af",
+  "source": "https://codeload.github.com/artem-ogre/CDT/zip/53eff288a4e77ad1c0afe1a10f60bd2b57f877b8",
+  "files": [
+    {
+      "path": "CDT/LICENSE",
+      "bytes": 16726,
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+    },
+    {
+      "path": "CDT/LICENSE-LLVM.txt",
+      "bytes": 16703,
+      "sha256": "539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b"
+    },
+    {
+      "path": "CDT/LICENSE-predicates.txt",
+      "bytes": 1503,
+      "sha256": "3dd54af7e7efb401f43223277c8abdc77046cb70d50af814b93fb0c3a65f4a85"
+    },
+    {
+      "path": "CDT/include/CDT.h",
+      "bytes": 14776,
+      "sha256": "6041e6daa665b8a7dff63ec19403b31c48f4b28028687f0678eb9e1acf98b967"
+    },
+    {
+      "path": "CDT/include/CDT.hpp",
+      "bytes": 3070,
+      "sha256": "0ebf62422d24f72a939d6a8c1a350a837ca0a936b0037c02bc621d721c18b440"
+    },
+    {
+      "path": "CDT/include/CDTUtils.h",
+      "bytes": 18874,
+      "sha256": "9a3e6801ff6e14e307b649b8ea62d0abf69378b55216b34c12ad1fbf6ce05e96"
+    },
+    {
+      "path": "CDT/include/CDTUtils.hpp",
+      "bytes": 8950,
+      "sha256": "9a39de0ab6af89e54510b638de03d34e41398652dbc8d5c2f3149d5c42ae393c"
+    },
+    {
+      "path": "CDT/include/KDTree.h",
+      "bytes": 15561,
+      "sha256": "f63fba08504451ddba36dd89cdef6dc96d5a1198cef4ff35daacf978ee908d99"
+    },
+    {
+      "path": "CDT/include/LocatorKDTree.h",
+      "bytes": 1963,
+      "sha256": "e4bd046501dd339265ffb4541dfcb1b59771bf746d309864e606cf995e95ab8c"
+    },
+    {
+      "path": "CDT/include/Triangulation.h",
+      "bytes": 52317,
+      "sha256": "fac6dc424acdad000b17978be6ffcee2523cd59a605bbfefe2b2deeb1fbaa0f4"
+    },
+    {
+      "path": "CDT/include/Triangulation.hpp",
+      "bytes": 93911,
+      "sha256": "a857333624fe816f597250dd542e4aa02e0fe7b3a1e0742cfd63685ce961c1ed"
+    },
+    {
+      "path": "CDT/include/portable_nth_element.hpp",
+      "bytes": 9585,
+      "sha256": "fab9ccbd4cf6ec078d5ffca43277b7c5d4403e31716a4ec0e39b0857d4d4119e"
+    },
+    {
+      "path": "CDT/include/predicates.h",
+      "bytes": 62143,
+      "sha256": "d9f8ac6a0fa510f88a9dff844e0ff371bc80abffd598b9f00a58e93ce7799863"
+    },
+    {
+      "path": "CDT/include/remove_at.hpp",
+      "bytes": 1828,
+      "sha256": "9f7cf7d2a87a64f74dc924c2c8b8e3ec4ecb13b9b0e4452706da3efe2f5e485c"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 16726,
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+    },
+    {
+      "path": "docs/README.md",
+      "bytes": 23718,
+      "sha256": "fc335b6bf70965a5fe1bd53b60e1ec1d0d5d8e8438d02fae62d1cee11dac2030"
+    }
+  ],
+  "upstream_files_modified": false
+}

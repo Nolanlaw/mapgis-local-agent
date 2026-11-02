@@ -1,0 +1,550 @@
+{
+  "fields": [
+    {
+      "name": "type",
+      "type": "integer",
+      "description": "property type 空间数据水平坐标系类型"
+    },
+    {
+      "name": "unit",
+      "type": "integer",
+      "description": "property unit 空间数据水平坐标单位"
+    },
+    {
+      "name": "mapw",
+      "type": "number",
+      "description": "property mapw 空间数据图幅理论宽 type坐标系,unit单位"
+    },
+    {
+      "name": "maph",
+      "type": "number",
+      "description": "property maph 空间数据图幅理论高 type坐标系,unit单位"
+    },
+    {
+      "name": "projType",
+      "type": "integer",
+      "description": "property projType 空间数据投影类型"
+    },
+    {
+      "name": "earthParam",
+      "type": "integer",
+      "description": "property earthParam 空间数据参考椭球体参数类型"
+    },
+    {
+      "name": "jd0",
+      "type": "number",
+      "description": "property jd0 空间数据数据左下角经度,数据单位统一采用UNIT_DM"
+    },
+    {
+      "name": "wd0",
+      "type": "number",
+      "description": "property wd0 空间数据数据左下角纬度,数据单位统一采用UNIT_DMS格式"
+    },
+    {
+      "name": "djd",
+      "type": "number",
+      "description": "property djd 空间数据数据经度跨度,数据单位统一采用UNIT_DM"
+    },
+    {
+      "name": "dwd",
+      "type": "number",
+      "description": "property dwd 空间数据数据纬度跨度,数据单位统一采用UNIT_DM"
+    },
+    {
+      "name": "rate",
+      "type": "number",
+      "description": "property rate 空间数据数据水平比例尺倒数,无单位"
+    },
+    {
+      "name": "lon",
+      "type": "number",
+      "description": "property lon 空间数据中央经线经度, 数据单位统一采用UNIT_DMS格"
+    },
+    {
+      "name": "lon1",
+      "type": "number",
+      "description": "property lon1 空间数据双经线1经度,数据单位统一采用UNIT_DMS"
+    },
+    {
+      "name": "lon2",
+      "type": "number",
+      "description": "property lon2 空间数据双经线2经度, 数据单位统一采用UNIT_DMS格式"
+    },
+    {
+      "name": "lat",
+      "type": "number",
+      "description": "property lat 空间数据投影原点纬度,数据单位统一采用UNIT_DMS格式"
+    },
+    {
+      "name": "lat1",
+      "type": "number",
+      "description": "property lat1 空间数据双纬线1纬度,数据单位统一采用UNIT_DMS格式"
+    },
+    {
+      "name": "lat2",
+      "type": "number",
+      "description": "property lat2 空间数据双纬线2纬度,数据单位统一采用UNIT_DMS格式"
+    },
+    {
+      "name": "dx",
+      "type": "number",
+      "description": "property dx 空间数据图纸坐标原点在投影坐标系中的X偏移值,type坐标系,unit单位"
+    },
+    {
+      "name": "dy",
+      "type": "number",
+      "description": "property dy 空间数据图纸坐标原点在投影坐标系中的Y偏移值,type坐标系,unit单位"
+    },
+    {
+      "name": "levelType",
+      "type": "integer",
+      "description": "property levelType 空间数据大地水准面类型"
+    },
+    {
+      "name": "h",
+      "type": "number",
+      "description": "property h 空间数据大地水准面与参考椭球面之间的高差"
+    },
+    {
+      "name": "H2",
+      "type": "number",
+      "description": "property H 空间数据投影平面与大地水准面的高差"
+    },
+    {
+      "name": "vRate",
+      "type": "number",
+      "description": "property vRate 空间数据垂向比例尺倒数"
+    },
+    {
+      "name": "vUnit",
+      "type": "integer",
+      "description": "property vUnit 空间数据垂向数据单位"
+    },
+    {
+      "name": "TICtype",
+      "type": "integer",
+      "description": "property TICtype Tic点理论坐标系类型"
+    },
+    {
+      "name": "TICunit",
+      "type": "integer",
+      "description": "property TICunit Tic点理论坐标单位"
+    },
+    {
+      "name": "infoUnit",
+      "type": "integer",
+      "description": "property infoUnit 图形显示参数单位"
+    },
+    {
+      "name": "infoRatex",
+      "type": "number",
+      "description": "property infoRatex 图形显示参数单位值相对于当前数据单位值的x比例系数, 初始值必须赋0或1"
+    },
+    {
+      "name": "infoRatey",
+      "type": "number",
+      "description": "property infoRatey 图形显示参数单位值相对于当前数据单位值的y比例系数, 初始值必须赋0或1"
+    }
+  ],
+  "enums": {
+    "Enum_SpatialRef_Type": [
+      {
+        "name": "gisUserRef",
+        "value": 0,
+        "description": "用户自定义坐标系 TYPE_NOPAR"
+      },
+      {
+        "name": "gisGeographicRef",
+        "value": 1,
+        "description": "地理坐标系 TYPE_JWD"
+      },
+      {
+        "name": "gisGeodesticalRef",
+        "value": 2,
+        "description": "大地坐标系 TYPE_DD"
+      },
+      {
+        "name": "gisProjecticalRef",
+        "value": 3,
+        "description": "投影平面直角坐标系 TYPE_PRJ"
+      },
+      {
+        "name": "gisEarthCenterRef",
+        "value": 4,
+        "description": "地心大地直角坐标系 TYPE_XYZ"
+      }
+    ],
+    "Enum_SpatialUnit_Type": [
+      {
+        "name": "gisUNIT_MM",
+        "value": 0,
+        "description": "毫米"
+      },
+      {
+        "name": "gisUNIT_MilliMeter",
+        "value": 1,
+        "description": "毫米"
+      },
+      {
+        "name": "gisUNIT_Meter",
+        "value": 2,
+        "description": "米"
+      },
+      {
+        "name": "gisUNIT_Second",
+        "value": 3,
+        "description": "秒"
+      },
+      {
+        "name": "gisUNIT_Degree",
+        "value": 4,
+        "description": "度"
+      },
+      {
+        "name": "gisUNIT_DMS",
+        "value": 5,
+        "description": "度分秒,即±DDDMMSS.SSSS格式"
+      },
+      {
+        "name": "gisUNIT_Foot",
+        "value": 6,
+        "description": "英尺"
+      },
+      {
+        "name": "gisUNIT_Minute",
+        "value": 7,
+        "description": "分(1/60度)"
+      },
+      {
+        "name": "gisUNIT_Radian",
+        "value": 8,
+        "description": "弧度"
+      },
+      {
+        "name": "gisUNIT_GRAD",
+        "value": 9,
+        "description": "梯度   1梯度=0.015707963267949弧度"
+      },
+      {
+        "name": "gisUNIT_KM",
+        "value": 10,
+        "description": "公里"
+      },
+      {
+        "name": "gisUNIT_KiloMeter",
+        "value": 10,
+        "description": "公里"
+      },
+      {
+        "name": "gisUNIT_DM",
+        "value": 11,
+        "description": "分米"
+      },
+      {
+        "name": "gisUNIT_DeciMeter",
+        "value": 11,
+        "description": "分米"
+      },
+      {
+        "name": "gisUNIT_CM",
+        "value": 12,
+        "description": "厘米"
+      },
+      {
+        "name": "gisUNIT_CentiMeter",
+        "value": 12,
+        "description": "厘米"
+      },
+      {
+        "name": "gisUNIT_Inch",
+        "value": 13,
+        "description": "英寸"
+      },
+      {
+        "name": "gisUNIT_Yard",
+        "value": 14,
+        "description": "码"
+      },
+      {
+        "name": "gisUNIT_SeaMile",
+        "value": 15,
+        "description": "海里"
+      },
+      {
+        "name": "gisUNIT_Mile",
+        "value": 16,
+        "description": "英里"
+      },
+      {
+        "name": "gisUNIT_SQ_MM",
+        "value": 32,
+        "description": "平方毫米(Square Millimeter)"
+      },
+      {
+        "name": "gisUNIT_SQ_CM",
+        "value": 33,
+        "description": "平方厘米(Square Centimeter)"
+      },
+      {
+        "name": "gisUNIT_SQ_DM",
+        "value": 34,
+        "description": "平方分米(Square Millimeter)"
+      },
+      {
+        "name": "gisUNIT_SQ_M",
+        "value": 35,
+        "description": "平方米(Square DeciMeter)"
+      },
+      {
+        "name": "gisUNIT_SQ_KM",
+        "value": 36,
+        "description": "平方公里(Square KiloMeter)"
+      },
+      {
+        "name": "gisUNIT_SQ_Inch",
+        "value": 37,
+        "description": "平方英寸(Square Inch)"
+      },
+      {
+        "name": "gisUNIT_SQ_Foot",
+        "value": 38,
+        "description": "平方英尺(Square Foot)"
+      },
+      {
+        "name": "gisUNIT_SQ_Yard",
+        "value": 39,
+        "description": "平方码(Square Yard)"
+      },
+      {
+        "name": "gisUNIT_Are",
+        "value": 40,
+        "description": "公亩(Are)"
+      },
+      {
+        "name": "gisUNIT_Acre",
+        "value": 41,
+        "description": "英亩(Acre)"
+      },
+      {
+        "name": "gisUNIT_Hectare",
+        "value": 42,
+        "description": "公顷(Hectare)"
+      },
+      {
+        "name": "gisUNIT_SQ_Mile",
+        "value": 43,
+        "description": "平方英里(Square Mile)"
+      },
+      {
+        "name": "gisUNIT_CU_MM",
+        "value": 64,
+        "description": "立方毫米(Cubic Millimeter)"
+      },
+      {
+        "name": "gisUNIT_CU_CM",
+        "value": 65,
+        "description": "立方厘米(Cubic Centimeter)"
+      },
+      {
+        "name": "gisUNIT_CU_DM",
+        "value": 66,
+        "description": "立方分米(Cubic Millimeter)"
+      },
+      {
+        "name": "gisUNIT_CU_M",
+        "value": 67,
+        "description": "立方米(Cubic DeciMeter)"
+      },
+      {
+        "name": "gisUNIT_CU_Inch",
+        "value": 69,
+        "description": "立方英寸(Cubic Inch)"
+      },
+      {
+        "name": "gisUNIT_CU_Foot",
+        "value": 70,
+        "description": "立方英尺(Cubic Foot)"
+      },
+      {
+        "name": "gisUNIT_CU_Yard",
+        "value": 71,
+        "description": "立方码(Cubic Yard)"
+      }
+    ],
+    "Enum_SpatialPrj_Type": [
+      {
+        "name": "gisPRJ_LonLat",
+        "value": 0,
+        "description": "地理坐标系(经纬度)"
+      },
+      {
+        "name": "gisPRJ_UTM",
+        "value": 1,
+        "description": "通用横向墨卡托投影坐标系(UTM)"
+      },
+      {
+        "name": "gisPRJ_Albers_Conical_EQ_Area",
+        "value": 2,
+        "description": "亚尔勃斯等积圆锥投影坐标系,ALBERS CONICAL EQUAL AREA"
+      },
+      {
+        "name": "gisPRJ_Lambert_Conformal_Conic",
+        "value": 3,
+        "description": "兰伯特等角圆锥投影坐标系,LAMBERT CONFORMAL CONIC"
+      },
+      {
+        "name": "gisPRJ_Mercator",
+        "value": 4,
+        "description": "墨卡托(正轴等角圆柱)投影坐标系,MERCATOR"
+      },
+      {
+        "name": "gisPRJ_Gauss_Kruger",
+        "value": 5,
+        "description": "高斯-克吕格(横切椭圆柱等角)投影,GAUSS-KRUGER"
+      },
+      {
+        "name": "gisPRJ_Polyconic",
+        "value": 6,
+        "description": "普通多圆锥投影坐标系,POLYCONIC"
+      },
+      {
+        "name": "gisPRJ_EQ_Dist_Conic",
+        "value": 7,
+        "description": "等距圆锥投影坐标系,EQUIDISTANT  CONIC"
+      },
+      {
+        "name": "gisPRJ_Transverse_Mecator",
+        "value": 8,
+        "description": "横向墨卡托(横切圆柱等角)投影,TRANSVERSE MECATOR"
+      },
+      {
+        "name": "gisPRJ_StereoGraphic",
+        "value": 9,
+        "description": "球面投影(视点在球面)坐标系,STEREOGRAPHIC"
+      },
+      {
+        "name": "gisPRJ_Lambert_Azimuthal_EQ_Area",
+        "value": 10,
+        "description": "兰伯特等积方位投影坐标系,LAMBERT AZIMUTHAL EQUAL_AREA"
+      },
+      {
+        "name": "gisPRJ_Azimuthal_EQ_Dist",
+        "value": 11,
+        "description": "等距方位投影坐标系,AZIMUTHAL EQUIDISTANT"
+      },
+      {
+        "name": "gisPRJ_Gnomonic",
+        "value": 12,
+        "description": "心射切面(球心)投影坐标系,GNOMONIC"
+      },
+      {
+        "name": "gisPRJ_Orthographic",
+        "value": 13,
+        "description": "正射投影(视点无穷远)坐标系,ORTHOGRAPHIC"
+      },
+      {
+        "name": "gisPRJ_General_VER_NS_Perspective",
+        "value": 14,
+        "description": "通用垂直近距透视(外心)投影,GENERAL VERTICAL NEAR_SIDE PERSPECTIVE"
+      },
+      {
+        "name": "gisPRJ_Sinusoidal",
+        "value": 15,
+        "description": "正弦投影(伪圆柱)坐标系,SINUSOIDAL"
+      },
+      {
+        "name": "gisPRJ_Equirectangular",
+        "value": 16,
+        "description": "等距离切圆柱(方格)投影坐标系,EQUIRECTANGULAR"
+      },
+      {
+        "name": "gisPRJ_Miller_Cylindrical",
+        "value": 17,
+        "description": "米勒圆柱(透视正圆柱)投影坐标系,MILLER CYLINDRICAL"
+      },
+      {
+        "name": "gisPRJ_V_D_Grinten_I",
+        "value": 18,
+        "description": "范德格林顿I投影坐标系,VAN DER  GRINTEN I"
+      },
+      {
+        "name": "gisPRJ_Oblique_Mercator",
+        "value": 19,
+        "description": "斜轴墨卡托投影坐标系,OBLIQUE MERCATOR (HOTINE)"
+      },
+      {
+        "name": "gisPRJ_Polar_Srereographic",
+        "value": 20,
+        "description": "极点球面投影坐标系,POLAR SREREOGRAPHIC"
+      }
+    ],
+    "Enum_SpatialEP_Type": [
+      {
+        "name": "gisEP_UnDefine",
+        "value": 0,
+        "description": "未指定参考椭球体参数类型"
+      },
+      {
+        "name": "gisEP_Beijing54",
+        "value": 1,
+        "description": "北京54/Krasovsky(1940年)椭球"
+      },
+      {
+        "name": "gisEP_Krasovsky",
+        "value": 1,
+        "description": "北京54/克拉索夫斯基(1940年)椭球"
+      },
+      {
+        "name": "gisEP_Xian80",
+        "value": 2,
+        "description": "西安80/1975年I.U.G.G推荐椭球"
+      },
+      {
+        "name": "gisEP_IUGG1975",
+        "value": 2,
+        "description": "西安80/1975年I.U.G.G推荐椭球"
+      },
+      {
+        "name": "gisEP_IUGG1979",
+        "value": 3,
+        "description": "1979年I.U.G.G推荐椭球"
+      },
+      {
+        "name": "gisEP_IUGG1983",
+        "value": 4,
+        "description": "1983年I.U.G.G推荐椭球"
+      },
+      {
+        "name": "gisEP_UserDefine",
+        "value": 5,
+        "description": "新的椭球参数(自定义)"
+      },
+      {
+        "name": "gisEP_IUGG1967",
+        "value": 6,
+        "description": "1967年I.U.G.G推荐椭球"
+      },
+      {
+        "name": "gisEP_WGS84",
+        "value": 7,
+        "description": "WGS-84"
+      },
+      {
+        "name": "gisEP_GRS80",
+        "value": 8,
+        "description": "GRS-80"
+      },
+      {
+        "name": "gisEP_WGS72",
+        "value": 9,
+        "description": "WGS-72"
+      },
+      {
+        "name": "gisEP_Australia1965",
+        "value": 10,
+        "description": "澳大利亚1965年椭球"
+      }
+    ]
+  },
+  "scope": "Native SDK parameter metadata. Angular field encodings follow these original SDK descriptions; no automatic unit conversion or layer reprojection."
+}

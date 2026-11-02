@@ -54,6 +54,36 @@ def test_bundle_stale_source_and_id_conflict_do_not_overwrite(tmp_path):
     assert not Path(receipt['output']).exists()
 
 
+def test_absent_database_companion_is_bound_until_publication(tmp_path):
+    bridge=Bridge(tmp_path);source=tmp_path/'data.sqlite';source.write_bytes(b'closed database')
+    companion=tmp_path/'data.sqlite-wal'
+    references=[{'file':str(source),'sha256':sha(source.read_bytes())},
+        {'file':str(companion),'must_be_absent':True}]
+    stage,receipt,_=begin_bundle(bridge,{'operation':'database.test'},'db',references,'result.sqlite')
+    folder=stage/'files';folder.mkdir();(folder/'result.sqlite').write_bytes(b'complete copy')
+    finish_bundle(bridge,'db',folder,{})
+    companion.write_bytes(b'later committed changes not reflected in main file hash')
+    with pytest.raises(BridgeError,match='STALE_SOURCE'):bridge.apply('db')
+    assert not Path(receipt['output']).exists()
+    companion.unlink()
+    assert bridge.apply('db')['state']=='APPLIED'
+    companion.write_bytes(b'changed after publication')
+    assert bridge.apply('db')['state']=='APPLIED'  # already published immutable result adopted
+
+
+def test_absent_database_companion_checked_before_prepare_and_recovery(tmp_path,monkeypatch):
+    bridge=Bridge(tmp_path);source=tmp_path/'d.accdb';source.write_bytes(b'database');lock=source.with_suffix('.laccdb');lock.touch()
+    refs=[{'file':str(source),'sha256':sha(source.read_bytes())},{'file':str(lock),'must_be_absent':True}]
+    with pytest.raises(BridgeError,match='STALE_SOURCE'):begin_bundle(bridge,{'operation':'database.test'},'db',refs,'d.accdb')
+    lock.unlink();stage,receipt,_=begin_bundle(bridge,{'operation':'database.test'},'db',refs,'d.accdb')
+    folder=stage/'files';folder.mkdir();(folder/'d.accdb').write_bytes(b'completed copy')
+    import mapgis_agent.artifacts as module
+    with monkeypatch.context() as patch:
+        patch.setattr(module,'reconcile_bundle',lambda *a:None);finish_bundle(bridge,'db',folder,{})
+    lock.touch()
+    with pytest.raises(BridgeError,match='STALE_SOURCE'):reconcile_bundle(bridge,'db')
+
+
 @pytest.mark.skipif(os.name!='nt',reason='Windows case-insensitive native output names')
 def test_native_uppercase_extension_keeps_exact_artifact_member_identity(tmp_path):
     bridge=Bridge(tmp_path);source=tmp_path/'input.txt';source.write_bytes(b'source')

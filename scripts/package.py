@@ -1,4 +1,5 @@
 """Explicit source bundle, actual restore/hash check and fresh stdio startup."""
+import ast
 import asyncio
 import hashlib
 import json
@@ -53,22 +54,10 @@ async def main():
         async with ClientSession(*streams) as session:
             await session.initialize()
             tools = [tool.name for tool in (await session.list_tools()).tools]
-            expected_tools = {"mapgis_get_capabilities", "mapgis_get_live_state", "mapgis_inspect_file",
-                              "mapgis_make_work_copy", "mapgis_prepare_patch", "mapgis_apply_patch",
-                              "mapgis_get_request", "mapgis_cancel_request", "mapgis_prepare_recovery",
-                              "mapgis_find_operations", "mapgis_describe_operation", "mapgis_search_native_help",
-                              "mapgis_register_scan", "mapgis_scan_window", "mapgis_prepare_georeference",
-                              "mapgis_write_georeferenced_window", "mapgis_extract_candidates",
-                              "mapgis_merge_candidate_tiles", "mapgis_prepare_creation", "mapgis_prepare_vector_operation",
-                              "mapgis_prepare_delete", "mapgis_read_features", "mapgis_prepare_file_operation",
-                              "mapgis_compare_files", "mapgis_verify_request_output",
-                              "mapgis_native_file_info", "mapgis_prepare_native_operation", "mapgis_prepare_native_plot", "mapgis_reconcile_native_request",
-                              "mapgis_native_workspace", "mapgis_query_attributes", "mapgis_prepare_export", "mapgis_prepare_import",
-                              "mapgis_analyze_terrain", "mapgis_prepare_terrain", "mapgis_analyze_network", "mapgis_prepare_network",
-                              "mapgis_prepare_native_raster", "mapgis_prepare_raster_warp", "mapgis_reconcile_artifact",
-                              "mapgis_native_project_info", "mapgis_prepare_native_project", "mapgis_prepare_project_plot",
-                              "mapgis_projection_points", "mapgis_prepare_map_frame", "mapgis_prepare_annotations", "mapgis_prepare_seams",
-                              "mapgis_prepare_attribute_report", "mapgis_prepare_plot_export"}
+            definitions = ast.parse((restore / "src/mapgis_agent/server.py").read_text(encoding="utf8"))
+            expected_tools = {node.name for node in ast.walk(definitions)
+                              if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                              and node.name.startswith("mapgis_")}
             if len(tools) != len(expected_tools) or set(tools) != expected_tools:
                 raise RuntimeError("Restored server tool inventory mismatch")
             response = await session.call_tool("mapgis_get_capabilities", {})

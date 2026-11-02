@@ -2,6 +2,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import rasterio
+import pytest
 from rasterio.transform import from_origin
 
 from mapgis_agent.core import Bridge,sha
@@ -12,7 +13,8 @@ from mapgis_agent.native_plot import validate_eps,_ghostscript,_render_check
 from test_native_raster import native_settings,ROOT
 
 
-def test_native_project_eps_contains_actual_raster_colors(tmp_path):
+@pytest.mark.parametrize('standard_postscript',[False,True])
+def test_native_project_eps_contains_actual_raster_colors(tmp_path,standard_postscript):
     bridge=Bridge(tmp_path);executable,bas=native_settings(tmp_path)
     source=tmp_path/'colors.tif';data=np.zeros((3,24,32),np.uint8);data[0,:,:16]=255;data[2,:,16:]=255
     with rasterio.open(source,'w',driver='GTiff',width=32,height=24,count=3,dtype='uint8',crs='EPSG:32650',transform=from_origin(400,900,2,2)) as raster:raster.write(data)
@@ -21,8 +23,15 @@ def test_native_project_eps_contains_actual_raster_colors(tmp_path):
         {'name':'colors.mpj','coordinate_frame':'native'},'project');project=bridge.apply('project')
     view=tmp_path/'view.txt';view.write_text('400 852 464 900 160 120\n',encoding='ascii')
     output=tmp_path/'map.eps'
-    _,events=_run_child([str(executable),'project','plot',str(bas.parent),project['output'],str(view),str(output)],tmp_path,'project-plot.json')
-    assert any(e.get('event')=='layer_drawn' and e['kind']==11 and e['records']==1 for e in events)
+    if standard_postscript:
+        from mapgis_agent.native_project import prepare_project_plot
+        prepared=prepare_project_plot(bridge,project['output'],project['candidate_sha256'],
+            {'native_bounds':[400,852,464,900],'paper_mm':[160,120],'coordinate_frame':'native'},'plot')
+        assert prepared['normalization']['native_page_mm']==[160,120]
+        output=Path(bridge.apply('plot')['output'])
+    else:
+        _,events=_run_child([str(executable),'project','plot',str(bas.parent),project['output'],str(view),str(output)],tmp_path,'project-plot.json')
+        assert any(e.get('event')=='layer_drawn' and e['kind']==11 and e['records']==1 for e in events)
     validate_eps(output,[160,120]);_render_check(_ghostscript(ROOT),tmp_path,output,[160,120])
     pixels=cv2.imdecode(np.frombuffer((tmp_path/'preview.png').read_bytes(),np.uint8),cv2.IMREAD_COLOR)
     height,width=pixels.shape[:2]

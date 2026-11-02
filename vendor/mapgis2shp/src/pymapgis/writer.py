@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
+# Local MapGIS Agent change, 2026-10-31: retain coincident same-side region arcs.
 """
 pymapgis.writer
 Provides writing support for MapGIS *.wt, *.wl, *.wp geospatial vector files.
@@ -850,7 +851,7 @@ def _filetime_now() -> int:
 
 
 def _encode_line_aux(
-    gdf: gpd.GeoDataFrame, params: Optional[pd.DataFrame]
+    gdf: gpd.GeoDataFrame, params: Optional[pd.DataFrame], factor: float = 1.0
 ) -> Tuple[bytes, bytes, bytes, bytes, bytes]:
     """Encode the native .wl auxiliary sections.
 
@@ -863,11 +864,11 @@ def _encode_line_aux(
     with the line layer (layer 100 -> 0x64, layer 5 -> 0x05, native-verified).
     """
     nodes = bytearray(24)
-    boxes = struct.pack("<4d", *gdf.total_bounds)
+    boxes = struct.pack("<4d", *(gdf.total_bounds * factor))
     flags = struct.pack("<i", _LINE_FLAG_BASE)
     for i, geom in enumerate(gdf.geometry):
         nodes += struct.pack("<2i", 2 * i + 1, 2 * i + 2) + _WL_NODE_TABLE_PAD
-        minx, miny, maxx, maxy = geom.bounds
+        minx, miny, maxx, maxy = (v * factor for v in geom.bounds)
         boxes += struct.pack("<4d", minx, miny, maxx, maxy)
         row = params.iloc[i] if params is not None else None
         layer = int(row["layer"]) if (row is not None and "layer" in row.index) else 0
@@ -949,26 +950,31 @@ class _PolygonArcDecomposer:
         return out
 
     def build(self) -> Tuple[List[List[Tuple[float, float]]], List[Tuple[int, int]]]:
-        sides: Dict[Tuple[Tuple[float, float], Tuple[float, float]], List[int]] = (
+        sides: Dict[Tuple[Tuple[float, float], Tuple[float, float], int], List[int]] = (
             defaultdict(lambda: [0, 0])
         )
-        ring_order: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
+        ring_order: List[Tuple[Tuple[float, float], Tuple[float, float], int]] = []
         seen_seg: set = set()
         for pid, pts in self._rings():
             for a, b in zip(pts, pts[1:]):
                 if a == b:
                     continue
-                seg = (a, b) if a <= b else (b, a)
+                base = (a, b) if a <= b else (b, a)
+                side = 0 if a <= b else 1
+                lane = 0
+                # Same-side ownership cannot overwrite another physical
+                # region. A coincident arc is legal: keep another slot.
+                # Opposite-side neighbours still share one native arc.
+                while sides[(base[0], base[1], lane)][side] not in (0, pid):
+                    lane += 1
+                seg = (base[0], base[1], lane)
                 if seg not in seen_seg:
                     seen_seg.add(seg)
                     ring_order.append(seg)
                 # Shells and interiors use the same registration convention.
                 # Reversing only a hole makes a coincident hole and island both
                 # reappear as positive area after a Reader-Writer-Reader cycle.
-                if a <= b:
-                    sides[seg][0] = pid
-                else:
-                    sides[seg][1] = pid
+                sides[seg][side] = pid
 
         adjacency: Dict[Tuple[float, float], List[Any]] = defaultdict(list)
         for seg in sides:
@@ -986,7 +992,8 @@ class _PolygonArcDecomposer:
             visited.add(start_seg)
             left, right = sides[start_seg]
             key = frozenset((left, right))
-            chain: deque = deque(start_seg)
+            chain: deque = deque(start_seg[:2])
+            chain_segments: deque = deque([start_seg])
             for forward in (True, False):
                 while True:
                     vertex = chain[-1] if forward else chain[0]
@@ -1002,8 +1009,10 @@ class _PolygonArcDecomposer:
                     other = nxt_seg[1] if nxt_seg[0] == vertex else nxt_seg[0]
                     if forward:
                         chain.append(other)
+                        chain_segments.append(nxt_seg)
                     else:
                         chain.appendleft(other)
+                        chain_segments.appendleft(nxt_seg)
             coords = list(chain)
             if len(coords) < 2:
                 warnings.warn("degenerate arc discarded")
@@ -1011,9 +1020,9 @@ class _PolygonArcDecomposer:
             # 判定存储走向的左右多边形：取链中部一条段，与其规范方向比对
             i = max(0, (len(coords) - 1) // 2)
             p, q = coords[i], coords[i + 1]
-            mid = (p, q) if p <= q else (q, p)
+            mid = chain_segments[i]
             side_l, side_r = sides[mid]
-            if (p, q) == mid:
+            if (p, q) == mid[:2]:
                 walk_left, walk_right = side_l, side_r
             else:
                 walk_left, walk_right = side_r, side_l
@@ -1532,7 +1541,7 @@ class Writer:
         if self.shapeType == "LINE":
             index, coords = _encode_lines(self._gdf, self._params, factor)
             nodes, aux5, meta, boxes, flags = _encode_line_aux(
-                self._gdf, self._params
+                self._gdf, self._params, factor
             )
             secs = {
                 0: index,

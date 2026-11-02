@@ -1,0 +1,153 @@
+[
+  {
+    "id": "geochemistry.background-statistics",
+    "name": "分域原始/对数迭代标准差、MAD与经验分位数背景估计",
+    "module": "geochemistry",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_geochemistry_statistics",
+      "backend": "numpy_openpyxl_explicit_background"
+    },
+    "parameters": {
+      "source": "file/expected_sha256，literal XLSX、唯一样品键、元素和显式单位或null，domain_fields明确统计分域",
+      "iterative_sigma": "transform raw或log10；screen_sigma/threshold_sigma明确；trim_sides upper或both；样本标准差ddof1、严格界外剔除且保留相等值，每元素/域独立重置，max_iterations/minimum_n显式边界",
+      "median_mad": "mad_scale和threshold_sigma明确；MAD为中位绝对偏差，缩放不自动推定正态",
+      "quantile": "quantile大于0.5，线性经验分位插值；对数域的阈值整体反变换",
+      "limits": "最多200000输入行、500000样品-元素对、1000域、64元素；未测/删失/零/负值不互换，log要求正值，未完成迭代不发布最终阈值",
+      "grouped": "已验限定范围：sigma预剔除后，grouped.estimator=mean_sd或left_mode，intervals/precision(full或section_decimals)/mode_tie(error或lowest)明确；left_mode只作上阈值，完整频数/边界及估计器离差入表，零宽/遗漏/未定义众值拒绝；旧协议1参数不增加grouped默认字段"
+    },
+    "output_checks": [
+      "所有原始样品保留；Raw/Classified及长表均保留原工作表行和样品键，剔除轨迹与最终异常类别分开",
+      "原始/对数阈值对照独立标量计算，量纲及整体反对数明确；常数、极大/极小有限值、界上相等及非法输入另验",
+      "宏源码和原保存数值仅作已标明版本的参照，不执行Excel宏，不把已发现的跨元素状态缺陷移植进新估计器",
+      "输出工作簿逐格重读；CSV/JSON及来源可复现，Classified可经已有表建点、原厂保存重开/工程/出图工具验收"
+    ],
+    "scope": "数值背景候选与明确方法比较；不以统计规则断言真实地质背景、矿化或法定阈值。原有Q3+1.5IQR箱线工具和历史请求保持独立。原Section宏静态源码为原始5σ/对数3σ双侧剔除、最终均值+2样本SD，原始宏跨元素lyps复用的差异已单独保存；本方法每域每元素独立重置。 28项相关测试、148次实际MCP、1092原样x4元素、4张64点原生图及4份原生图例分支已验。原生符号1自有黑色图形的首次出图已保留为未接受表现；实际交付改用精确原生圆，逐图确认60绿色范围内和4粉色高值，另各有1个图例标记。 原始/对数分组均值SD、左半部众值法另完成7组数值、72次实际MCP、4份原生文件及2张完整图；原协议1实际沿用两次。公式来自在用Sheet8/Sheet10，完整精度和声明的小数舍入变体分开，未宣称与VBA Single/中间乘积舍入/Find状态逐位一致。",
+    "reference": "https://file.statistik.tuwien.ac.at/filz/papers/Stoten05.pdf",
+    "evidence": [
+      "work/full-implementation-20261101/mcp-geochem-statistics-01/result.json",
+      "work/full-implementation-20261101/mcp-geochem-statistics-01/visual-review.json",
+      "work/full-implementation-20261101/mcp-geochem-statistics-01/native-color-pixel-check.json",
+      "work/full-implementation-20261101/rea/geochemistry-macro-01/findings.json",
+      "work/full-implementation-20261101/mcp-geochem-grouped-01/result.json",
+      "work/full-implementation-20261101/mcp-geochem-grouped-01/visual-review.json"
+    ]
+  },
+  {
+    "id": "geochemistry.soil-grid",
+    "name": "土壤化探基点方位网格、单双线号及原生点线标注",
+    "module": "geochemistry",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_soil_sampling_grid",
+      "backend": "geos_existing_native_encoder"
+    },
+    "parameters": {
+      "source": "WP测量范围及源哈希、明确原生坐标系；孔洞保留",
+      "parameters": "基点、网格北顺时针方位、实际米间距、线点基号/步长、左右单双或顺序、负号许可、边界容差和点线预算",
+      "template": "name/*.wt、crs、map_scale；可选明确点样式；原图不改"
+    },
+    "output_checks": [
+      "独立标量坐标/方位/编号核对；孔洞、负号和预算另验",
+      "原生WT点+WT注记+裁剪WL勘探线，CSV/JSON逐点对应；无实际线段时不伪造WL",
+      "MCP加原厂保存重开、工程/出图需单独实测"
+    ],
+    "scope": "与原Section土壤样品自动编号主题对应的显式参数化实现；单双号公式及网格北定义明确，不猜地理参考、真北/磁北、野外可采性或规范符合性。 193次累计实际MCP（包含留存重试与拒绝），5输入/12输出原厂保存重开，5份MPJ/EPS/PDF/TIFF及实际预览已验；合成显式WGS84 TM120E米制坐标，未认定真实采样或规范符合性。",
+    "reference": "Installed section.CHM#土壤样品自动编号.htm",
+    "evidence": [
+      "work/full-implementation-20261101/mcp-sample-numbering-02/result.json",
+      "work/full-implementation-20261101/mcp-sample-numbering-02/visual-review.json",
+      "work/full-implementation-20261101/sample-numbering-related-tests-03.log"
+    ]
+  },
+  {
+    "id": "geochemistry.sediment-numbering",
+    "name": "水系沉积物大格小格编号、留号及旧编号保留",
+    "module": "geochemistry",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_sediment_sample_numbering",
+      "backend": "existing_byte_preserving_attribute_schema"
+    },
+    "parameters": {
+      "source": "WT全体实际锚点及哈希；明确坐标系、原点参考（左上格中心/外角）、实际米尺寸、行列和首末大格号",
+      "parameters": "大格行序，ABCD四分格，格内X升/Y降；边界归属、重合点物理顺序、预留号码、已有文字ID字段和未占用的新字段名明确",
+      "template": "新WT名、crs、label用map_scale；原图形/CRS/比例尺字节不改，另出WT标注及CSV/JSON"
+    },
+    "output_checks": [
+      "完整原始物理ID、所有非属性区段逐字节保持；新增ID及前后映射独立核对",
+      "已有人工ID不覆盖，预留/占用号码跳过；未知旧后缀空字符串，不冒充0",
+      "边界/区外/重合/字段冲突明确；MCP及原厂保存重开/工程/出图另验"
+    ],
+    "scope": "原Section手册大格参数与文献正文2.2的ABCD/格内排序实现；补明确内边/外边规则。只编号已给样点，不自动认定水系采样位置、质控留号规范或野外合格。 193次累计实际MCP（包含留存重试与拒绝），5输入/12输出原厂保存重开，5份MPJ/EPS/PDF/TIFF及实际预览已验；合成显式WGS84 TM120E米制坐标，未认定真实采样或规范符合性。",
+    "reference": "https://www.wutanyuhuatan.com/article/doi/10.11720/wtyht.2026.0079?viewType=HTML",
+    "evidence": [
+      "work/full-implementation-20261101/mcp-sample-numbering-02/result.json",
+      "work/full-implementation-20261101/mcp-sample-numbering-02/visual-review.json",
+      "work/full-implementation-20261101/sample-numbering-related-tests-03.log"
+    ]
+  },
+  {
+    "id": "geochemistry.assay-qa",
+    "name": "原始化验删失界限、单位换算与批次质量追溯",
+    "module": "geochemistry",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_assay_qa",
+      "backend": "literal_openpyxl_decimal_units"
+    },
+    "parameters": {
+      "source": "XLSX及哈希、样品键、批次/实验室/方法/干湿基准元数据列；每元素量纲/单位/界限/原始限定符显式声明",
+      "limits": "左右删失、区间[DL,QL)、未测/缺失/空白/拒收/估计/实测零保留；未知符号、重复键、冲突或单位问题逐行标记，不删除、不自动填值",
+      "outputs": "Raw/Wide/MapReady/Measurements/Issues/Batches及JSON/CSV；MapReady为文字状态，已有table.points显式原生坐标/样式另验"
+    },
+    "output_checks": [
+      "原始SHA不变；每测量转换与删失界限独立对照",
+      "公式/陈旧哈希/参数歧义拒绝，异常行完整留表",
+      "实际MCP、原厂样点保存重开、工程出图另验"
+    ],
+    "scope": "输入质量和血缘工具；不声称以替代值完成删失统计、实验室质控合格、批次可比或干湿/密度/氧化物转换。 17项针对性检查、130次累计实际MCP；24干样+12水样独立单位/界限对照，4份原生文件保存重开、2份MPJ/EPS/PDF/TIFF及实际图像/注记检查。原1092x4资料全部4368条单位未知原样留痕，不生成真实坐标或虚构ppm。",
+    "reference": "https://www.epa.gov/n-steps-online/data-considerations",
+    "evidence": [
+      "work/full-implementation-20261101/mcp-assay-qa-01/result.json",
+      "work/full-implementation-20261101/mcp-assay-qa-01/visual-review.json",
+      "work/full-implementation-20261101/assay-qa-tests-03.log"
+    ]
+  },
+  {
+    "id": "geochemistry.combination",
+    "name": "多元素组合异常套合及样点异常特征表",
+    "module": "geochemistry",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_geochemistry_combination",
+      "backend": "geos_existing_native_spatial_summary"
+    },
+    "parameters": {
+      "samples": "原生WT及哈希，所有物理锚点显式为样品；元素值必须有限、非负、精确数值",
+      "elements": "每元素WP及哈希、互异name/value_field、unit或null、正threshold、可选正background、正weight",
+      "parameters": "domain_id、至少k个不同元素、边界归属、gt/ge、加权均值/加权和/最大加权比值、负未定义标记和区域/关系预算",
+      "template": "新WP名、共同显式原生线性坐标系及map_scale；孔洞不修复、不缓冲",
+      "concentration_centres": "可选all_observed_maxima：每组合区成员元素所有实测最高值点，全部并列物理样点保留；另出WT及来源表"
+    },
+    "output_checks": [
+      "同元素重复/叠置区先取并集，边界分割后按不同元素数计支持；样点物理ID/源区关系完整留表",
+      "每区描述均值/极值/样本SD、阈上数、均值/阈值及面积指标；无样品/一个样品/实测0区分",
+      "原生WP及XLSX/CSV/JSON；空套合不伪造WP；MCP及原厂保存重开/出图另验"
+    ],
+    "scope": "10项针对性测试、303次累计实际MCP（含首次保留重试和旧协议1实际重放）、6输入/12输出原厂保存重开；另6份显示半径/注记修改保存及3套MPJ/EPS/PDF/TIFF、实际预览与全分辨率位置像素检查。组合区按声明元素数、域、阈值/权重统计；可选浓集中心只表示区内成员元素全部实测最高值点，保留并列物理记录，未推定矿床中心。RNAP=(样点均值-声明背景)/背景*面积km2；区域尺度仅比值乘面积，不是金属量、概率或资源储量。不替代删失值或推定原厂隐藏算法/地质总体。",
+    "reference": "https://www.wutanyuhuatan.com/fileWTYHT/journal/article/wtyht/html/2016/1000-8918/1000-8918-40-2-279.html",
+    "evidence": [
+      "work/full-implementation-20261101/mcp-geochem-combination-02/result.json",
+      "work/full-implementation-20261101/mcp-geochem-combination-02/visual-review.json",
+      "work/full-implementation-20261101/mcp-geochem-combination-02/independent-plot-pixels.json",
+      "work/full-implementation-20261101/combination-centres-tests-04.log",
+      "work/full-implementation-20261101/public-ecosystem-combination.json"
+    ]
+  }
+]

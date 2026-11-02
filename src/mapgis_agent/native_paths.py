@@ -25,10 +25,13 @@ def _remove_link(alias:Path,target:Path):
 
 
 class NativePathAlias:
-    def __init__(self,folder:Path):
+    def __init__(self,folder:Path,record_folder:Path|None=None):
         self.target=folder.resolve(strict=True)
         self.path=Path(tempfile.gettempdir()).resolve()/('mg6-'+uuid.uuid4().hex[:12])
-        records=self.target/'native-path-aliases';records.mkdir(exist_ok=True)
+        # Read-only input folders and artifact member sets must not receive
+        # control records. Their caller supplies its separate diagnostic folder.
+        records=(self.target if record_folder is None else Path(record_folder).resolve(strict=True))/'native-path-aliases'
+        records.mkdir(exist_ok=True)
         self.record=records/(self.path.name+'.json')
         self._save('CREATING')
         powershell=Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'

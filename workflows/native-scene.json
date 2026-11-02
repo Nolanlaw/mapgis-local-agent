@@ -1,0 +1,88 @@
+{
+  "id": "native-scene",
+  "schema_version": 1,
+  "title": "原生DEM、三维叠加与路线飞行",
+  "execution": "通过 mapgis_prepare_native_scene 调用原厂 DemArea 和 NewTin3DFly；无需鼠标或切换输入桌面。",
+  "native_module": "three_d",
+  "validation": "LOCAL_SAMPLE_TESTED",
+  "validation_scope": "实际 MCP 已验证原生 DEM 保存及逐高程读回、换视角、旧目录隐藏后的迁移重开、独立 MSI 逐像素核对；平坦、2×2、非方形、英尺转换、局部坐标和跨块 DEM。原厂 RGB 单基瓦片纹理附加、替换、移除及隐藏旧源后的重开17次调用通过。原厂绘制和 MSI 编码分进程；真实父进程退出120/122/123/121后12次恢复通过，完成的渲染和编码不重放，失败编码保留后另起文件，原文件及日志 SHA/mtime 保持。符号点、二维图案和每区纹理、其他模型和完整高分辨率纹理仍在接入。 原生WL逐顶点贴地附加/替换/移除、迁移与源变化拒绝23次实际MCP通过；底图与WL并用时，四种真实中断后12次恢复通过。 飞行15次MCP验证整条100帧、迁移、片段及末帧的精确像素；小数速度3次，四种真实中断后12次恢复，原录制不重放。 末帧姿态20次实际MCP及12次真实退出恢复通过；新进程静态视图逐像素等于影片末帧，整片AVI字节保持。 普通WT注记经实际MCP验证黑字927像素、关闭后背景完全一致、物理顺序、字体粗斜体、替换移除、移目录重开、飞行末帧；四种父进程退出后12次恢复通过。 实色WP独立CDT网格、原厂高程调色、孔洞、半透明、距离隐藏、迁移和飞行37次实际MCP通过；四种父进程退出后12次恢复通过。",
+  "inputs": [
+    "数值高程栅格，明确的源坐标系和垂直单位；不得把元素含量当作高程",
+    "北向上的仿射格网、至少两行两列、最多200万单元；缺失高程先单独处理",
+    "原生 DEM 使用 float32；默认只接受无舍入误差的高程，误差限需明确给出"
+  ],
+  "steps": [
+    {
+      "id": "create",
+      "action": "operation=create；参数声明 vertical_unit，模板声明新 .scene.json 文件名和 crs。默认全景 overview；walk 为漫游视角。输出包含原生 DEM 头文件与数据子目录、校准后的 elevation.tif、原生透视 MSI 和 TIFF/PNG。",
+      "tools": [
+        "mapgis_prepare_native_scene",
+        "mapgis_apply_patch",
+        "mapgis_get_request"
+      ]
+    },
+    {
+      "id": "view",
+      "action": "operation=render 读取已有 .scene.json，沿用其 frame、绑定依赖和已保存的视图参数；给出的参数覆盖对应设置。quality 默认1，表示完整高程抽样，降低时必须至少留下两行两列。原生 DEM 保持原字节。eye 与 target 成对指定 XYZ，XY 使用源坐标、Z 使用米；检查返回的原生实际视点，原厂接口可能限制其范围。",
+      "tools": [
+        "mapgis_prepare_native_scene",
+        "mapgis_apply_patch"
+      ]
+    },
+    {
+      "id": "lines",
+      "action": "line_overlay={file,expected_sha256,coordinate_frame:native_metres,source_crs?:明确源框架}；原生WL存储XY必须为米，全部顶点在DEM范围内。既有顶点由原厂取地形高程，不自动加密。继承、替换及remove_line_overlay=true移除均已验证。旧格式坐标头不足时显式赋予已知source_crs，只赋值不重投影。",
+      "tools": [
+        "mapgis_prepare_native_scene",
+        "mapgis_apply_patch",
+        "mapgis_get_request"
+      ]
+    },
+    {
+      "id": "annotations",
+      "action": "annotations指定普通文本WT及摘要、native_metres和必要的source_crs；font使用已安装GB2312字体，points1..30，bold/italic可选。锚点在DEM内，height_offset_m默认5；visible及max_view_distance_m控制显示。原厂逐字形覆盖与图集尺寸校验；原WT字节和物理顺序保持。继承、替换、remove_annotations移除；不把符号或富文本当普通注记。",
+      "tools": [
+        "mapgis_prepare_native_scene",
+        "mapgis_apply_patch",
+        "mapgis_get_request"
+      ]
+    },
+    {
+      "id": "regions",
+      "action": "region_overlay指定原WP/hash/native_metres/source_crs。未修改CDT2.0.1对加密边界与区内DEM节点建网、去除孔洞；原厂查询高程与填色，独立标准OpenGL组合于原厂WL和注记之前。不调用失败的原厂许可三角化器。源WP与可重建regions.mesh一同保留，最多10万顶点；opacity/visible/height_offset_m/max_view_distance_m可选，继承/替换/remove_region_overlay。二维图案和每区纹理未接通。",
+      "tools": [
+        "mapgis_prepare_native_scene",
+        "mapgis_apply_patch",
+        "mapgis_get_request",
+        "mapgis_reconcile_artifact"
+      ]
+    },
+    {
+      "id": "flight",
+      "action": "operation=flight，flight指定源XY路线和原厂空间步长speed；fps默认24。frame_count不填录制全部，指定frame_start/count录片段。原厂插值和绘制，Windows标准VFW录无压缩AVI，独立原生PID逐帧SHA核对，MSI/TIFF/PNG为末帧。最多1000个推进步骤、AVI小于1GiB；片段先绘前缀以保持相机历史，不截短冒充全路线。",
+      "tools": [
+        "mapgis_prepare_native_scene",
+        "mapgis_apply_patch",
+        "mapgis_get_request",
+        "mapgis_reconcile_artifact"
+      ]
+    },
+    {
+      "id": "preserve",
+      "action": "共享时保留整个产物目录。透视图是像素视图，不能把高程栅格的坐标系直接赋给它。JSON 是 Agent 视图清单，原生可编辑数据为 DEM_INFO 及其依赖；不能宣称它是原厂三维场景文件格式。",
+      "tools": [
+        "mapgis_get_request",
+        "mapgis_reconcile_artifact"
+      ]
+    },
+    {
+      "id": "final-view",
+      "action": "飞行结束前保存final_camera；render默认恢复末帧。保持native_camera原样，显式eye/target或overview选择新视角。旧实验版未保存末帧姿态的清单先按flight.input重新录制。",
+      "tools": [
+        "mapgis_prepare_native_scene",
+        "mapgis_apply_patch",
+        "mapgis_get_request"
+      ]
+    }
+  ]
+}

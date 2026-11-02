@@ -48,6 +48,18 @@ def crs_metadata(value: dict, resolved: CRS | None) -> dict:
     return dict(value) if resolved is None else {"definition":resolved.to_wkt(),"axis_order":"xy"}
 
 
+def local_crs_matches(crs: CRS, frame: dict) -> bool:
+    """Match an embedded engineering grid by its declared name, units and axes.
+
+    WKT1 LOCAL_CS may omit its datum and use Easting/Northing axis names. It
+    cannot be compared to a newly invented local datum or reprojected as Earth.
+    """
+    axes=crs.axis_info;factor={'metre':1.,'millimetre':.001}.get(frame.get('unit'))
+    return (crs.is_engineering and crs.name==frame.get('name') and factor is not None
+        and len(axes)==2 and [a.direction for a in axes]==['east','north']
+        and all(math.isclose(a.unit_conversion_factor,factor,rel_tol=1e-12,abs_tol=0.) for a in axes))
+
+
 def image_size(path: Path) -> tuple[int, int]:
     # JPEG SOF dimensions require no image allocation, including the 2.3Gpx scans.
     with path.open("rb") as stream:

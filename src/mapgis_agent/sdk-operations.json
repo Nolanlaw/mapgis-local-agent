@@ -1,0 +1,33 @@
+[
+  {
+    "id": "native.sdk_flow",
+    "name": "原厂SDK类型发现及私有进程组合调用",
+    "module": "native",
+    "validation": "BACKEND_TESTED_BOUNDED_SCOPE",
+    "execution": {
+      "kind": "mcp",
+      "tool": "mapgis_prepare_sdk_flow",
+      "backend": "mapgis_native"
+    },
+    "parameters": {
+      "discovery": "先调用mapgis_describe_sdk读取本机原厂类型库、精确参数和current_call_policy",
+      "inputs": "有归属任务副本id/file/expected_sha256",
+      "outputs": "新成果id/name/source，保持源物理编号、属性及地图参数",
+      "objects": "原厂坐标/参数/图形值对象，以及PntArea/LinArea/RegArea",
+      "steps": "按类型执行method/get/put/putref、引用前序对象、读取out参数和断言返回值"
+    },
+    "output_checks": [
+      "原厂类型库和DLL摘要与当前安装匹配",
+      "Load/Save使用明确任务副本及新路径，不选择文件对话框、不连接远程数据库",
+      "同一原厂对象按序执行，失败断言立即停止后续调用",
+      "整体保全主/弧/节点属性及地图参数、独立几何读回、原厂新进程重开",
+      "多媒体资源原字节携带，完整成果包沿用原子发布与重复请求对账"
+    ],
+    "scope": "原厂IClassFactory/IDispatch接口，既有隔离x86私有桌面中执行；不操作用户鼠标键盘，不注册COM、不改原厂二进制。当前仅开放策略所列值对象和保留编号的几何工作区；不等同全部6.7菜单覆盖。复杂数组/二进制、in-out参数、属性表修改、DB/打印/对话框不由此入口调用。",
+    "evidence": [
+      "docs/SDK-CALLS.md",
+      "work/full-implementation-20261101/local67-calling/sdk-tests-02.log",
+      "work/full-implementation-20261101/mcp-sdk-flow-02/result.json"
+    ]
+  }
+]

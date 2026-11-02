@@ -10,7 +10,7 @@ import math
 import cv2
 import numpy as np
 from affine import Affine
-from rasterio.features import shapes
+from rasterio.features import shapes,rasterize
 from shapely import coverage_is_valid, coverage_simplify, get_num_coordinates, segmentize, set_precision, unary_union
 from shapely.affinity import affine_transform
 from shapely.geometry import LineString, Point, box, mapping, shape
@@ -100,6 +100,27 @@ def extract_candidates(raster: RasterWorkspace, scan_id: str, window_id: str,
             chosen=(delta<best)&(delta<=tolerance)
             labels[chosen]=i
             best[chosen]=delta[chosen]
+        excluded=np.zeros((height,width),bool)
+        exclusion_fill=_number(config,'exclusion_fill_px',0)
+        if exclusion_fill>512:raise BridgeError('EXCLUSION_FILL_WINDOW: at most 512 preview pixels')
+        regions=config.get('exclude_regions',[])
+        if not isinstance(regions,list) or len(regions)>1000:raise BridgeError('EXCLUSION_REGIONS')
+        excluded_shapes=[]
+        for region in regions:
+            if not isinstance(region,dict) or set(region)!={'geometry','reason'} or not isinstance(region['reason'],str) or not region['reason']:
+                raise BridgeError('EXCLUSION_REGION: geometry and explicit reason required')
+            geometry=shape(region['geometry'])
+            if (geometry.geom_type not in {'Polygon','MultiPolygon'} or geometry.is_empty or not geometry.is_valid
+                    or not all(math.isfinite(v) for v in geometry.bounds)
+                    or not box(0,0,width,height).covers(geometry)):
+                raise BridgeError('EXCLUSION_REGION_BOUNDS: valid polygons in preview pixels required')
+            excluded_shapes.append((mapping(geometry),1))
+        if excluded_shapes:
+            excluded=rasterize(excluded_shapes,out_shape=(height,width),transform=Affine.identity(),dtype='uint8').astype(bool)
+            labels[excluded]=0
+            qa.update(excluded_pixels=int(excluded.sum()),excluded_regions=len(regions),
+                      exclusion_fill_px=exclusion_fill,exclusion_reasons=[r['reason'] for r in regions],
+                      exclusion_policy='explicit occlusions filled from nearest visible palette; inferred pixels are recorded')
         seed_minimum=_number(config,"min_seed_area_px",0)
         erosion=config.get("seed_erosion_px",0)
         protected=config.get("protected_classes",[])
@@ -130,12 +151,13 @@ def extract_candidates(raster: RasterWorkspace, scan_id: str, window_id: str,
         unknown=labels==0
         qa["unknown_pixels_before_fill"]=int(unknown.sum())
         fill=_number(config,"max_fill_px",0)
-        if fill and np.any(~unknown):
+        if (fill or exclusion_fill) and np.any(~unknown):
             distance,nearest=cv2.distanceTransformWithLabels(unknown.astype(np.uint8),cv2.DIST_L2,5,labelType=cv2.DIST_LABEL_PIXEL)
             lookup=np.zeros(int(nearest.max())+1,np.int16)
             lookup[nearest[~unknown]]=labels[~unknown]
-            allowed=unknown&(distance<=fill)
+            allowed=unknown&((~excluded&(distance<=fill))|(excluded&(distance<=exclusion_fill)))
             labels[allowed]=lookup[nearest[allowed]]
+        if regions:qa['exclusion_filled_pixels']=int(np.count_nonzero(excluded&(labels>0)))
         qa["unknown_pixels"]=int((labels==0).sum())
         qa["filled_pixels"]=qa["unknown_pixels_before_fill"]-qa["unknown_pixels"]
         qa["pixel_geometry"]="GDAL cell edges, 4-connectivity; unclassified pixels remain holes"

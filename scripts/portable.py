@@ -40,7 +40,8 @@ def installation(value: str) -> Path:
     return path
 
 
-def configure(root: Path, python: Path, mapgis: str | None = None, native_legacy: bool = False) -> dict:
+def configure(root: Path, python: Path, mapgis: str | None = None, native_legacy: bool = False,
+              private_ui: bool = False) -> dict:
     """Generate only our local client config; preserve independently edited files."""
     config_file, state_file = root / 'mcp-config.local.json', root / 'setup-state.local.json'
     state = load(state_file)
@@ -56,13 +57,16 @@ def configure(root: Path, python: Path, mapgis: str | None = None, native_legacy
             raise ValueError('Existing MapGIS binding points elsewhere; preserve it and resolve before rebinding')
     entry = {'mcpServers': {'mapgis_local': {'command': str(python.resolve()),
         'args': ['-s', '-B', '-X', 'utf8', str(root / 'scripts/launch_mcp.py'), '--root', str(root)]}}}
-    if native_legacy and not (chosen or native.get('mapgis_installation')):
-        raise ValueError('An existing licensed MapGIS installation is required for the legacy native host')
+    if (native_legacy or private_ui) and not (chosen or native.get('mapgis_installation')):
+        raise ValueError('An existing licensed MapGIS installation is required for native execution')
     if chosen:
         native['mapgis_installation'] = str(chosen)
     if native_legacy:
         native['native_backend_legacy_dep_compatibility'] = True
-    if chosen or native_legacy:
+    if private_ui:
+        native['native_general_private_ui'] = True
+        native['native_volume_private_ui'] = True
+    if chosen or native_legacy or private_ui:
         write_json(native_file, native)
     write_json(config_file, entry)
     write_json(state_file, {'generated_mcp_sha256': hashlib.sha256(config_file.read_bytes()).hexdigest(),
@@ -70,7 +74,8 @@ def configure(root: Path, python: Path, mapgis: str | None = None, native_legacy
     return {'status': 'CONFIGURED', 'client_configuration': str(config_file),
         'mapgis': str(chosen) if chosen else native.get('mapgis_installation'),
         'native_legacy_host_enabled': native.get('native_backend_legacy_dep_compatibility') is True,
-        'next': 'Open this package folder in a computer-use-capable agent host; or load the generated stdio config in your MCP client.'}
+        'private_ui_enabled': native.get('native_general_private_ui') is True,
+        'next': 'Load the generated stdio config in an agent/MCP client, or use MapGIS-CLI.cmd. Authorized private controls use their own processes and no desktop input.'}
 
 
 def profile(root: Path) -> dict:
@@ -86,7 +91,7 @@ def profile(root: Path) -> dict:
     return {'status': 'MATCH' if all(x['matches'] for x in checks) else 'UNSUPPORTED_BUILD',
         'installation': value, 'modules': checks,
         'licence': 'Confirm in the installed MapGIS application',
-        'desktop_host': 'Host-provided Sky required for native UI execution'}
+        'desktop_host': 'Authorized private-process controls require --enable-private-ui; external user-window observations retain their separate Sky binding.'}
 
 
 def doctor(root: Path) -> dict:
@@ -119,6 +124,8 @@ def main() -> None:
     parser.add_argument('--interactive', action='store_true')
     parser.add_argument('--enable-native-legacy-host', action='store_true',
                         help='Accept DEP compatibility for this package-owned x86 child only; Windows and MapGIS binaries stay unchanged')
+    parser.add_argument('--enable-private-ui', action='store_true',
+                        help='Authorize original non-server and volume controls in newly owned private processes and task copies; no user keyboard, mouse, foreground or installation changes')
     args = parser.parse_args()
     try:
         if args.action == 'setup':
@@ -126,7 +133,7 @@ def main() -> None:
             if args.interactive and not selected and not (ROOT / 'config.local.json').exists():
                 print('MapGIS 6.7 installation folder (Enter = file tools only):', flush=True)
                 selected = input().strip() or None
-            result = configure(ROOT, Path(sys.executable), selected, args.enable_native_legacy_host)
+            result = configure(ROOT, Path(sys.executable), selected, args.enable_native_legacy_host, args.enable_private_ui)
             result['diagnostics'] = doctor(ROOT)
             if result['mapgis']:
                 completed = subprocess.run([sys.executable, '-s', '-B', '-X', 'utf8',

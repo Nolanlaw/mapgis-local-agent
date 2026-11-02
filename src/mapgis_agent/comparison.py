@@ -59,7 +59,13 @@ def _extract_style(reader: Reader, row_idx: int) -> dict[str, Any]:
         frame = getattr(reader, field_name, None)
         if frame is not None and not frame.empty and row_idx < len(frame):
             row_series = frame.iloc[row_idx]
-            return {str(k): _safe_scalar(v) for k, v in row_series.items()}
+            from .point_primitives import style_fields
+            allowed=style_fields(row_series) if field_name=='point_params' else set(row_series.index)
+            result={str(k): _safe_scalar(v) for k, v in row_series.items() if k in allowed}
+            if field_name=='point_params' and row_series.get('point_type') in (2,3):
+                for field in ('point_type','color','layer','border_color','filled'):
+                    if result.get(field) is not None:result[field]=int(result[field])
+            return result
     return {}
 
 

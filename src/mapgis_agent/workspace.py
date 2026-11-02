@@ -19,7 +19,7 @@ import uuid
 import psutil
 
 from .core import Bridge, BridgeError, json_text, read_native, sha
-from .native_backend import KINDS, _parameters, _validate, backend_configuration, native_file_info, prepare_native_operation
+from .native_backend import KINDS, _parameters, _validate, _native_commands, _native_opcode, backend_configuration, native_file_info, prepare_native_operation
 from .desktop import PrivateDesktop
 from .native_paths import NativePathAlias,cleanup_aliases
 
@@ -169,7 +169,7 @@ class NativeWorkspaces:
             'scope':'agent-owned native buffer; external editor memory is not changed',
             'replayed':False}
 
-    def _start(self,folder,state):
+    def _start(self,folder,state,*,persist=True):
         self._claim(folder,state['id'])
         executable,dll = backend_configuration(self.bridge.root)
         buffer = _NativeBuffer(executable,dll,state,folder)
@@ -182,7 +182,7 @@ class NativeWorkspaces:
             native_path_alias=str(buffer.path_alias.path),
             native_executable=str(executable.resolve()),controller_pid=controller.pid,
             controller_start=controller.create_time())
-        self._write_state(folder,state)
+        if persist:self._write_state(folder,state)
 
     def _stop(self,state):
         buffer = self.buffers.pop(state['id'],None)
@@ -232,6 +232,45 @@ class NativeWorkspaces:
             'save_request':pending['bridge_request']}
         state['requests'][pending['id']] = {'hash':pending['hash'],'receipt':receipt}
         self._write_state(folder,state)
+        return receipt
+
+    def _append_result(self,pending):
+        result=self.bridge.status(pending['bridge_request'])
+        if result['state'] in {'RUNNING','FAILED'}:
+            from .native_append import reconcile_native_append
+            result=reconcile_native_append(self.bridge,pending['bridge_request'])
+        if result['state'] not in {'PREPARED','APPLIED'}:raise BridgeError('WORKSPACE_APPEND_INCOMPLETE')
+        return result
+
+    def _commit_append(self,folder,state,pending,result):
+        for source in result['sources']:
+            if sha(Path(source['file']).read_bytes())!=source['sha256']:raise BridgeError('STALE_SOURCE')
+        candidate=self.bridge.owned_path(Path(result['stage'])/'files'/result['payload']['template']['name'])
+        blob,reader,_=read_native(candidate);digest=sha(blob)
+        if digest!=result['candidate_sha256'] or len(reader.geom)!=state['active']+len(pending['parameters']['record_ids']):
+            raise BridgeError('WORKSPACE_APPEND_CHECKPOINT_CHANGED')
+        checkpoint=folder/(pending['token']+'-append'+candidate.suffix.lower())
+        if checkpoint.exists():
+            if sha(checkpoint.read_bytes())!=digest:raise BridgeError('WORKSPACE_APPEND_CHECKPOINT_CONFLICT')
+        else:
+            temporary=checkpoint.with_suffix(checkpoint.suffix+'.tmp')
+            with temporary.open('wb') as stream:stream.write(blob);stream.flush();os.fsync(stream.fileno())
+            os.replace(temporary,checkpoint)
+        next_state=dict(state);next_state['requests']=dict(state['requests'])
+        next_state.update(checkpoint=str(checkpoint),checkpoint_sha256=digest,active=len(reader.geom),revision=state['revision']+1,dirty=True,pending=None)
+        self._stop(state)
+        try:
+            # A fresh private native buffer adopts the checked CopyList result.
+            # Until request+revision commit together, the old pending journal
+            # remains authoritative if this parent is interrupted.
+            self._start(folder,next_state,persist=False)
+            receipt=self._public(next_state)|{'verification':result['verification'],'native_reopen':result['native_reopen'],
+                'native_execution':result['native_execution'],'append_request':pending['bridge_request'],'buffer_restarted':True,
+                'previous_native_pid':state.get('native_pid')}
+            next_state['requests'][pending['id']]={'hash':pending['hash'],'receipt':receipt}
+            self._write_state(folder,next_state)
+        except Exception:self._stop(next_state);raise
+        state.clear();state.update(next_state)
         return receipt
 
     def execute(self,action:str,workspace_id:str,parameters:dict,expected_revision:int|None=None,request_id:str|None=None):
@@ -286,6 +325,8 @@ class NativeWorkspaces:
                     try:
                         if pending['action']=='edit':
                             self._commit_edit(folder,state,pending,self._validate_checkpoint(state,pending))
+                        elif pending['action']=='append':
+                            self._commit_append(folder,state,pending,self._append_result(pending))
                         else:
                             result = self.bridge.status(pending['bridge_request'])
                             if result['state']=='PREPARED':result=self.bridge.apply(pending['bridge_request'])
@@ -297,7 +338,7 @@ class NativeWorkspaces:
                         state['requests'][pending['id']]={'hash':pending['hash'],'failure':str(exc)}
                         state.update(pending=None)
                         resolution = 'failed_request_rolled_back_to_checkpoint'
-                self._start(folder,state)
+                if workspace_id not in self.buffers:self._start(folder,state)
                 return self._public(state) | {'recovery':resolution}
             if state.get('pending'):raise BridgeError('WORKSPACE_PENDING: recover before another edit')
             if action=='close':
@@ -329,15 +370,26 @@ class NativeWorkspaces:
             if action=='edit':
                 if set(parameters)!={'operation','parameters'}:raise BridgeError('WORKSPACE_PARAMETERS')
                 operation = parameters['operation']
-                if operation not in ('point.move','feature.delete'):raise BridgeError('WORKSPACE_EDIT_OPERATION')
-                checked = _parameters(operation,parameters['parameters'],read_native(Path(state['checkpoint']))[1])
+                if operation not in ('point.move','point.radius','point.style','point.text','line.replace','line.smooth','line.resize','line.extend_to','arc.replace','arc.smooth','node.move','feature.delete','feature.append'):raise BridgeError('WORKSPACE_EDIT_OPERATION')
+                checked = _parameters(operation,parameters['parameters'],read_native(Path(state['checkpoint']))[1],Path(state['checkpoint']))
+                if operation=='feature.append':
+                    from .native_append import prepare_native_append
+                    pending.update(action='append',operation=operation,parameters=checked,
+                        bridge_request='workspace-append-'+sha((workspace_id+'\0'+request_id).encode())[:32])
+                    state['pending']=pending;self._write_state(folder,state)
+                    try:
+                        prepared=prepare_native_append(self.bridge,checked['file'],checked['expected_sha256'],checked['record_ids'],
+                            {'name':'appended'+Path(state['checkpoint']).suffix.lower()},pending['bridge_request'],
+                            {'file':state['checkpoint'],'expected_sha256':state['checkpoint_sha256']})
+                        return self._commit_append(folder,state,pending,prepared)
+                    except Exception:
+                        self._stop(state);state['state']='LOST';self._write_state(folder,state);raise
                 pending.update(operation=operation,parameters=checked,native_pid=buffer.process.pid,
                     candidate=str(folder/pending['token']/Path(state['checkpoint']).name))
-                command = (' '.join(str(rid) for rid in checked['record_ids']) if operation=='feature.delete' else
-                    ' '.join(f"{u['record_id']} {u['x']!r} {u['y']!r}" for u in checked['updates']))
+                command = _native_commands(operation, checked, Path(state['checkpoint']))
                 state['pending']=pending;self._write_state(folder,state)
                 try:
-                    response=buffer.ask(operation,pending['token'],command)
+                    response=buffer.ask(_native_opcode(operation),pending['token'],command)
                     if response['revision']!=state['revision']+1:raise BridgeError('WORKSPACE_NATIVE_REVISION')
                     return self._commit_edit(folder,state,pending,self._validate_checkpoint(state,pending))
                 except Exception:

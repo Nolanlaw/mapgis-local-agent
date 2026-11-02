@@ -1,6 +1,7 @@
 """Offline synthetic-file acceptance through real stdio; never controls MapGIS UI."""
 from __future__ import annotations
 
+import ast
 import asyncio
 import hashlib
 import json
@@ -48,7 +49,11 @@ async def run() -> dict:
                     'mapgis_native_project_info', 'mapgis_prepare_native_project', 'mapgis_prepare_project_plot',
                     'mapgis_projection_points', 'mapgis_prepare_map_frame', 'mapgis_prepare_annotations', 'mapgis_prepare_seams',
                     'mapgis_prepare_attribute_report', 'mapgis_prepare_plot_export'}
-                assert len(names) == len(expected) and set(names) == expected
+                definitions=ast.parse((ROOT/'src/mapgis_agent/server.py').read_text(encoding='utf8'))
+                declared={node.name for node in ast.walk(definitions)
+                          if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef))and node.name.startswith('mapgis_')}
+                assert expected<=declared  # Preserve every original core contract.
+                assert len(names)==len(declared)and set(names)==declared
 
                 async def call(name, **arguments):
                     nonlocal count

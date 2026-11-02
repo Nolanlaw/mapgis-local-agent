@@ -1,0 +1,23 @@
+{
+  "operation": "mean",
+  "bands": [
+    1
+  ],
+  "radius": 1,
+  "sigma": 1.0,
+  "edge": "complete",
+  "weights": null,
+  "offset": 0.0,
+  "percentiles": [
+    2.0,
+    98.0
+  ],
+  "threshold": null,
+  "morphology": "open",
+  "iterations": null,
+  "classes": 5,
+  "sample_size": 100000,
+  "seed": 0,
+  "standardize": false,
+  "palette": null
+}

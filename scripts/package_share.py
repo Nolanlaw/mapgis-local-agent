@@ -39,10 +39,12 @@ def public_sources(portable: bool = False) -> dict[str, Path]:
                 ('AGENTS.md', 'NOTICE.md', 'pyproject.toml', 'requirements.lock.txt', '.gitignore')}
     selected['README.md'] = ROOT/('docs/SHARE.md' if portable else 'README.GITHUB.md')
     selected['docs/NATIVE.md'] = ROOT/'docs/NATIVE-PORTABLE.md'
-    for name in ('SHARE.md', 'THIRD-PARTY.md', 'CAPABILITIES.md', 'SOURCES.md', 'VALIDATION.md'):
+    for name in ('SHARE.md', 'THIRD-PARTY.md', 'CAPABILITIES.md', 'SOURCES.md', 'VALIDATION.md', 'AUTOMATION.md',
+                 'LOCAL67-CALLING-CONTRACT.md', 'LOCAL67-ROUTES.md', 'PRIVATE-CALLS-PROPOSAL.md',
+                 'SDK-CALLS.md', 'MULTIMEDIA.md', 'FULL-COVERAGE.md', 'DATABASES.md', 'VOLUME.md', 'RELEASE-0.7.0.md'):
         selected['docs/'+name] = ROOT/'docs'/name
     for folder in ('src', 'native', 'tests', 'vendor/mapgis2shp', 'vendor/geoscan',
-                   'vendor/stratigraphic-amenity', 'third_party/winhlp', 'workflows', 'packaging'):
+                   'vendor/stratigraphic-amenity', 'vendor/cdt', 'third_party/winhlp', 'workflows', 'packaging'):
         for file in (ROOT/folder).rglob('*'):
             parts = file.relative_to(ROOT).parts
             if not file.is_file() or any(p in ('__pycache__', '.git', '.pytest_cache', 'archive') for p in parts):
@@ -57,10 +59,10 @@ def public_sources(portable: bool = False) -> dict[str, Path]:
     return selected
 
 
-def copy_base_runtime(stage: Path, bundle: Path) -> None:
+def copy_base_runtime(stage: Path, bundle: Path, expected_sha256: str | None = None) -> None:
     """Reuse a pinned accepted runtime, replacing its application dependencies."""
-    if sha(bundle) != BASE_BUNDLE_SHA:
-        raise ValueError('Changed base bundle; pinned 0.3.2 archive required')
+    if sha(bundle) != (expected_sha256 or BASE_BUNDLE_SHA):
+        raise ValueError('Changed base bundle; the exact expected archive digest is required')
     source_names = {'third_party/sources/' + name for name in SOURCE_SHA}
     with zipfile.ZipFile(bundle) as archive:
         manifest = json.loads(archive.read('MapGIS-Agent/bundle-manifest.json'))
@@ -92,10 +94,11 @@ def copy_base_runtime(stage: Path, bundle: Path) -> None:
 def build(stage: Path, python_archive: Path | None, ghostscript: Path | None,
           source_archives: Path | None, base_bundle: Path | None = None,
           extra_sources: Path | None = None, extra_bundle: Path | None = None,
-          backend_sources: Path | None = None) -> dict:
+          backend_sources: Path | None = None, base_sha256: str | None = None,
+          extra_bundle_sha256: str | None = None) -> dict:
     stage.mkdir(parents=True, exist_ok=False)
     if base_bundle:
-        copy_base_runtime(stage, base_bundle)
+        copy_base_runtime(stage, base_bundle, base_sha256 or BASE_BUNDLE_SHA)
     else:
         if not python_archive or not ghostscript or not source_archives:
             raise ValueError('Provide a pinned base bundle, or all original runtime inputs')
@@ -139,8 +142,8 @@ def build(stage: Path, python_archive: Path | None, ghostscript: Path | None,
             ordinary_copy(source_archives / name, stage / 'third_party/sources' / name)
     extra = json.loads((ROOT/'packaging/native-sources.json').read_text(encoding='utf8'))
     if extra_bundle:
-        if sha(extra_bundle) != 'a77776d1f8bb66343716548f45f3c919bdf6f618c6bf08679b305756b0644203':
-            raise ValueError('Changed extra-source bundle; accepted 0.4.0 archive required')
+        if sha(extra_bundle) != (extra_bundle_sha256 or 'a77776d1f8bb66343716548f45f3c919bdf6f618c6bf08679b305756b0644203'):
+            raise ValueError('Changed extra-source bundle; the exact expected archive digest is required')
         with zipfile.ZipFile(extra_bundle) as previous:
             for item in extra:
                 data=previous.read('MapGIS-Agent/third_party/sources/'+item['file'])
@@ -172,10 +175,10 @@ def build(stage: Path, python_archive: Path | None, ghostscript: Path | None,
         'packages': components, 'ghostscript': {'version': '10.08.0', 'source_included': True},
         'geos': {'version': '3.14.1', 'source_included': True},
         'libvips': {'version': '8.18.7', 'source_included': True, 'build_recipes_and_native_dependencies': extra},
-        'runtime_scope': '49 MapGIS tools; isolated exact-build x86 native buffers, WP topology deletion, MSI/MPJ/EPS; SciPy/ContourPy/NetworkX open algorithms; Pyogrio/GDAL vector exchange and Rasterio/GDAL rasters, libvips and separate GPL-2.0 help indexing; analysis-only pefile excluded',
+        'runtime_scope': 'MapGIS MCP tools (exact names verified on restored startup); isolated exact-build x86 native buffers, WP topology deletion, MSI/MPJ/EPS; CDT native TIN storage, SciPy/ContourPy/NetworkX open algorithms; Pyogrio/GDAL vector exchange and Rasterio/GDAL rasters, libvips and separate GPL-2.0 help indexing; analysis-only pefile excluded',
         'sources': SOURCE_SHA,
         'backend_sources': backend,
-        'base_bundle_sha256': BASE_BUNDLE_SHA if base_bundle else None,
+        'base_bundle_sha256': sha(base_bundle) if base_bundle else None,
         'licences': 'See docs/THIRD-PARTY.md, dependency dist-info/licenses and included source archives.'}
     (stage / 'THIRD-PARTY.json').write_text(json.dumps(third_party, ensure_ascii=False, indent=2), encoding='utf-8')
     commands = {'01-Setup.cmd': 'portable.py setup --interactive %*',
@@ -226,18 +229,21 @@ def main() -> None:
     runtime_input = parser.add_mutually_exclusive_group(required=True)
     runtime_input.add_argument('--python-archive', type=Path)
     runtime_input.add_argument('--base-bundle', type=Path)
+    parser.add_argument('--base-sha256', help='Exact digest of an accepted current bundle when reusing its runtime')
     parser.add_argument('--ghostscript', type=Path)
     parser.add_argument('--source-archives', type=Path)
     extra_input = parser.add_mutually_exclusive_group(required=True)
     extra_input.add_argument('--extra-sources', type=Path)
     extra_input.add_argument('--extra-sources-bundle', type=Path)
+    parser.add_argument('--extra-bundle-sha256', help='Exact digest when using an accepted current bundle for corresponding sources')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--backend-sources', type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
     manifest = build(args.stage.resolve(), args.python_archive, args.ghostscript,
-                     args.source_archives, args.base_bundle, args.extra_sources, args.extra_sources_bundle,args.backend_sources)
+                     args.source_archives, args.base_bundle, args.extra_sources, args.extra_sources_bundle,args.backend_sources,
+                     args.base_sha256,args.extra_bundle_sha256)
     with zipfile.ZipFile(args.output, 'x', zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
         for file in sorted(args.stage.rglob('*')):
             if file.is_file():

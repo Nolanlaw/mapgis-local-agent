@@ -1,4 +1,4 @@
-# Windows 分享版
+# Windows 分享版 0.7.0
 
 适用于 Windows 10/11 x64，自带 Python 和运行依赖。MapGIS、许可、专有字体和系统库由接收者提供。
 
@@ -16,13 +16,13 @@
 默认关闭。旧 BAS60 需要本包独立 32 位进程采用 DEP 兼容构建，只影响该子进程。接受此取舍后运行：
 
 ```powershell
-./runtime/python/python.exe -s -B -X utf8 scripts/portable.py setup --mapgis D:/MapGIS67 --enable-native-legacy-host
+./runtime/python/python.exe -s -B -X utf8 scripts/portable.py setup --mapgis D:/MapGIS67 --enable-native-legacy-host --enable-private-ui
 ./runtime/python/python.exe -s -B -X utf8 scripts/self_test_native.py
 ./runtime/python/python.exe -s -B -X utf8 scripts/self_test_workspace.py
 ./runtime/python/python.exe -s -B -X utf8 scripts/self_test_modules.py --native
 ```
 
-已绑定安装可省略 --mapgis。路径含空格时加引号。自检使用合成数据，不操作鼠标，不修改安装或系统 DEP。许可仍由原生组件确认。
+--enable-private-ui明确启用本包自有非服务器进程及3BN/3DM控件路线，不使用用户桌面的键鼠。已授权开关会在目录迁移setup后保留。已绑定安装可省略 --mapgis。路径含空格时加引号。自检使用合成数据，不操作鼠标，不修改安装或系统 DEP。许可仍由原生组件确认。
 
 不启用原生后端也可运行开放模块自检：
 
@@ -38,7 +38,7 @@ Agent 阅读 AGENTS.md 和 docs/NATIVE.md 后，通过 MCP 或 MapGIS-CLI.cmd �
 
 > 把这份 WP 打开到后台会话，删除物理区 3 和 5。检查孔洞和共享边界，查看未保存状态，再另存并重开验证。
 
-49 个工具和 57 项任务说明通过 find_operations/describe_operation 查询。接口返回候选、实际检查和来源指纹，apply_patch 后才交付。后台运行无需电脑操作宿主；外部 GUI 的只读绑定有单独宿主要求。
+123 个工具和 158 项任务说明通过 find_operations/describe_operation 查询。接口返回候选、实际检查和来源指纹，apply_patch 后才交付。后台SDK和已授权私有原厂操作无需电脑操作宿主；外部用户窗口的只读绑定有单独宿主要求。
 
 ## 数据和恢复
 

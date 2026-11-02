@@ -15,6 +15,9 @@
 | SciPy 1.16.2 | BSD-3-Clause，Delaunay、线性插值与曲面积分；wheel 内含 OpenBLAS/LAPACK 和各自声明 | 对应 sdist、wheel 原始 LICENSE.txt、包内第三方许可与 `packaging/backend-sources.json` |
 | ContourPy 1.3.3 | BSD-3-Clause，格网等值线 | 对应 sdist、wheel 许可和 SHA256 |
 | NetworkX 3.5 | BSD-3-Clause，路径与连通性 | 对应 sdist、wheel 许可和 SHA256 |
+| ezdxf 1.4.5 | MIT，DXF 图层、实体、中文文本和曲线交换 | PyPI 固定版源码与摘要、wheel 原始许可证；字体文件仅引用，不随包分发 |
+| fontTools 4.68.0 | MIT，ezdxf 的字体处理依赖 | 对应 PyPI 源码、原始许可证和摘要 |
+| CDT 2.0.1 | MPL-2.0，提交 `53eff288a4e77ad1c0afe1a10f60bd2b57f877b8`；约束三角剖分，之后由 MapGIS 接口写入原生 TIN | `vendor/cdt` 未修改头文件、MPL、谓词的 BSD-3-Clause、Apache-2.0 WITH LLVM-exception 原始声明及逐文件摘要 |
 | Pyogrio 0.13.0 | MIT，GDAL 矢量交换；本轮实测 GDAL 3.12.4、GEOS 3.14.1 | 对应 sdist、wheel 原始许可及 GDAL/依赖声明；GEOS 3.14.1 源码沿用已固定版本 |
 | Ghostscript 10.08.0 | 独立 CLI 将原生 EPS 转为 PDF，AGPLv3 | 官方运行时、对应源码和原始许可 |
 | winhlp | 单独的本机帮助索引工具，GPL-2.0；提交 `cb2661ef85693799641cf7ab258e7a4074732568` | `third_party/winhlp` 未修改解析器源码、原许可与来源；MCP 服务不导入该库 |
@@ -30,3 +33,13 @@ LGPL 库可以按其许可修改和替换。包内保留 Python 应用源码及�
 winhlp 上游完整 CLI 要求 Python 3.13+；本包只用已在 Python 3.12 验证的解析 API 子集，不调用其 TUI、WMF 或 HTML 导出模块。索引脚本通过独立进程运行。MapGIS 自带的帮助及解析结果始终保留在接收者本机。
 
 本包不包含 MapGIS、许可工具、专有符号/颜色库、课程报告、私人图件、聊天记录或本机账号配置。第三方许可的适用范围以各组件原文为准。
+
+### GDAL 两点通视算法适配
+
+`src/mapgis_agent/_los.py` 复用 GDAL v3.13.0 `alg/los.cpp` 的 Bresenham 取样、直线高度插值和地面相等可见的上游修复。提交 `130cb4675a0b42bd32acad56e57022cca44fc008`；作者 Ryan Friedman；该文件 SPDX 为 MIT。原始 C++、完整上游 LICENSE.TXT 和 SHA256 存于 `third_party/gdal_los/`，Python 文件内也保留 MIT 许可文字。适配返回完整采样表和按观察点顺序的第一个遮挡像元，新增显式单位、NoData 和输入摘要检查；不修改本机 GDAL 3.10.3 DLL。
+
+### D8水文依赖
+
+新增PyFlwDir0.5.12（MIT，Copyright Deltares），实际复用`fill_depressions`、D8拓扑、`upstream_area`、`basins`和`vectorize`；固定Numba0.68.1与llvmlite0.50.0（两条款BSD及随附第三方条款）。五份原始许可完整保留在`third_party/hydrology/`，官方wheel/sdist URL和SHA256见该目录`SOURCE.json`。源码归档保留在项目下载目录，可据摘要重取。原有NumPy2.5.4、SciPy1.16.2、Rasterio1.4.4、Affine3.0.1保持。
+
+项目仅添加单位/标定、舍入许可、缺测边界、汇流守恒检查，以及GeoTIFF/原生WT/WL/WP和请求账本的衔接；未修改这些包的源码。上游返回的零长度出口线段保存为出口点。Windows运行时在stdio输入线程启动前导入科学库，避免实测到的SciPy首次加载挂起。

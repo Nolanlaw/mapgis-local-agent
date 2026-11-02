@@ -1,0 +1,48 @@
+{
+  "id": "boreholes",
+  "schema_version": 1,
+  "title": "MapGIS 6.7 钻孔数据、柱状图与轨迹投影剖面",
+  "execution": "Use the public stdio MCP tools below. Save new branches, then use original BAS60 to save/freshly reopen the editable vectors and native MPJ before output. No desktop input.",
+  "native_module": "geology",
+  "validation": "BACKEND_TESTED",
+  "validation_scope": "Two labelled analytical holes, one quarter-circle minimum-curvature path and one vertical, explicit unlogged interval, native WT/WL/WP, source/result XLSX, MPJ/EPS/PDF/TIFF. 29 actual MCP calls plus21 recovery calls after parent exits102/104/103. This is the documented2D subset, not complete proprietary geology modules or native3D files.",
+  "inputs": [
+    "孔口表 hole_id/easting/northing/elevation；测斜表 hole_id/md/inclination/azimuth；分层表 hole_id/top/base/unit 及可选 description",
+    "各表首行字段名和工作表名显式映射；孔号原样字符串；测量为原始数值，不读取未核验公式缓存",
+    "明确平面/垂直单位为米、格网北、向下测斜倾角、高程基准；MD从0开始递增，不外推",
+    "柱状图竖向比例、图上柱宽与间距；剖面起终点、最大离面距离、水平/竖向比例和采样步长",
+    "地层到工程系统库样式的明确映射；不得按颜色推断地质类别"
+  ],
+  "steps": [
+    {
+      "id": "source",
+      "tools": ["mapgis_table_info", "mapgis_read_borehole_workbook"],
+      "action": "Inspect table names/headers and bind source SHA. Map each of the three tables explicitly. Set sort_by_depth=true only when sorting is intended; retain original row lineage.",
+      "checks": ["唯一孔口及孔号引用", "测斜站顺序及角度约定", "分层不重叠、不越界；缺失区间保持未编录"]
+    },
+    {
+      "id": "trajectory",
+      "tools": ["mapgis_borehole_trajectory", "mapgis_apparent_dip"],
+      "action": "Compute model positions with pinned wellpathpy minimum curvature and SciPy spherical direction interpolation. Query MDs within the supplied range. Project a supplied true dip only when a real attitude is given.",
+      "checks": ["MD/TVD/XYZ及向上高程", "测斜站重新采样差", "独立解析或已知轨迹检查点", "倾向不同于走向，视倾角符号随剖面方向"]
+    },
+    {
+      "id": "drawing",
+      "tools": ["mapgis_system_library_info", "mapgis_prepare_borehole_chart", "mapgis_apply_patch"],
+      "action": "Pass the hash-bound workbook binding so it is re-read and guarded through publication. mode=columns plots MD down; mode=section projects the actual sampled trace to the declared straight vertical plane, elevation up. Use explicit native region styles and separate labels. Output is WP plus sibling WL/WT/XLSX/JSON.",
+      "checks": ["全部原生点线区保存和新进程回读", "未编录留白、重叠拒绝", "柱宽为图上宽度，XYZ保留在表", "注明比例、纵向夸大和模型轨迹，无自动孔间连层"]
+    },
+    {
+      "id": "project_and_output",
+      "tools": ["mapgis_native_file_info", "mapgis_prepare_native_project", "mapgis_native_project_info", "mapgis_prepare_project_plot", "mapgis_prepare_plot_export"],
+      "action": "Use WP, WL and WT in that drawing order and a checked library binding. Reopen the three-layer MPJ, set the native drawing-mm page view explicitly, then export EPS/PDF/TIFF. View final output and check the actual chart relationships.",
+      "checks": ["轴线刻度可见，岩性花纹可分辨，标注不遮挡关键内容", "原生范围与纸张比例一致", "EPS像素对照；密集花纹必要时300dpi原条件复核", "输入SHA和mtime不变"]
+    },
+    {
+      "id": "recovery",
+      "tools": ["mapgis_get_request", "mapgis_reconcile_artifact", "mapgis_apply_patch"],
+      "action": "After a lost reply first inspect the same request ID. Recover completed native saves and frozen files; resume only stages not previously issued. Modified input workbook or chart specification is rejected.",
+      "checks": ["原生保存PID、候选SHA及mtime保持", "已封存结果不重算", "恢复后点线区与未编录表再次回读"]
+    }
+  ]
+}

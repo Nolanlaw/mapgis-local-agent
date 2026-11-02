@@ -10,9 +10,93 @@ import math
 from pathlib import Path
 import struct
 
-from pymapgis.reader import _read_topology_table
+from pymapgis.reader import _read_topology_table, _read_lines, _read_line_params, _read_crs
+from pymapgis import reader as native
 
-from .core import BridgeError, native_ids, read_native
+from .core import BridgeError, native_ids, read_native, sha, scalar
+from .attributes import _attribute_table
+from .attribute_codec import decode as decode_attribute
+
+
+def _wp_arc_records(file: str | Path):
+    blob, reader, sections = read_native(Path(file))
+    if reader.shapeType != 'POLYGON':
+        raise BridgeError('TOPOLOGY: WP required')
+    _, factor = _read_crs(io.BytesIO(blob))
+    geometry = _read_lines(io.BytesIO(blob), *sections[0], *sections[1], factor)
+    topology = _read_topology_table(io.BytesIO(blob), *sections[3])
+    parameters = _read_line_params(io.BytesIO(blob), *sections[0])
+    records = {}
+    if len(geometry) != len(topology):
+        raise BridgeError('TOPOLOGY: arc/owner count differs')
+    for aid, (line, row) in enumerate(zip(geometry, topology), 1):
+        if not blob[sections[0][0] + aid * 57]:
+            continue
+        records[aid] = {'arc_id': aid, 'owner_region_ids': sorted({int(v) for v in row[2:4] if v}),
+            'node_ids': [int(v) for v in row[:2]], 'coordinates': [list(p) for p in line.coords],
+            'style': {k: scalar(v) for k, v in parameters.iloc[aid - 1].items()
+                      if not isinstance(scalar(v), float) or math.isfinite(scalar(v))}}
+    return blob, reader, sections, records
+
+
+def _wp_nodes(records:dict)->dict:
+    """WP node identities come from the arc topology, not the network table."""
+    nodes={}
+    for aid,arc in records.items():
+        if arc['node_ids']==[0,0] and arc['coordinates'][0]==arc['coordinates'][-1]:continue
+        for identity,index in zip(arc['node_ids'],(0,-1)):
+            if identity<1:raise BridgeError('NODE_TOPOLOGY: active arc has no endpoint node identity')
+            point=arc['coordinates'][index]
+            node=nodes.setdefault(identity,{'node_id':identity,'coordinates':list(point),
+                                          'incident_arc_ids':set(),'owner_region_ids':set()})
+            if any(not math.isclose(a,b,rel_tol=0,abs_tol=1e-7) for a,b in zip(point,node['coordinates'])):
+                raise BridgeError('NODE_TOPOLOGY: incident arc endpoints disagree')
+            node['incident_arc_ids'].add(aid);node['owner_region_ids'].update(arc['owner_region_ids'])
+    for node in nodes.values():
+        for key in ('incident_arc_ids','owner_region_ids'):node[key]=sorted(node[key])
+    return nodes
+
+
+def read_wp_arcs(file: str, expected_sha256: str, offset: int = 0, limit: int = 20,
+                 arc_ids: list[int] | None = None) -> dict:
+    """Read saved WP arc identity, ownership and geometry in source map units."""
+    if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 100:
+        raise BridgeError('TOPOLOGY_PAGE: offset >= 0, limit 1..100')
+    blob, _, sections, records = _wp_arc_records(file)
+    if sha(blob) != expected_sha256:
+        raise BridgeError('STALE_SOURCE')
+    topology = validate_wp_topology(file)
+    ids = sorted(records)
+    if arc_ids is not None:
+        if (not isinstance(arc_ids, list) or not arc_ids or len(arc_ids) != len(set(arc_ids))
+                or any(type(v) is not int or v not in records for v in arc_ids)):
+            raise BridgeError('TOPOLOGY_ARC_IDS: unique active arc IDs required')
+        ids = sorted(arc_ids)
+    if Path(file).read_bytes() != blob:
+        raise BridgeError('STALE_DURING_TOPOLOGY_READ')
+    selected = ids[offset:offset + limit]
+    selected_nodes={nid for aid in selected for nid in records[aid]['node_ids']}
+    try:
+        nodes=_wp_nodes(records);node_status='VALIDATED_ENDPOINT_IDENTITIES'
+    except BridgeError as exc:
+        nodes={};node_status=str(exc)
+    attribute_tables={}
+    for kind,index,rows in [('arc',2,records),('node',5,nodes)]:
+        table=_attribute_table(blob,sections,index)
+        attribute_tables[kind]={'fields':[f.name for f in table['fields']] if table else [],
+                               'stored_rows':table['count']-1 if table else 0,'identity':'physical '+kind+' ID'}
+        for identity,row in rows.items():
+            data=table['data']+identity*table['width'] if table else 0
+            exists=table and identity<table['count'] and blob[data]==1
+            row['attributes']={f.name:scalar(decode_attribute(blob[data:data+table['width']],f)) for f in table['fields']} if exists else None
+    return {'file': str(Path(file).resolve()), 'source_sha256': expected_sha256, 'topology': topology,
+        'arcs': [records[aid] for aid in selected], 'total': len(ids),
+        'nodes':[nodes[nid] for nid in sorted(selected_nodes) if nid in nodes],'node_topology':node_status,
+        'attribute_tables':attribute_tables,'unassigned_closed_arc_ids':[aid for aid in selected if records[aid]['node_ids']==[0,0]],
+        'node_scope':'nodes touching the returned arcs; incident_arc_ids and owner_region_ids cover the whole file',
+        'next_offset': offset + len(selected) if offset + len(selected) < len(ids) else None,
+        'coordinate_frame': 'source map units; raw drawing scale already applied',
+        'identity': 'arc_id is independent of region physical IDs and attribute ID values'}
 
 
 def validate_wp_topology(file: str | Path) -> dict:
