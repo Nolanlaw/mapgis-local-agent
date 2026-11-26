@@ -6,9 +6,9 @@
 
 ## 下载与配置
 
-前往[最新Release](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest)，下载 **MapGIS-Agent-0.7.0-Windows-x64-Share.zip**。完整解压后使用包内Python，无需安装Python依赖。仓库保持私有，访问与下载需要相应权限。
+**普通使用者建议直接下载离线分享包（不要直接点绿色 Code 下载源码）**：前往[最新Release](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest)，下载 **MapGIS-Agent-0.7.0-Windows-x64-Share.zip**。完整解压到短路径（例如 `D:\MapGIS-Agent`）后直接使用包内 Python，无需安装 Python 依赖。仓库保持私有，访问与下载需要相应权限。
 
-先运行01-Setup.cmd配置安装路径，再运行02-SelfTest.cmd。启用原厂SDK兼容宿主及私有进程操作时执行：
+先运行 `01-Setup.cmd` 配置本机 MapGIS 6.7 安装路径（仅用纯文件处理可直接回车跳过），再运行 `02-SelfTest.cmd` 确认 `PASS`。如需启用原厂 SDK 兼容宿主及不抢桌面的私有进程控件操作，执行：
 
 ```powershell
 ./runtime/python/python.exe -s -B -X utf8 scripts/portable.py setup --mapgis 'D:/MapGIS67' --enable-native-legacy-host --enable-private-ui
@@ -16,7 +16,15 @@
 
 两个开关只授权包自身的子进程和任务副本；安装程序、许可和系统DEP设置保持。私有界面开关也启用已有3BN/3DM专用调用。移动目录后重新setup，已授权开关保留，独立手改的客户端配置会保护。
 
-将生成的mcp-config.local.json加入MCP客户端，或让Agent使用MapGIS-CLI.cmd。CLI与MCP调用同一工具注册表。完整安装说明见[Windows包说明](docs/SHARE.md)。
+### 3 步接入常用 AI 客户端（Claude Code / Cursor / Antigravity / Codex）
+
+运行完 Setup 后，解压目录会生成 `mcp-config.local.json`，将其中 `mcpServers.mapgis_local` 一段复制到你的客户端 MCP 配置并重启即可：
+
+- **Claude Code**：在项目目录或用户目录 `.mcp.json` / `~/.claude.json` 的 `mcpServers` 中合并 `mapgis_local`（或运行 `claude mcp add-json mapgis_local '<该对象JSON>'`）。
+- **Cursor**：在 `Settings → Tools & MCP` 打开 `~/.cursor/mcp.json`，将 `mapgis_local` 合并进 `mcpServers`。
+- **Antigravity / Gemini**：合并进 `~/.gemini/config/mcp_config.json` 的 `mcpServers`。
+- **Codex CLI**：按 `mcp-config.local.json` 中的 `command` 与 `args` 添加到 `~/.codex/config.toml` 的 `[mcp_servers.mapgis_local]`。
+- **验证连通**：重启客户端后直接向 Agent 提问 `“检查 mapgis_local 的当前能力与可用工具数量”`，返回已注册工具列表即接通。也可以不配 MCP，直接让 Agent 调用同目录的 `MapGIS-CLI.cmd`。完整安装说明见[Windows包说明](docs/SHARE.md)。
 
 ## 已接通的调用
 
@@ -36,7 +44,13 @@
 
 ## 开发与验证
 
-源码包不附MapGIS安装、许可、私人数据或Python环境。开发使用Python3.12和requirements.lock.txt；原生宿主源码位于native/。Windows分享包另附独立Python、开放运行库、对应源码及许可。
+源码包不附MapGIS安装、许可、私人数据或Python环境。开发使用Python3.12+和`requirements.lock.txt`；原生宿主源码位于`native/`（仓库已附预编译`MapgisNativeWorker.exe`，一般无需安装Visual Studio）。从源码安装可执行：
+
+```powershell
+.\scripts\Setup.ps1 -MapGISInstallation 'D:\MapGIS67' -EnableNativeLegacyHost -EnablePrivateUi
+```
+
+Windows分享包另附独立Python、开放运行库、对应源码及许可。
 
 ```powershell
 ./.venv/Scripts/python.exe -s -B -X utf8 scripts/mapgis_cli.py tools

@@ -7,7 +7,12 @@
 1. 完整解压到可写目录，不在 ZIP 预览中启动。
 2. 运行 `01-Setup.cmd`。输入 MapGIS 根目录、program 目录或 mdiedit6x.exe 路径；只用文件处理可直接回车。
 3. 运行 `02-SelfTest.cmd`，确认 PASS；`03-Diagnostics.cmd` 检查依赖和版本。
-4. 把生成的 `mcp-config.local.json` 加入支持 stdio 的 MCP 客户端。
+4. 把生成的 `mcp-config.local.json` 中的 `mapgis_local` 节点加入支持 stdio 的 MCP 客户端并重启：
+   - **Claude Code**：合并进 `.mcp.json` 或 `~/.claude.json` 的 `mcpServers`；
+   - **Cursor**：合并进 `~/.cursor/mcp.json` 的 `mcpServers`；
+   - **Antigravity / Gemini**：合并进 `~/.gemini/config/mcp_config.json` 的 `mcpServers`；
+   - **Codex CLI**：将 `command` 与 `args` 填入 `~/.codex/config.toml` 的 `[mcp_servers.mapgis_local]`。
+   重启后对 Agent 说“检查 `mapgis_local` 的当前能力与工具数量”即可确认连上。
 
 安装只在解压目录写本地配置。移动目录后重新安装以更新路径；独立手改的配置会保留，需要自行合并。MapGIS-MCP.cmd 是 stdio 入口，由客户端启动后等待输入。
 
