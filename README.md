@@ -6,7 +6,7 @@
 
 ## 下载与配置
 
-**普通使用者建议直接下载离线分享包（不要直接点绿色 Code 下载源码）**：前往[最新Release](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest)，下载 **MapGIS-Agent-0.7.0-Windows-x64-Share.zip**。完整解压到短路径（例如 `D:\MapGIS-Agent`）后直接使用包内 Python，无需安装 Python 依赖。仓库保持私有，访问与下载需要相应权限。
+**普通使用者建议直接下载离线分享包（不要直接点绿色 Code 下载源码）**：前往[最新Release](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest)，下载 **MapGIS-Agent-0.7.0-Windows-x64-Share.zip**。完整解压到短路径（例如 `D:\MapGIS-Agent`）后直接使用包内 Python，无需安装 Python 依赖。
 
 先运行 `01-Setup.cmd` 配置本机 MapGIS 6.7 安装路径（仅用纯文件处理可直接回车跳过），再运行 `02-SelfTest.cmd` 确认 `PASS`。如需启用原厂 SDK 兼容宿主及不抢桌面的私有进程控件操作，执行：
 
@@ -62,4 +62,6 @@ Windows分享包另附独立Python、开放运行库、对应源码及许可。
 
 发行检查包含包实际解压、全部文件核对、包内解释器与新stdio、原厂调用及保存/读回。此前31项真实私有控件检查和启动回执丢失恢复已通过；本版安装开关和打包变更另行回归。发布回执对应这台验证电脑，不推断其他实体电脑的许可或真实地质精度。
 
-[能力说明](docs/CAPABILITIES.md) · [接口](docs/NATIVE.md) · [SDK调用](docs/SDK-CALLS.md) · [第三方来源与许可](docs/THIRD-PARTY.md)
+[能力说明](docs/CAPABILITIES.md) · [接口](docs/NATIVE.md) · [SDK调用](docs/SDK-CALLS.md) · [第三方来源与许可](docs/THIRD-PARTY.md) · [许可协议 (Apache-2.0)](LICENSE)
+
+> 本项目原创代码采用 [Apache-2.0](LICENSE) 许可协议，按现状提供（As-is），仅在特定本机环境验证，不承诺持续适配；第三方组件来源及各自许可证见 [NOTICE.md](NOTICE.md) 与 [第三方来源与许可](docs/THIRD-PARTY.md)。
