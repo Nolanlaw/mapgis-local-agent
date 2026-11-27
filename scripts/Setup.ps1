@@ -126,7 +126,17 @@ if ($EnableNativeLegacyHost -or $EnablePrivateUi) {
     }
     [System.IO.File]::WriteAllText($NativeConfigPath, ($NativeState | ConvertTo-Json -Depth 20), [System.Text.UTF8Encoding]::new($false))
 }
+if ($MapGISInstallation -or (Test-Path -LiteralPath $NativeConfigPath)) {
+    $HelpIndexer = Join-Path $PSScriptRoot 'index_native_help.py'
+    if (Test-Path -LiteralPath $HelpIndexer -PathType Leaf) {
+        & $EnvironmentPython -s -B -X utf8 $HelpIndexer 2>&1 | Out-Host
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning 'Local MapGIS native help indexing returned a non-zero exit code; core MCP tools remain ready.'
+        }
+    }
+}
 & $EnvironmentPython -s -B -X utf8 (Join-Path $ProjectRoot 'scripts\mapgis_cli.py') capabilities --root $ProjectRoot
 if ($LASTEXITCODE -ne 0) { throw 'local capabilities check failed' }
 Write-Output "Ready. Client configuration ($Surface): $McpPath"
+Write-Output ("Optional Agent Skill: " + (Join-Path $ProjectRoot 'packaging\skill\SKILL.md'))
 Write-Output 'No global model, provider, MCP, licence or security setting was changed.'

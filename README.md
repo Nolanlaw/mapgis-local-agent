@@ -60,6 +60,12 @@ Legacy desktop GIS software was built for manual clicks, not autonomous AI agent
 
 Choose the packaging mode that fits your workflow — **headless file/QA/interchange tools work out of the box without a MapGIS installation**, and native MapGIS 6.7 execution opts in locally with your own licensed copy.
 
+### Option 0: Agent-Assisted 1-Prompt Setup (Easiest — Recommended)
+
+Paste this prompt directly into **Claude Code, Cursor, Codex, or Antigravity**:
+
+> *"Clone `https://github.com/Nolanlaw/mapgis-local-agent.git` into a short local path (e.g. `D:\MapGIS-Agent`), detect if I have a licensed MapGIS 6.7 installation (containing `program\mdiedit6x.exe`), run `.\scripts\Setup.ps1` with `-Surface hybrid` (plus `-MapGISInstallation`, `-EnableNativeLegacyHost`, `-EnablePrivateUi` if MapGIS 6.7 is found), register the generated `mcp-config.local.json` entry in my current MCP client config, install `packaging/skill/SKILL.md` into my agent skills folder, and verify with `scripts/portable.py doctor` and `scripts/self_test.py`."*
+
 ### Option 1: One-Click Desktop Extension (`.mcpb`)
 
 Download [`mapgis-local-agent-3.0.0.mcpb`](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest) from Releases (MCPB v0.4, verified on non-ASCII Windows paths, launches the 21-tool `hybrid` surface).

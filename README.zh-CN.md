@@ -60,6 +60,12 @@
 
 支持**纯无头开源模式（无需安装 MapGIS 即可使用文件编辑、MapPlan、DRC 审图、注记避让、视觉预览与跨软件互操作）**，也可按需本地授权绑定你自己的正版 MapGIS 6.7 安装目录。
 
+### 方式零：发给 AI Agent 一句话全自动安装（最省心，推荐）
+
+直接把下面这句话复制发给你的 **Claude Code / Cursor / Codex / Antigravity**：
+
+> “请帮我把 `https://github.com/Nolanlaw/mapgis-local-agent.git` 克隆到一个短路径目录（例如 `D:\MapGIS-Agent`），检查我电脑上是否装有 MapGIS 6.7（含 `program\mdiedit6x.exe`），运行 `.\scripts\Setup.ps1 -Surface hybrid`（如找到 MapGIS 6.7 则一并加上 `-MapGISInstallation`、`-EnableNativeLegacyHost`、`-EnablePrivateUi`），把生成的 `mcp-config.local.json` 接入我当前客户端的 MCP 配置，同时把 `packaging/skill/SKILL.md` 安装到我的 Agent Skills 目录，最后跑一遍 `scripts/portable.py doctor` 和 `scripts/self_test.py` 验证连通。”
+
 ### 方式一：一键桌面扩展（`.mcpb`）
 
 前往 [GitHub Releases](https://github.com/Nolanlaw/mapgis-local-agent/releases/latest) 下载 `mapgis-local-agent-3.0.0.mcpb`（MCPB v0.4，已在中文路径目录实测解包启动并枚举 21 工具）。
