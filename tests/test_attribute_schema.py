@@ -1,4 +1,5 @@
 import json
+import struct
 from pathlib import Path
 
 import pytest
@@ -27,6 +28,85 @@ def sample(bridge, suffix='wt'):
 
 SCHEMA = [{'name': '岩性', 'source': 'code'}, {'name': 'ID', 'source': 'ID'},
           {'name': '厚度', 'type': 'double', 'default': 2.5}]
+
+
+@pytest.mark.parametrize('suffix', ['wt', 'wl', 'wp'])
+def test_attribute_header_records_data_offset(tmp_path, suffix):
+    # MapGIS reads attribute records from header bytes 12..15 (348 + 39 per field).
+    from mapgis_agent.attributes import prepare_attribute_schema
+    bridge = Bridge(tmp_path)
+    source = sample(bridge, suffix)
+    before, _, sections = read_native(source)
+    prepare_attribute_schema(bridge, str(source), sha(before), SCHEMA, 'schema')
+    after, _, changed = read_native(Path(bridge.apply('schema')['output']))
+    attr = 9 if suffix == 'wp' else 2
+    for blob, secs in ((before, sections), (after, changed)):
+        start = secs[attr][0]
+        fields = struct.unpack_from('<h', blob, start + 322)[0]
+        assert struct.unpack_from('<i', blob, start + 12)[0] == 348 + 39 * fields
+
+
+def anomalies(bridge):
+    rows = [{'type': 'Feature', 'id': f'W-{i}', 'properties': {'ID': i, '异常编号': f'W-{i}', '面积km2': i / 8},
+             'geometry': mapping(Polygon([(20 * i, 0), (20 * i + 10, 0), (20 * i + 10, 10), (20 * i, 10)]))}
+            for i in (1, 2, 36)]
+    prepare_creation(bridge, {'type': 'FeatureCollection', 'features': rows},
+                     {'name': 'W_anomalies.wp', 'crs': LOCAL, 'map_scale': 1000}, 'create')
+    return Path(bridge.apply('create')['output'])
+
+
+def test_created_wp_string_field_rows_are_where_mapgis_reads_them(tmp_path):
+    # W_anomalies.wp (2026-11-05) kept the old stamp 972 at bytes 12..15 instead of 543, so
+    # 属性管理 browsed its 异常编号 table from the wrong byte; native tables have no gap.
+    blob, reader, sections = read_native(anomalies(Bridge(tmp_path)))
+    start, size = sections[9]
+    fields, count, width = struct.unpack_from('<hih', blob, start + 322)
+    data = start + struct.unpack_from('<i', blob, start + 12)[0]  # MapGIS record origin
+    assert data == start + 348 + 39 * fields and data + count * width == start + size
+    descriptors = [blob[start + 348 + 39 * i:start + 387 + 39 * i] for i in range(fields)]
+    names = [d[:20].rstrip(b'\0').decode('gbk') for d in descriptors]
+    assert names == ['ID', '面积', '周长', '异常编号', '面积km2']
+    raw = descriptors[3]
+    offset, storage, declared = struct.unpack_from('<ihh', raw, 21)
+    # Native string descriptor: type 0, capacity plus NUL, flag bytes 00 01 00 00, own index.
+    assert (raw[20], storage, declared, raw[29:35]) == (0, 5, 4, b'\0\x01\0\0\x03\0')
+    assert [blob[data + i * width] for i in range(count)] == [1] * 4
+    assert blob[data + 3 * width + offset:data + 3 * width + offset + storage] == b'W-36\0'
+    assert reader.data['异常编号'].tolist() == ['W-1', 'W-2', 'W-36']
+
+
+def test_stale_writer_offset_is_read_in_place_reported_and_repairable(tmp_path):
+    # Pre-fix files keep the stamp while their records follow the descriptors.
+    from mapgis_agent.attributes import prepare_attribute_schema
+    bridge = Bridge(tmp_path)
+    fresh = anomalies(bridge)
+    blob, reader, sections = read_native(fresh)
+    stale = bytearray(blob)
+    struct.pack_into('<i', stale, sections[9][0] + 12, 972)
+    path = tmp_path / 'work' / 'W_anomalies.wp'
+    path.write_bytes(stale)
+    assert read_native(path)[1].data.equals(reader.data)
+    flagged = [w for w in bridge.inspect(str(path))['warnings'] if w.startswith('ATTRIBUTE_HEADER_STALE')]
+    assert len(flagged) == 1 and '属性表头偏移过期，原生属性管理会错位' in flagged[0]
+    assert not any(w.startswith('ATTRIBUTE_HEADER_STALE') for w in bridge.inspect(str(fresh))['warnings'])
+    prepare_attribute_schema(bridge, str(path), sha(bytes(stale)),
+                             [{'name': n, 'source': n} for n in reader.data.columns], 'hdrfix')
+    assert Path(bridge.apply('hdrfix')['output']).read_bytes() == blob
+
+
+def test_installed_sample_with_leftover_descriptor_reads_from_header_offset(tmp_path):
+    # Ku6_2.wl declares two fields but keeps a third descriptor; MapGIS reads its records from 465.
+    config = ROOT / 'config.local.json'
+    if not config.is_file():
+        pytest.skip('installed MapGIS samples are not available')
+    source = Path(json.loads(config.read_text(encoding='utf8'))['mapgis_installation']) / 'sample/Ku6_2.wl'
+    if not source.is_file():
+        pytest.skip('installed MapGIS sample Ku6_2.wl is not available')
+    _, reader, _ = read_native(source)
+    assert reader.fields == [('ID', 'integer', 8), ('长度', 'double', 15)] and len(reader.data) == 751
+    assert reader.data['ID'].tolist()[:3] == [1, 2, 3]
+    assert reader.data['长度'].iloc[0] == pytest.approx(18.45528992460185)
+    assert not any(w.startswith('ATTRIBUTE_HEADER_STALE') for w in Bridge(tmp_path).inspect(str(source))['warnings'])
 
 
 @pytest.mark.parametrize('suffix', ['wt', 'wl', 'wp'])

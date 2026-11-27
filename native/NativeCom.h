@@ -39,14 +39,26 @@ long com_long(const _variant_t& value){
 bool com_bool(const _variant_t& value){if(value.vt!=VT_BOOL)throw std::runtime_error("COM non-boolean result");return value.boolVal!=VARIANT_FALSE;}
 void com_stage(const char* name){printf("{\"event\":\"com_stage\",\"name\":\"%s\"}\n",name);fflush(stdout);}
 
+struct ComLibraryProfile {const wchar_t* name;const char* sha256;};
+constexpr ComLibraryProfile COM_LIBRARIES[]={
+ {L"MapGisBasCom1.DLL","dbad827ed7e1586d358a8d56ec8873be3f3a7ab005797c3c57460636747077d2"},
+ {L"proj60.dll","9e85c489a16814352bfaaf7008942f4e90d335a622e6a2a3f2438c090dd8f2cb"},
+ {L"AttCom.dll","28238214d883764c4958b23a6553cf47a51b8891db0b27ae790a326346e04629"},
+ {L"MapGisMapCom.dll","f01519451e70e2a1ae4c419d7e4f42cfe447a85afcb8cda5a8d1449c248562df"},
+ {L"MapgisLayerCom.dll","b9daa169cddaed2b26e7f20944a56088fb3fbebdf51b9c7c396f143483d90a2c"},
+ {L"MapGisDspCom.dll","af330ddf5320fa6bf1f0a4c915a188664e2e21c345c861aaa3c16205035f09aa"},
+};
+
 struct ComContext{
  HANDLE context=INVALID_HANDLE_VALUE;ULONG_PTR cookie=0;bool initialized=false;std::wstring runtime;
  ComContext(const wchar_t* bas,const wchar_t* manifest){
   if(digest(bas)!=BAS_SHA)throw std::runtime_error("COM BAS build profile");
   std::wstring filename(manifest);runtime=filename.substr(0,filename.find_last_of(L"/\\"));
-  const wchar_t* names[]={L"MapGisBasCom1.DLL",L"MapGisMapCom.dll",L"MapgisLayerCom.dll",L"MapGisDspCom.dll"};
-  const char* hashes[]={"dbad827ed7e1586d358a8d56ec8873be3f3a7ab005797c3c57460636747077d2","f01519451e70e2a1ae4c419d7e4f42cfe447a85afcb8cda5a8d1449c248562df","b9daa169cddaed2b26e7f20944a56088fb3fbebdf51b9c7c396f143483d90a2c","af330ddf5320fa6bf1f0a4c915a188664e2e21c345c861aaa3c16205035f09aa"};
-  for(int i=0;i<4;++i)if(digest((runtime+L"/"+names[i]).c_str())!=hashes[i])throw std::runtime_error("COM SDK build profile");
+  for(const auto& entry:COM_LIBRARIES){
+   if(digest((runtime+L"/"+entry.name).c_str())!=entry.sha256){
+    char message[180];sprintf_s(message,"COM SDK build profile: %ls",entry.name);throw std::runtime_error(message);
+   }
+  }
   ACTCTXW settings{};settings.cbSize=sizeof settings;settings.lpSource=manifest;context=CreateActCtxW(&settings);
   if(context==INVALID_HANDLE_VALUE)throw std::runtime_error("COM private activation manifest");
   if(!ActivateActCtx(context,&cookie)){ReleaseActCtx(context);context=INVALID_HANDLE_VALUE;throw std::runtime_error("COM private activation context");}
@@ -56,7 +68,11 @@ struct ComContext{
  }
  ~ComContext(){if(initialized)OleUninitialize();if(cookie)DeactivateActCtx(0,cookie);if(context!=INVALID_HANDLE_VALUE)ReleaseActCtx(context);}
  ComDispatch create(const wchar_t* library,const wchar_t* id){
-  HMODULE module=LoadLibraryW((runtime+L"/"+library).c_str());
+  const auto* entry=std::find_if(std::begin(COM_LIBRARIES),std::end(COM_LIBRARIES),[library](const auto& value){return wcscmp(library,value.name)==0;});
+  if(entry==std::end(COM_LIBRARIES))throw std::runtime_error("COM SDK library policy");
+  const auto path=runtime+L"/"+entry->name;
+  if(digest(path.c_str())!=entry->sha256)throw std::runtime_error("COM SDK library changed before activation");
+  HMODULE module=LoadLibraryW(path.c_str());
   if(!module){DWORD code=GetLastError();char message[200];sprintf_s(message,"COM original module %ls initialization: Win32 %lu",library,code);throw std::runtime_error(message);}
   using Factory=HRESULT(__stdcall*)(REFCLSID,REFIID,void**);CLSID cls{};com_require(CLSIDFromString(id,&cls),"class identity");
   ComFactory factory;com_require(sym<Factory>(module,"DllGetClassObject")(cls,IID_IClassFactory,reinterpret_cast<void**>(&factory)),"class factory");

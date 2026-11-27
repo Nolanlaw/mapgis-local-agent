@@ -48,7 +48,7 @@ def prepare_deletion(bridge: Bridge, file: str, expected_sha256: str,
         attr_start, attr_size = sections[native._ATTR_HEADER_INDEX[reader.shapeType]]
         stream = io.BytesIO(before)
         count, length, _ = native._read_attribute_header(stream, attr_start)
-        table = stream.tell()
+        table = attr_start + native._attribute_record_origin(before[attr_start:attr_start + 348], attr_size)[0]
         size = 93 if reader.shapeType == "POINT" else 57
         if (length < 1 or table + count * length > attr_start + attr_size
                 or (max(record_ids) + 1) * size > sections[0][1]):

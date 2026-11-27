@@ -410,6 +410,24 @@ def _read_attribute_header(
     return record_count, record_length, fields
 
 
+def _attribute_record_origin(head: bytes, size: int) -> Tuple[int, bool]:
+    """Return (offset of record 0 in the attribute section, header_is_stale).
+
+    MapGIS reads records from the int32 at section bytes 12..15: native tables
+    point just past the descriptors, or past a leftover descriptor (sample
+    Ku6_2.wl: 465 for two fields). Before 2026-11-05 this writer stored a fixed
+    stamp there but packed records right after the descriptors; such a pointer
+    lies inside the descriptors or overruns the section. Those records are read
+    where they are, and the header is reported stale (MapGIS misreads it).
+    """
+    field_count, record_count, record_length = struct.unpack_from("<hih", head, 322)
+    dense = 348 + 39 * max(field_count, 0)
+    declared = struct.unpack_from("<i", head, 12)[0]
+    if declared == dense or dense < declared <= size - record_count * record_length:
+        return declared, False
+    return dense, True
+
+
 # ---------------------------------------------------------------------------
 # Coordinate reference system
 # ---------------------------------------------------------------------------
@@ -1288,7 +1306,7 @@ class Reader:
         file_obj.seek(end)
         self._raw_tail = file_obj.read(max(0, file_size - end))
 
-        attr_start, _ = header_entries[_ATTR_HEADER_INDEX[self.shapeType]]
+        attr_start, attr_size = header_entries[_ATTR_HEADER_INDEX[self.shapeType]]
         record_count, record_length, fields = _read_attribute_header(
             file_obj, attr_start
         )
@@ -1315,6 +1333,9 @@ class Reader:
                 f.name: raw_blocks[i] for i, f in enumerate(fields)
             },
         }
+        file_obj.seek(attr_start)
+        origin, _ = _attribute_record_origin(file_obj.read(348), attr_size)
+        file_obj.seek(attr_start + origin)
         self.data = _read_attribute_records(
             file_obj, record_count, record_length, fields
         )

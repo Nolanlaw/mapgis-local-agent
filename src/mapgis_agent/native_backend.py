@@ -5,6 +5,7 @@ Candidates go through the existing Bridge ledger and explicit apply operation.
 """
 from __future__ import annotations
 
+from contextlib import ExitStack, contextmanager
 import json
 import io
 import math
@@ -20,7 +21,7 @@ import uuid
 import psutil
 
 from .comparison import compare_native_files
-from .core import Bridge, BridgeError, json_text, layout_signature, native_ids, read_native, sha
+from .core import Bridge, BridgeError, json_text, layout_signature, native_ids, read_native, sha, stale_attribute_headers
 from .native_state import PROFILE
 from .topology import validate_wp_topology, _wp_arc_records, _wp_nodes
 from .desktop import PrivateDesktop
@@ -55,12 +56,43 @@ def backend_configuration(root: Path) -> tuple[Path, Path]:
     return executable, dll
 
 
-def _run_child(args: list[str], folder: Path, log_name: str,*,mfc_windows:bool=False) -> tuple[dict, list[dict]]:
+def _stop_owned_process(process):
+    if process.poll() is None:
+        process.kill()
+        process.wait()
+
+
+@contextmanager
+def _guard_owned_process(process):
+    """Close an ephemeral job object to retire only this owned child on parent loss."""
+    import win32job
+    job = win32job.CreateJobObject(None, 'MapGISAgentWorker_' + uuid.uuid4().hex)
+    try:
+        limits = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
+        limits['BasicLimitInformation']['LimitFlags'] |= win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, limits)
+        if process.poll() is None:
+            try:
+                win32job.AssignProcessToJobObject(job, int(process._handle))
+            except Exception as exc:
+                if process.poll() is None:
+                    raise BridgeError('NATIVE_PROCESS_GUARD: cannot guard owned native child') from exc
+        yield
+    finally:
+        job.Close()
+
+
+def _run_child(args: list[str], folder: Path, log_name: str,*,mfc_windows:bool=False,
+               guard_process:bool=False) -> tuple[dict, list[dict]]:
     stdout_file, stderr_file = folder / (log_name + '.stdout'), folder / (log_name + '.stderr')
     # Redirect to owned files: native fflush survives loss of the MCP parent.
-    with stdout_file.open('xb') as out, stderr_file.open('xb') as err, PrivateDesktop(mfc_windows=mfc_windows) as desktop:
+    with (stdout_file.open('xb') as out, stderr_file.open('xb') as err,
+          PrivateDesktop(mfc_windows=mfc_windows) as desktop, ExitStack() as lifecycle):
         process = subprocess.Popen(args, cwd=folder, stdout=out, stderr=err,
                                    creationflags=subprocess.CREATE_NO_WINDOW,startupinfo=desktop.startupinfo,env=desktop.environment)
+        lifecycle.callback(_stop_owned_process, process)
+        if guard_process:
+            lifecycle.enter_context(_guard_owned_process(process))
         created, exited, kernel_time, user_time = (wt.FILETIME() for _ in range(4))
         kernel = ct.WinDLL('kernel32', use_last_error=True)
         kernel.GetProcessTimes.argtypes = [wt.HANDLE, *([ct.POINTER(wt.FILETIME)] * 4)]
@@ -102,7 +134,7 @@ def _run_child(args: list[str], folder: Path, log_name: str,*,mfc_windows:bool=F
 
 
 def _invoke(executable: Path, dll: Path, folder: Path, kind: str, operation: str,
-            output: Path | None = None, log_name: str = 'invoke.json') -> dict:
+            output: Path | None = None, log_name: str = 'invoke.json', *, guard_process: bool = False) -> dict:
     # The old DLL also corrupts WT/WL coordinate headers at long save paths,
     # not just persistent WP buffers. Keep every native data path short.
     with NativePathAlias(folder) as alias:
@@ -112,7 +144,8 @@ def _invoke(executable: Path, dll: Path, folder: Path, kind: str, operation: str
                 str(alias.path / ('input' + {0:'.wl',1:'.wt',2:'.wp'}[KINDS[kind]])),
                 str(KINDS[kind]), str(alias.path / output.name) if output else '-',
                 str(alias.path / 'updates.txt')]
-        result, events = _run_child(args, folder, log_name)
+        result, events = (_run_child(args, folder, log_name, guard_process=True)
+                          if guard_process else _run_child(args, folder, log_name))
     try:
         count = [e for e in events if e.get('event') == 'count'][-1]
         bounds = next((e['native_bounds'] for e in events if e.get('event') == 'bounds'), None)
@@ -150,6 +183,7 @@ def native_file_info(root: str | Path, file: str, expected_sha256: str) -> dict:
     if path.read_bytes() != blob:
         raise BridgeError('STALE_DURING_NATIVE_READ')
     return {**result, 'file': str(path), 'sha256': sha(blob), 'source_preserved': True,
+            'warnings': [*result.get('warnings', []), *stale_attribute_headers(blob)],
             'mode': 'isolated_native_x86', 'profile': 'mapgis-6.7-051118-bas60-v1',
             'scope': 'saved file opened by BAS60 in a fresh process; no live editor state'}
 

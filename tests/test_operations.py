@@ -63,10 +63,17 @@ def test_backend_description_keeps_legacy_workflow_and_distinguishes_the_backend
 
 
 def test_catalog_backend_routes_are_real_and_exact_build_availability_is_explicit(tmp_path):
+    from mapgis_agent.mcp_surface import _Operations
     from mapgis_agent.operations import _catalog,describe_operation
-    tools={tool.name for tool in asyncio.run(build_server(tmp_path).list_tools())}
+    legacy=build_server(tmp_path,surface='legacy')
+    legacy_tools={tool.name for tool in asyncio.run(legacy.list_tools())}
+    compact_tools={tool.name for tool in asyncio.run(build_server(tmp_path,surface='compact').list_tools())}
+    hybrid_tools={tool.name for tool in asyncio.run(build_server(tmp_path,surface='hybrid').list_tools())}
+    modern_routes=set(_Operations(legacy,tmp_path).tools)|compact_tools|hybrid_tools
+    assert len(legacy_tools)==123 and len(compact_tools)==15 and len(hybrid_tools)==21
     for item in _catalog():
-        if item['execution']['kind']=='mcp':assert item['execution']['tool'] in tools
+        if item['execution']['kind']=='mcp':
+            assert item['execution']['tool'] in (legacy_tools|modern_routes)
     item=describe_operation(tmp_path,'native.workspace')
     assert item['availability']=='NOT_CONFIGURED'
     assert 'external GUI' in item['coverage_scope']

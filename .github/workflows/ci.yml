@@ -1,0 +1,98 @@
+name: MapGIS MCP contracts
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    env:
+      MAPGIS_MCP_SURFACE: legacy
+      OPENBLAS_NUM_THREADS: '1'
+      PYTEST_ADDOPTS: -p no:cacheprovider
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the project and pinned MCP SDK
+        run: python -m pip install -e . pytest "mcp==1.30.0"
+      - name: Select the vendored native-file reader when present
+        shell: pwsh
+        run: |
+          foreach ($candidate in @('vendor/mapgis2shp/src', 'vendor/mapgis2shp')) {
+            if (Test-Path -LiteralPath "$candidate/pymapgis/__init__.py") {
+              "PYTHONPATH=$((Resolve-Path -LiteralPath $candidate).Path)" >> $env:GITHUB_ENV
+              break
+            }
+          }
+      - name: Verify GPL winhlp subprocess isolation
+        shell: pwsh
+        run: |
+          @'
+          import ast
+          from pathlib import Path
+
+          indexer = Path("scripts/index_native_help.py")
+          isolated = []
+          violations = []
+          for root in (Path("src/mapgis_agent"), Path("scripts")):
+              for path in root.rglob("*.py"):
+                  tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+                  for node in ast.walk(tree):
+                      modules = []
+                      if isinstance(node, ast.Import):
+                          modules = [item.name for item in node.names]
+                      elif isinstance(node, ast.ImportFrom):
+                          modules = [node.module or ""] + [item.name for item in node.names]
+                      elif (isinstance(node, ast.Call) and node.args
+                            and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)
+                            and ast.unparse(node.func).split(".")[-1] in {"import_module", "__import__"}):
+                          modules = [node.args[0].value]
+                      parts = {part for name in modules for part in name.casefold().split(".")}
+                      if not parts.intersection({"winhlp", "index_native_help"}):
+                          continue
+                      location = f"{path}:{node.lineno}"
+                      if (path == indexer and isinstance(node, ast.ImportFrom) and node.module == "winhlp.lib.hlp"
+                              and [item.name for item in node.names] == ["HelpFile"]):
+                          isolated.append(location)
+                      else:
+                          violations.append(location)
+          if violations:
+              raise SystemExit("winhlp or in-process indexer import: " + ", ".join(violations))
+          if len(isolated) != 1:
+              raise SystemExit("Expected one GPL parser import in the standalone help indexer")
+          print("Direct winhlp imports outside the standalone indexer: 0")
+          '@ | python -s -B -X utf8 -
+          exit $LASTEXITCODE
+      - name: Run connector regressions without a licensed MapGIS host
+        run: >-
+          python -s -B -X utf8 -m pytest
+          tests/test_object_store.py tests/test_errors_and_discovery.py tests/test_jobs.py
+          tests/test_mcp_surfaces.py tests/test_artifacts.py tests/test_nested_artifacts.py
+          tests/test_bridge.py tests/test_operations.py tests/test_tool_entry.py
+          tests/test_sdk_and_cli_v3.py tests/test_portable.py tests/test_packaging.py -q
+      - name: Verify the SPDX inventory has zero unresolved package licenses
+        run: python -s -B -X utf8 scripts/generate_sbom.py --check --output packaging/sbom.spdx.json
+      - name: Fetch official SPDX, MCP Registry and MCPB schemas
+        shell: pwsh
+        run: |
+          $schemaDir = Join-Path $env:RUNNER_TEMP 'mapgis-distribution-schemas'
+          New-Item -ItemType Directory -Path $schemaDir | Out-Null
+          $schemas = @{
+            'registry.json' = 'https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json'
+            'mcpb.json' = 'https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json'
+            'spdx.json' = 'https://raw.githubusercontent.com/spdx/spdx-spec/v2.3/schemas/spdx-schema.json'
+          }
+          foreach ($name in $schemas.Keys) {
+            Invoke-WebRequest -Uri $schemas[$name] -OutFile (Join-Path $schemaDir $name) -TimeoutSec 30 -ErrorAction Stop
+          }
+          "MAPGIS_DISTRIBUTION_SCHEMA_DIR=$schemaDir" >> $env:GITHUB_ENV
+      - name: Validate distribution manifests, restore MCPB, and smoke-test MapGIS-Bench
+        run: python -s -B -X utf8 -m pytest tests/test_sbom_and_distribution.py -q
+      - name: Verify the surface size and metadata contracts
+        run: python -s -B -X utf8 scripts/benchmark_surfaces.py --output work/v3-sprint1/surface-benchmark.json

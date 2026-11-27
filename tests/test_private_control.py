@@ -5,7 +5,22 @@ from pathlib import Path
 import pytest
 from mapgis_agent.core import Bridge, BridgeError
 from mapgis_agent.private_control import private_control, _relative
-from mapgis_agent.native_ui_core import NativeUIClient, encoded, digest, display_text
+from mapgis_agent.native_ui_core import NativeUIClient, encoded, digest, display_text, file_confirm_allowed
+
+
+def test_file_confirm_needs_bound_path_in_chooser_or_echoed_by_mapgis_dialog():
+    bound = r'C:\T\mg6-x\outputs\out\out\W.GRD'
+    edit = {'hwnd':7,'class':'Edit','text':bound}
+    chooser = [{'hwnd':1,'class':'ComboBoxEx32','text':''},{'hwnd':2,'class':'Static','text':'文件名(&N):'},edit]
+    assert file_confirm_allowed(chooser,{7:bound})
+    assert not file_confirm_allowed(chooser,{})
+    # A chooser cannot be confirmed by a Static echo alone.
+    assert not file_confirm_allowed(chooser[:2]+[{'hwnd':8,'class':'Static','text':bound}],{7:bound})
+    grid = [{'hwnd':3,'class':'Button','text':'输出网格文件名&F'},{'hwnd':4,'class':'Static','text':bound}]
+    assert file_confirm_allowed(grid,{7:bound})
+    assert not file_confirm_allowed(grid,{})
+    assert not file_confirm_allowed([grid[0],{'hwnd':4,'class':'Static','text':'TmpGrid.Grd'}],{7:bound})
+    assert file_confirm_allowed([{'hwnd':5,'class':'Button','text':'确定'}],{})
 
 
 def test_legacy_control_lone_surrogate_is_retained_as_json_escape():
@@ -19,7 +34,8 @@ def test_legacy_control_lone_surrogate_is_retained_as_json_escape():
 
 def test_candidate_reports_exact_nonserver_entries_without_launch(tmp_path):
     result=private_control(Bridge(tmp_path),'policy')
-    assert result['enabled']is False and len(result['modules'])==20
+    assert result['enabled']is False and len(result['modules'])==21
+    assert result['modules']['section']['executable']=='section.exe'
     assert result['modules']['terrain_3d']['entry_role']=='archive_extractor'
     assert result['modules']['terrain_flight']['executable']=='DTM3DFly.exe'
     assert 'database_setup'not in result['modules'] and 'utilities'not in result['modules']

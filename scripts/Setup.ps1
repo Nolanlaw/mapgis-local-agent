@@ -2,13 +2,15 @@ param(
     [string]$PythonPath,
     [string]$MapGISInstallation,
     [switch]$EnableNativeLegacyHost,
-    [switch]$EnablePrivateUi
+    [switch]$EnablePrivateUi,
+    [ValidateSet('legacy', 'compact', 'hybrid')]
+    [string]$Surface = 'hybrid'
 )
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $PortablePython = Join-Path $ProjectRoot 'runtime\python\python.exe'
 if ((Test-Path -LiteralPath $PortablePython) -and -not $PythonPath) {
-    $PortableArguments = @('-s', '-B', '-X', 'utf8', ('"' + (Join-Path $PSScriptRoot 'portable.py') + '"'), 'setup')
+    $PortableArguments = @('-s', '-B', '-X', 'utf8', ('"' + (Join-Path $PSScriptRoot 'portable.py') + '"'), 'setup', '--surface', $Surface)
     if ($EnableNativeLegacyHost) { $PortableArguments += '--enable-native-legacy-host' }
     if ($EnablePrivateUi) { $PortableArguments += '--enable-private-ui' }
     if ($MapGISInstallation) {
@@ -16,9 +18,6 @@ if ((Test-Path -LiteralPath $PortablePython) -and -not $PythonPath) {
         if (Test-Path -LiteralPath $NativeArgument -PathType Container) { $NativeArgument = $NativeArgument.TrimEnd('\') + '\.' }
         $PortableArguments += @('--mapgis', ('"' + $NativeArgument + '"'))
     }
-    # Windows PowerShell 5.1 can return without launching a native application
-    # in a host without a console. Start-Process provides a real process handle
-    # and exit status; keep both streams in this package's own work directory.
     $SetupLogs = Join-Path $ProjectRoot 'work\setup'
     New-Item -ItemType Directory -Path $SetupLogs -Force | Out-Null
     $LaunchId = [Guid]::NewGuid().ToString('N')
@@ -108,7 +107,7 @@ if ($LASTEXITCODE -ne 0) { throw 'native reader installation failed' }
 if ($LASTEXITCODE -ne 0) { throw 'bridge installation failed' }
 $McpEntry = [ordered]@{ mcpServers = [ordered]@{ mapgis_local = [ordered]@{
     command = $EnvironmentPython
-    args = @('-X', 'utf8', (Join-Path $ProjectRoot 'scripts\launch_mcp.py'), '--root', $ProjectRoot)
+    args = @('-s', '-B', '-X', 'utf8', (Join-Path $ProjectRoot 'scripts\launch_mcp.py'), '--root', $ProjectRoot, '--surface', $Surface)
 }}}
 $McpPath = Join-Path $ProjectRoot 'mcp-config.local.json'
 [System.IO.File]::WriteAllText($McpPath, ($McpEntry | ConvertTo-Json -Depth 8), [System.Text.UTF8Encoding]::new($false))
@@ -127,7 +126,7 @@ if ($EnableNativeLegacyHost -or $EnablePrivateUi) {
     }
     [System.IO.File]::WriteAllText($NativeConfigPath, ($NativeState | ConvertTo-Json -Depth 20), [System.Text.UTF8Encoding]::new($false))
 }
-& $EnvironmentPython -X utf8 (Join-Path $ProjectRoot 'scripts\mapgis_cli.py') capabilities
+& $EnvironmentPython -s -B -X utf8 (Join-Path $ProjectRoot 'scripts\mapgis_cli.py') capabilities --root $ProjectRoot
 if ($LASTEXITCODE -ne 0) { throw 'local capabilities check failed' }
-Write-Output "Ready. Client configuration: $McpPath"
+Write-Output "Ready. Client configuration ($Surface): $McpPath"
 Write-Output 'No global model, provider, MCP, licence or security setting was changed.'

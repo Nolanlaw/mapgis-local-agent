@@ -1,0 +1,347 @@
+{
+  "schema_version": "mapgis-cartography-rules/v1",
+  "version": "1.0.0",
+  "standards": [
+    {
+      "id": "GB/T 958-2015",
+      "title": "区域地质图图例",
+      "effective": "2015-07-01",
+      "sections": [
+        "4.11",
+        "4.12"
+      ],
+      "url": "https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=2C6718A842C6D8CE39587B60410C3BD8"
+    },
+    {
+      "id": "DZ/T 0179-2025",
+      "title": "地质图用色标准及用色原则（1∶50 000～1∶250 000）",
+      "effective": "2025-12-31",
+      "replaces": "DZ/T 0179-1997",
+      "scale_denominator": [
+        50000,
+        250000
+      ],
+      "sections": [
+        "9.2.1",
+        "9.3.1"
+      ],
+      "url": "https://ghzyj.sh.gov.cn/hyxw/20251021/587572072af6423cbbcf42bd1221af05.html"
+    }
+  ],
+  "palette_reference": {
+    "status": "public approval draft",
+    "url": "https://gi.mnr.gov.cn/202504/P020250429414585946484.pdf",
+    "tables": [
+      2,
+      6
+    ],
+    "scope": "Representative printed RGB entries. CMYK designators are separate from native Slib indices. Project exceptions can authorize other units or alternative colors."
+  },
+  "codes": {
+    "Q": {
+      "name": "第四系",
+      "color_codes": [
+        "Y55"
+      ],
+      "recommended_rgb": [
+        255,
+        255,
+        115
+      ],
+      "rgb": [
+        [
+          [
+            240,
+            247,
+            74
+          ],
+          [
+            255,
+            255,
+            242
+          ]
+        ]
+      ]
+    },
+    "Qh": {
+      "name": "全新统",
+      "color_codes": [
+        "Y25"
+      ],
+      "recommended_rgb": [
+        255,
+        255,
+        191
+      ],
+      "rgb": [
+        [
+          [
+            247,
+            247,
+            136
+          ],
+          [
+            255,
+            255,
+            242
+          ]
+        ]
+      ]
+    },
+    "Qp": {
+      "name": "更新统",
+      "color_codes": [
+        "Y45K3"
+      ],
+      "recommended_rgb": [
+        247,
+        247,
+        136
+      ],
+      "rgb": [
+        [
+          [
+            240,
+            242,
+            74
+          ],
+          [
+            255,
+            255,
+            166
+          ]
+        ]
+      ]
+    },
+    "N": {
+      "name": "新近系",
+      "color_codes": [
+        "M15Y55"
+      ],
+      "recommended_rgb": [
+        255,
+        217,
+        115
+      ],
+      "rgb": [
+        [
+          [
+            247,
+            217,
+            102
+          ],
+          [
+            255,
+            245,
+            230
+          ]
+        ]
+      ]
+    },
+    "N1": {
+      "name": "中新统",
+      "color_codes": [
+        "M7Y55"
+      ],
+      "recommended_rgb": [
+        255,
+        237,
+        115
+      ],
+      "rgb": [
+        [
+          [
+            247,
+            217,
+            102
+          ],
+          [
+            255,
+            245,
+            230
+          ]
+        ]
+      ]
+    },
+    "N2": {
+      "name": "上新统",
+      "color_codes": [
+        "M5Y30"
+      ],
+      "recommended_rgb": [
+        255,
+        242,
+        179
+      ],
+      "rgb": [
+        [
+          [
+            247,
+            224,
+            102
+          ],
+          [
+            255,
+            245,
+            230
+          ]
+        ]
+      ]
+    },
+    "E": {
+      "name": "古近系",
+      "color_codes": [
+        "M23Y36"
+      ],
+      "recommended_rgb": [
+        255,
+        196,
+        163
+      ],
+      "rgb": [
+        [
+          [
+            255,
+            156,
+            102
+          ],
+          [
+            255,
+            245,
+            230
+          ]
+        ]
+      ]
+    },
+    "K": {
+      "name": "白垩系",
+      "color_codes": [
+        "C45Y100"
+      ],
+      "recommended_rgb": [
+        140,
+        255,
+        0
+      ],
+      "rgb": [
+        [
+          [
+            128,
+            242,
+            0
+          ],
+          [
+            230,
+            255,
+            166
+          ]
+        ]
+      ]
+    },
+    "K1": {
+      "name": "下白垩统",
+      "color_codes": [
+        "C45Y80"
+      ],
+      "recommended_rgb": [
+        140,
+        255,
+        51
+      ],
+      "rgb": [
+        [
+          [
+            128,
+            242,
+            0
+          ],
+          [
+            230,
+            255,
+            166
+          ]
+        ]
+      ]
+    },
+    "K2": {
+      "name": "上白垩统",
+      "color_codes": [
+        "C20Y55"
+      ],
+      "recommended_rgb": [
+        204,
+        255,
+        115
+      ],
+      "rgb": [
+        [
+          [
+            128,
+            242,
+            0
+          ],
+          [
+            230,
+            255,
+            166
+          ]
+        ]
+      ]
+    },
+    "J3": {
+      "name": "上侏罗统",
+      "color_codes": [
+        "C20"
+      ],
+      "recommended_rgb": [
+        204,
+        255,
+        255
+      ],
+      "rgb": [
+        [
+          [
+            153,
+            240,
+            240
+          ],
+          [
+            230,
+            255,
+            255
+          ]
+        ]
+      ]
+    },
+    "γ": {
+      "name": "花岗岩",
+      "color_basis": "Refer to age-specific acid intrusive rock entries in table 6."
+    },
+    "Kγ": {
+      "name": "白垩纪花岗岩示例",
+      "color_codes": [
+        "M75Y75"
+      ],
+      "recommended_rgb": [
+        255,
+        64,
+        64
+      ],
+      "rgb": [
+        [
+          [
+            255,
+            38,
+            51
+          ],
+          [
+            255,
+            153,
+            230
+          ]
+        ]
+      ]
+    }
+  },
+  "exceptions": []
+}

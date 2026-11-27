@@ -168,8 +168,15 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
     kind = TYPES.get(Path(name).suffix.lower())
     if kind is None:
         raise BridgeError("INVALID_EXTENSION: WT/WL/WP required")
+    specification = template.get('crs', {})
+    mode = specification.get('crs_delivery_mode')
+    if mode not in (None, 'dual_sidecar'):
+        raise BridgeError('CRS_DELIVERY_MODE: expected dual_sidecar')
+    modern = mode == 'dual_sidecar'
     output = bridge.destination_path(bridge.root / "deliverables/creation" / request_id / name)
     payload = {"format_version":5,"kind":"CREATE", "features":features,"template":template}
+    if modern:
+        payload['operation'] = 'crs.modern_create'
     if sources is not None:
         sources=[{'file':str(Path(item['file']).resolve(strict=True)),'sha256':item['sha256']} for item in sources]
         if not sources or any(sha(Path(item['file']).read_bytes())!=item['sha256'] for item in sources):
@@ -184,7 +191,11 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
             if existing["payload_hash"] != payload_hash:
                 raise BridgeError("REQUEST_ID_CONFLICT")
             return bridge._receipt(existing)
-    crs = explicit_crs(template.get("crs",{}))
+    declared = explicit_crs(specification)
+    if modern and (declared is None or not (declared.is_geographic or declared.is_projected)
+                   or len(declared.axis_info) != 2):
+        raise BridgeError('CRS_SIDECAR_2D_EARTH_CRS_REQUIRED')
+    crs = None if modern else declared
     projection = crs.to_dict() if crs else {}
     unsupported_tm = projection.get("proj") == "tmerc" and any((
         projection.get("k",projection.get("k_0",1)) != 1,
@@ -265,6 +276,8 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
             # unscaled; physical ground units and datum remain in the receipt.
             raw=bytearray(path.read_bytes())
             raw[91:93]=bytes([0,0])
+            if modern:
+                raw[109:111] = b'\0\0'
             struct.pack_into('<d',raw,143,0.0)
             path.write_bytes(raw)
         if any(text is not None for text in texts):
@@ -311,7 +324,7 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
                 raise BridgeError("NATIVE_TEXT_READBACK_MISMATCH")
     receipt = {"id":request_id,"kind":"CREATE","source":str(manifest),"source_sha256":payload_hash,
                "candidate_sha256":sha(blob),"output":str(output),"feature_count":len(mapping),
-               "feature_mapping":mapping,"crs":crs_metadata(template["crs"],crs),"earth_crs_known":crs is not None,
+               "feature_mapping":mapping,"crs":crs_metadata(specification,declared),"earth_crs_known":declared is not None,
                "map_scale":scale,"coordinate_frame":"map","native_type":kind,
                "native_coordinate_representation":"user drawing coordinates; ground reference in receipt" if crs is None else "native earth projection",
                "geometry_readback":"VERIFIED","native_reopen":"NOT_VERIFIED",
@@ -322,6 +335,31 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
     if sources is not None:
         if any(sha(Path(item['file']).read_bytes())!=item['sha256'] for item in sources):raise BridgeError('STALE_SOURCE: native input changed while preparing')
         receipt['sources']=sources
+    if modern:
+        from .artifacts import begin_bundle, fail_bundle, finish_bundle
+        from .crs_contract import make_crs_sidecar, sidecar_path
+        contract = make_crs_sidecar(name, blob, declared)
+        bound_sources = [{'file': str(manifest), 'sha256': payload_hash}, *(sources or [])]
+        stage, previous, fresh = begin_bundle(bridge, payload, request_id, bound_sources, name)
+        if not fresh:
+            return previous
+        try:
+            files = stage / 'files'
+            files.mkdir()
+            vector = files / name
+            vector.write_bytes(blob)
+            sidecar = sidecar_path(vector)
+            sidecar.write_text(json_text(contract), encoding='utf-8')
+            read_native(vector)
+            metadata = {key: value for key, value in receipt.items()
+                        if key not in {'id', 'kind', 'source', 'source_sha256', 'output', 'sources'}}
+            metadata.update(crs_delivery_mode=mode, crs_sidecar=sidecar.name,
+                            native_coordinate_representation='unscaled user drawing; geodetic reference in hash-bound WKT2',
+                            sidecar_sha256=sha(sidecar.read_bytes()))
+            return finish_bundle(bridge, request_id, files, metadata)
+        except Exception as exc:
+            fail_bundle(bridge, request_id, exc)
+            raise
     with bridge.connect() as db:
         db.execute("BEGIN IMMEDIATE")
         existing = db.execute("SELECT * FROM commands WHERE id=?",(request_id,)).fetchone()
@@ -332,3 +370,9 @@ def prepare_creation(bridge: Bridge, features: dict, template: dict, request_id:
         db.execute("INSERT INTO commands VALUES (?,?,?,?,?,?,?,?)",(request_id,payload_hash,"PREPARED",
             str(manifest),encoded,blob,"[]",json_text(receipt)))
     return {**receipt,"state":"PREPARED"}
+
+
+def prepare_modern_crs_creation(bridge, features, template, request_id, sources=None):
+    """Prepare an atomic WT/WL/WP and CRS sidecar using the shared creator."""
+    return prepare_creation(bridge, features, {**template, 'crs': {
+        **template.get('crs', {}), 'crs_delivery_mode': 'dual_sidecar'}}, request_id, sources)

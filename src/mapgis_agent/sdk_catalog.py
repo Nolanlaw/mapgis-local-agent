@@ -8,6 +8,8 @@ import struct
 from .core import BridgeError
 from .raster import file_sha
 
+PROFILE_PATH = Path(__file__).with_name('data') / 'com67-profile.json'
+
 VT_NAMES = {0:'empty',1:'null',2:'int16',3:'int32',4:'float32',5:'float64',6:'currency',7:'date',
     8:'bstr',9:'dispatch',10:'error',11:'boolean',12:'variant',13:'unknown',14:'decimal',
     16:'int8',17:'uint8',18:'uint16',19:'uint32',20:'int64',21:'uint64',22:'int',23:'uint',
@@ -20,7 +22,7 @@ def sdk_profile(root):
     if not config.get('mapgis_installation'):
         raise BridgeError('SDK_INSTALLATION_NOT_CONFIGURED')
     program=Path(config['mapgis_installation']).resolve()/'program'
-    profile=json.loads(Path(__file__).with_name('data').joinpath('com67-profile.json').read_text(encoding='utf8'))
+    profile=json.loads(PROFILE_PATH.read_text(encoding='utf8'))
     return program,profile
 
 
@@ -65,7 +67,8 @@ def sdk_describe(root,library=None,class_name=None,interface=None,member=None,of
     if type(offset) is not int or offset<0 or type(limit) is not int or not 1<=limit<=250:
         raise BridgeError('SDK_PAGE: offset>=0, limit1..250')
     program,profile=sdk_profile(root)
-    available=[{'library':p['name'],'sha256':p['sha256'],'classes':len(p['classes'])} for p in profile['files']]
+    available=[{'library':p['name'],'sha256':p['sha256'],'classes':len(p['classes']),
+                'typelib_guid':p['typelib'],'typelib_version':p['version']} for p in profile['files']]
     base={'scope':'Exact installed MapGIS6.7 Automation metadata; source contract, not an executed method.',
         'execution_verified':False,'metadata_host_bits':struct.calcsize('P')*8,'libraries':available,
         'library_hash_status':'Expected exact profile; requesting a library verifies its current binary before and after metadata reading.'}
@@ -78,11 +81,18 @@ def sdk_describe(root,library=None,class_name=None,interface=None,member=None,of
     if not source.is_file() or file_sha(source)!=entry['sha256']:raise BridgeError('SDK_BUILD_MISMATCH: '+entry['name'])
     import pythoncom
     lib=pythoncom.LoadTypeLib(str(source.resolve()))
+    lib_attr=lib.GetLibAttr()
+    if str(lib_attr[0]).casefold()!=entry['typelib'].casefold() or f'{lib_attr[3]}.{lib_attr[4]}'!=entry['version']:
+        raise BridgeError('SDK_TYPELIB_BUILD_MISMATCH: '+entry['name'])
     infos={};types=[]
     for i in range(lib.GetTypeInfoCount()):
         ti=lib.GetTypeInfo(i);attr=ti.GetTypeAttr();name=ti.GetDocumentation(-1)[0]
         infos[name]=ti;types.append({'name':name,'kind':attr.typekind,'guid':str(attr.iid),'methods':attr.cFuncs,'variables':attr.cVars})
-    result=base|{'library':entry['name'],'source':str(source),'source_sha256':entry['sha256'],'typelib_guid':entry['typelib']}
+    if {t['name']:t['guid'].casefold() for t in types if t['kind']==pythoncom.TKIND_COCLASS} != {
+            cls['name']:cls['clsid'].casefold() for cls in entry['classes']}:
+        raise BridgeError('SDK_TYPELIB_CLASS_MISMATCH: '+entry['name'])
+    result=base|{'library':entry['name'],'source':str(source),'source_sha256':entry['sha256'],
+                 'typelib_guid':entry['typelib'],'typelib_version':entry['version']}
     if class_name is None and interface is None:
         selected=types[offset:offset+limit]
         result.update(types=selected,total=len(types),next_offset=offset+len(selected) if offset+len(selected)<len(types) else None)

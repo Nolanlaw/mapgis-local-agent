@@ -18,7 +18,7 @@ from .core import BridgeError,json_text
 
 def _remove_link(alias:Path,target:Path):
     if not os.path.lexists(alias):return
-    if alias.parent!=Path(tempfile.gettempdir()).resolve() or not alias.name.startswith('mg6-'):
+    if alias.parent!=Path(tempfile.gettempdir()).resolve() or not alias.name.startswith(('mg6_','mg6-')):
         raise BridgeError('NATIVE_ALIAS_IDENTITY')
     if not alias.is_junction() or not os.path.samefile(alias,target):raise BridgeError('NATIVE_ALIAS_TARGET_CHANGED')
     os.rmdir(alias)  # Junction only; no recursive delete and no target traversal.
@@ -27,7 +27,8 @@ def _remove_link(alias:Path,target:Path):
 class NativePathAlias:
     def __init__(self,folder:Path,record_folder:Path|None=None):
         self.target=folder.resolve(strict=True)
-        self.path=Path(tempfile.gettempdir()).resolve()/('mg6-'+uuid.uuid4().hex[:12])
+        # No hyphen: MapGIS 属性管理 export sends "CREATE TABLE <unbracketed path>" and Jet rejects '-'.
+        self.path=Path(tempfile.gettempdir()).resolve()/('mg6_'+uuid.uuid4().hex[:12])
         # Read-only input folders and artifact member sets must not receive
         # control records. Their caller supplies its separate diagnostic folder.
         records=(self.target if record_folder is None else Path(record_folder).resolve(strict=True))/'native-path-aliases'
@@ -67,7 +68,7 @@ class NativePathAlias:
 def cleanup_aliases(folder:Path):
     target=folder.resolve(strict=True);records=target/'native-path-aliases'
     if not records.is_dir():return
-    for record in records.glob('mg6-*.json'):
+    for record in records.glob('mg6[_-]*.json'):
         data=json.loads(record.read_text(encoding='utf8'))
         if data['state']=='CLOSED':continue
         if Path(data['target']).resolve(strict=True)!=target or Path(data['alias']).name!=record.stem:raise BridgeError('NATIVE_ALIAS_IDENTITY')

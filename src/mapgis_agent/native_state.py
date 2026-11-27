@@ -19,17 +19,16 @@ import struct
 
 import psutil
 
+from .abi_profiles import default_profile
+
 
 class NativeStateError(RuntimeError):
     pass
 
 
-PROFILE = {
-    'mdiedit6x.exe': '34e34d198cce7a10bfa16ddf11e74dbd6afb85d68ac0a8e7f8561a136d052504',
-    'maped6x.dll': 'bd627edec5ac0c1940854596f769bffc98601fd22f2f2f728b0766a6e48b2478',
-    'mapprj60.dll': 'faeeddbe9d4190f6b3645bfb0610a60bd68a6724f03d1e638932939f083f3291',
-    'bas60.dll': '680029d3ed7a04338a6799f1e16cab30d6e421d13e3d8c66bbeccb057a50ee24',
-}
+_ABI = default_profile()
+PROFILE = dict(_ABI['modules'])
+_LAYOUT = _ABI['layout']
 ENTITIES = {0: 'LINE', 1: 'POINT', 2: 'POLYGON', 4: 'ARC'}
 
 
@@ -38,17 +37,19 @@ def _string(data: bytes) -> str:
 
 
 def _project_once(read, address: int) -> dict:
-    prefix = read(address, 0x649)
-    project = struct.unpack_from('<I', prefix, 0x645)[0]
-    count, pool = struct.unpack_from('<iI', prefix, 0x175)
+    view_abi, project_abi, layer_abi = (_LAYOUT[key] for key in ('view', 'project', 'layer'))
+    prefix = read(address, view_abi['bytes'])
+    project = struct.unpack_from('<I', prefix, view_abi['project_pointer'])[0]
+    count, pool = struct.unpack_from('<iI', prefix, view_abi['selection_header'])
     if not project or not 0 <= count <= 100000 or (count and not pool):
         raise NativeStateError('Invalid native project or selection header')
-    header = read(project, 0xB37)
-    full_path = _string(header[0x3E0:0x4E0])
-    name = _string(header[0x5E4:0x6E4])
-    modified = struct.unpack_from('<h', header, 0xA)[0]
-    total = struct.unpack_from('<h', header, 0x6E6)[0]
-    node = struct.unpack_from('<I', header, 0xB33)[0]
+    header = read(project, project_abi['bytes'])
+    path_offset, name_offset = (project_abi[key] for key in ('path', 'name'))
+    full_path = _string(header[path_offset:path_offset+project_abi['string_bytes']])
+    name = _string(header[name_offset:name_offset+project_abi['string_bytes']])
+    modified = struct.unpack_from('<h', header, project_abi['modified'])[0]
+    total = struct.unpack_from('<h', header, project_abi['layer_count'])[0]
+    node = struct.unpack_from('<I', header, project_abi['layer_head'])[0]
     if not name or not 0 <= total <= 4096:
         raise NativeStateError('Invalid native project name or item count')
     layers, visited = [], set()
@@ -56,15 +57,16 @@ def _project_once(read, address: int) -> dict:
         if not node or node in visited:
             raise NativeStateError('Invalid native project item chain')
         visited.add(node)
-        item = read(node, 0x19A)
-        layers.append({'index': index, 'path': _string(item[6:262]),
-                       'native_type': item[4], 'native_state': item[5],
-                       'area': struct.unpack_from('<h', item, 0x194)[0],
+        item = read(node, layer_abi['bytes'])
+        path_offset = layer_abi['path']
+        layers.append({'index': index, 'path': _string(item[path_offset:path_offset+layer_abi['path_bytes']]),
+                       'native_type': item[layer_abi['type']], 'native_state': item[layer_abi['state']],
+                       'area': struct.unpack_from('<h', item, layer_abi['area'])[0],
                        'address': hex(node)})
-        node = struct.unpack_from('<I', item, 0x196)[0]
+        node = struct.unpack_from('<I', item, layer_abi['next'])[0]
     if node:
         raise NativeStateError('Native project item count and chain disagree')
-    data = read(pool, count * 8) if count else b''
+    data = read(pool, count * view_abi['selection_record_bytes']) if count else b''
     selection = []
     for area, entity, record in struct.iter_unpack('<hhi', data):
         if entity not in ENTITIES or record <= 0 or area <= 0:
@@ -92,22 +94,25 @@ def read_project_view(read, address: int) -> dict:
 
 def read_workspaces(read, bas_base: int) -> dict[int, dict]:
     """BAS60 93/87: list and dirty flag; 175/176/177: live entity counts."""
+    workspace_abi = _LAYOUT['workspace']
+    address = bas_base + workspace_abi['head_rva']
+
     def once():
-        head = struct.unpack('<I', read(bas_base + 0x8D928, 4))[0]
+        head = struct.unpack('<I', read(address, 4))[0]
         node, seen, rows, count_data = head, set(), {}, {}
         while node:
             if node in seen or len(seen) >= 4096:
                 raise NativeStateError('Invalid native workspace chain')
             seen.add(node)
-            area = struct.unpack('<h', read(node, 2))[0]
-            following = struct.unpack('<I', read(node + 8, 4))[0]
-            flags = read(node + 0xEB7, 1)[0]
+            area = struct.unpack('<h', read(node + workspace_abi['area'], 2))[0]
+            following = struct.unpack('<I', read(node + workspace_abi['next'], 4))[0]
+            flags = read(node + workspace_abi['flags'], 1)[0]
             if area <= 0 or area in rows:
                 raise NativeStateError('Invalid or duplicated native workspace handle')
             rows[area] = {'address': hex(node), 'native_flags': flags, 'modified': bool(flags & 1)}
-            references, owner = struct.unpack('<ih', read(node + 0xC, 6))
-            external = struct.unpack('<I', read(node + 0x143, 4))[0]
-            layout = read(node + 0xACD, 29)
+            references, owner = struct.unpack('<ih', read(node + workspace_abi['references_owner'], 6))
+            external = struct.unpack('<I', read(node + workspace_abi['external'], 4))[0]
+            layout = read(node + workspace_abi['layout'], workspace_abi['layout_bytes'])
             count_data[area] = (owner if references > 0 and owner > 0 else None, external, layout)
             node = following
         for area, row in rows.items():
@@ -122,14 +127,14 @@ def read_workspaces(read, bas_base: int) -> dict[int, dict]:
             if external:
                 row['counts_status'] = 'EXTERNAL_STORAGE'
                 continue
-            kind = layout[0]
+            kind = layout[workspace_abi['type']]
             if kind not in (0, 1, 2):
                 row['counts_status'] = 'UNSUPPORTED_WORKSPACE_TYPE'
                 continue
             counts = {}
-            entities = [('POINT' if kind == 1 else 'ARC' if kind == 2 else 'LINE', 5)]
+            entities = [('POINT' if kind == 1 else 'ARC' if kind == 2 else 'LINE', workspace_abi['first_counts'])]
             if kind == 2:
-                entities.append(('REGION', 21))
+                entities.append(('REGION', workspace_abi['region_counts']))
             for entity, offset in entities:
                 active, slots = struct.unpack_from('<ii', layout, offset)
                 if active == slots == 0:
@@ -140,7 +145,7 @@ def read_workspaces(read, bas_base: int) -> dict[int, dict]:
             else:
                 row['counts'] = counts
             row['counts_status'] = 'OBSERVED' if row['counts'] is not None else 'NOT_INITIALISED'
-        if struct.unpack('<I', read(bas_base + 0x8D928, 4))[0] != head:
+        if struct.unpack('<I', read(address, 4))[0] != head:
             raise NativeStateError('Workspace list changed during snapshot')
         return rows
     first = once()
@@ -253,16 +258,19 @@ def live_state(root: str | Path, pid: int) -> dict:
     memory = _ProcessMemory(pid)
     try:
         modules = memory.modules()
-        image, editor, project, bas = [modules[n]['base'] for n in PROFILE]
-        checks = [(editor + 0x25720, bytes.fromhex('8b8145060000c3')),
-                  (project + 0x8540, bytes.fromhex('668b410ac3')),
-                  (image + 0xAF1E, b'\xc7\x06' + struct.pack('<I', image + 0x210F8)),
-                  (bas + 0x1AE23, bytes.fromhex('8a80b70e00002401'))]
+        image, bas = (modules[key]['base'] for key in ('mdiedit6x.exe', 'bas60.dll'))
+        vtable = image + _LAYOUT['view']['vtable_rva']
+        checks = []
+        for guard in _ABI['guards']:
+            code = bytes.fromhex(guard['hex'])
+            if guard.get('append_relocated_vtable'):
+                code += struct.pack('<I', vtable)
+            checks.append((modules[guard['module']]['base'] + guard['rva'], code))
         if any(memory.read(address, len(code)) != code for address, code in checks):
             raise NativeStateError('Loaded native code differs from the verified profile')
         workspaces = read_workspaces(memory.read, bas)
         views, rejected = [], []
-        for address in memory.find_views(image + 0x210F8):
+        for address in memory.find_views(vtable):
             try:
                 view = read_project_view(memory.read, address)
                 for layer in view['layers']:

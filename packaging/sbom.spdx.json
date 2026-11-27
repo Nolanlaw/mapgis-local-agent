@@ -1,0 +1,1825 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "MapGIS Local Agent 3.0.0 full",
+  "documentNamespace": "https://github.com/Nolanlaw/mapgis-local-agent/spdx/3.0.0/88d0f29b-15d2-4df6-9bb2-2c3d19c449e2",
+  "creationInfo": {
+    "created": "2026-11-27T05:26:41Z",
+    "creators": [
+      "Tool: mapgis-agent-sbom"
+    ]
+  },
+  "documentDescribes": [
+    "SPDXRef-MapGIS-Local-Agent"
+  ],
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-MapGIS-Local-Agent",
+      "name": "mapgis-local-agent",
+      "downloadLocation": "https://github.com/Nolanlaw/mapgis-local-agent",
+      "filesAnalyzed": false,
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "LICENSE and NOTICE.md",
+      "versionInfo": "3.0.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/mapgis-local-agent@3.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-affine",
+      "name": "affine",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "3.0.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/affine@3.0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-annotated-types",
+      "name": "annotated-types",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "0.8.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/annotated-types@0.8.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-anyio",
+      "name": "anyio",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "4.15.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/anyio@4.15.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-attrs",
+      "name": "attrs",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "26.1.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/attrs@26.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-certifi",
+      "name": "certifi",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MPL-2.0",
+      "licenseConcluded": "MPL-2.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "2026.10.23",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/certifi@2026.10.23"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-cffi",
+      "name": "cffi",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT-0",
+      "licenseConcluded": "MIT-0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2.1.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/cffi@2.1.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-click",
+      "name": "click",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "8.5.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/click@8.5.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-click-plugins",
+      "name": "click-plugins",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License file: click_plugins-1.1.1.2.dist-info/licenses/LICENSE.txt",
+      "versionInfo": "1.1.1.2",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/click-plugins@1.1.1.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-cligj",
+      "name": "cligj",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License file: cligj-0.7.2.dist-info/LICENSE",
+      "versionInfo": "0.7.2",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/cligj@0.7.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-colorama",
+      "name": "colorama",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License file: colorama-0.4.6.dist-info/licenses/LICENSE.txt",
+      "versionInfo": "0.4.6",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/colorama@0.4.6"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-contourpy",
+      "name": "contourpy",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "1.3.3",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/contourpy@1.3.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-cryptography",
+      "name": "cryptography",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "Apache-2.0 OR BSD-3-Clause",
+      "licenseConcluded": "Apache-2.0 OR BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "50.0.2",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/cryptography@50.0.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-et-xmlfile",
+      "name": "et_xmlfile",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "2.0.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/et-xmlfile@2.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-ezdxf",
+      "name": "ezdxf",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "Classifier: METADATA Classifier MIT License",
+      "versionInfo": "1.4.5",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/ezdxf@1.4.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-fonttools",
+      "name": "fonttools",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "4.68.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/fonttools@4.68.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-geopandas",
+      "name": "geopandas",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "1.2.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/geopandas@1.2.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-h11",
+      "name": "h11",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "0.16.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/h11@0.16.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-httpcore",
+      "name": "httpcore",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "1.0.9",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/httpcore@1.0.9"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-httpx",
+      "name": "httpx",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "0.28.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/httpx@0.28.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-httpx-sse",
+      "name": "httpx-sse",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "0.4.3",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/httpx-sse@0.4.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-idna",
+      "name": "idna",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "3.20",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/idna@3.20"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-iniconfig",
+      "name": "iniconfig",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2.3.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/iniconfig@2.3.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-jsonschema",
+      "name": "jsonschema",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "4.26.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/jsonschema@4.26.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-jsonschema-specifications",
+      "name": "jsonschema-specifications",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2025.9.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/jsonschema-specifications@2025.9.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-llvmlite",
+      "name": "llvmlite",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-2-Clause AND Apache-2.0 WITH LLVM-exception",
+      "licenseConcluded": "BSD-2-Clause AND Apache-2.0 WITH LLVM-exception",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "0.50.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/llvmlite@0.50.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-mapgis2shp",
+      "name": "mapgis2shp",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "2.6.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/mapgis2shp@2.6.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-mcp",
+      "name": "mcp",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "1.30.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/mcp@1.30.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-networkx",
+      "name": "networkx",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License file: networkx-3.5.dist-info/licenses/LICENSE.txt",
+      "versionInfo": "3.5",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/networkx@3.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-numba",
+      "name": "numba",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-2-Clause",
+      "licenseConcluded": "BSD-2-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License file: numba-0.68.1.dist-info/licenses/LICENSE",
+      "versionInfo": "0.68.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/numba@0.68.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-numpy",
+      "name": "numpy",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "licenseConcluded": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2.5.4",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/numpy@2.5.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-opencv-python-headless",
+      "name": "opencv-python-headless",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License file: opencv_python_headless-4.13.0.92.dist-info/LICENSE.txt",
+      "versionInfo": "4.13.0.92",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/opencv-python-headless@4.13.0.92"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-openpyxl",
+      "name": "openpyxl",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "3.1.5",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/openpyxl@3.1.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-packaging",
+      "name": "packaging",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "Apache-2.0 OR BSD-2-Clause",
+      "licenseConcluded": "Apache-2.0 OR BSD-2-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "26.3",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/packaging@26.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pandas",
+      "name": "pandas",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "3.1.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pandas@3.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pluggy",
+      "name": "pluggy",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "1.7.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pluggy@1.7.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-psutil",
+      "name": "psutil",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "7.2.2",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/psutil@7.2.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pycparser",
+      "name": "pycparser",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "3.12",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pycparser@3.12"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pydantic",
+      "name": "pydantic",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2.14.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pydantic@2.14.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pydantic-core",
+      "name": "pydantic_core",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2.50.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pydantic-core@2.50.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pydantic-settings",
+      "name": "pydantic-settings",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2.16.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pydantic-settings@2.16.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pyflwdir",
+      "name": "pyflwdir",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "Classifier: METADATA Classifier MIT License",
+      "versionInfo": "0.5.12",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pyflwdir@0.5.12"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pygments",
+      "name": "Pygments",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-2-Clause",
+      "licenseConcluded": "BSD-2-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2.21.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pygments@2.21.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pyjwt",
+      "name": "PyJWT",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2.15.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pyjwt@2.15.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pyogrio",
+      "name": "pyogrio",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "0.13.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pyogrio@0.13.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pyparsing",
+      "name": "pyparsing",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "3.3.3",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pyparsing@3.3.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pyproj",
+      "name": "pyproj",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "3.8.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pyproj@3.8.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pytest",
+      "name": "pytest",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "9.1.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pytest@9.1.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-python-dateutil",
+      "name": "python-dateutil",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause AND (Apache-2.0 OR BSD-3-Clause)",
+      "licenseConcluded": "BSD-3-Clause AND (Apache-2.0 OR BSD-3-Clause)",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License file: python_dateutil-3.0.0.dist-info/licenses/LICENSE",
+      "versionInfo": "3.0.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/python-dateutil@3.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-python-dotenv",
+      "name": "python-dotenv",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "1.2.4",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/python-dotenv@1.2.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-python-multipart",
+      "name": "python-multipart",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "0.0.32",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/python-multipart@0.0.32"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pyvips",
+      "name": "pyvips",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "3.0.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pyvips@3.0.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pyvips-binary",
+      "name": "pyvips-binary",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "LGPL-3.0-or-later",
+      "licenseConcluded": "LGPL-3.0-or-later",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "8.18.7",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pyvips-binary@8.18.7"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-pywin32",
+      "name": "pywin32",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "Verified name and version: pywin32-312.dist-info/licenses/win32/License.txt; also see com/License.txt and component notices",
+      "versionInfo": "312",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pywin32@312"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-rasterio",
+      "name": "rasterio",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License file: rasterio-1.4.4.dist-info/licenses/LICENSE.txt",
+      "versionInfo": "1.4.4",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/rasterio@1.4.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-referencing",
+      "name": "referencing",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "0.37.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/referencing@0.37.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-rpds-py",
+      "name": "rpds-py",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2026.9.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/rpds-py@2026.9.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-scipy",
+      "name": "scipy",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "1.16.2",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/scipy@1.16.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-shapely",
+      "name": "shapely",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "2.2.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/shapely@2.2.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-six",
+      "name": "six",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "1.17.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/six@1.17.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-sse-starlette",
+      "name": "sse-starlette",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "3.6.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/sse-starlette@3.6.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-starlette",
+      "name": "starlette",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "1.10.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/starlette@1.10.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-typing-extensions",
+      "name": "typing_extensions",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "PSF-2.0",
+      "licenseConcluded": "PSF-2.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "4.16.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/typing-extensions@4.16.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-typing-inspection",
+      "name": "typing-inspection",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "0.4.4",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/typing-inspection@0.4.4"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-tzdata",
+      "name": "tzdata",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License: METADATA License",
+      "versionInfo": "2026.5",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/tzdata@2026.5"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyPI-uvicorn",
+      "name": "uvicorn",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseDeclared": "BSD-3-Clause",
+      "licenseConcluded": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "License-Expression: METADATA License-Expression",
+      "versionInfo": "0.54.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/uvicorn@0.54.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Vendor-mapgis2shp",
+      "name": "mapgis2shp (vendored)",
+      "downloadLocation": "https://github.com/leecugb/mapgis2shp/tree/2acf993e81a1d8e1984f110aff6725672ac09149",
+      "filesAnalyzed": false,
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "vendor/mapgis2shp/LICENSE and AGENT_PATCH.md",
+      "versionInfo": "2.6.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Vendor-geoscan",
+      "name": "GeoScan",
+      "downloadLocation": "https://github.com/keros68/geoscan/tree/6a5aa66192f17fd1d1aeb602f410aebff4d8bc92",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "vendor/geoscan/LICENSE and SOURCE.json",
+      "versionInfo": "6a5aa66192f17fd1d1aeb602f410aebff4d8bc92"
+    },
+    {
+      "SPDXID": "SPDXRef-Vendor-stratigraphic-amenity",
+      "name": "Stratigraphic Amenity",
+      "downloadLocation": "https://github.com/EigenformAI/stratigraphic-amenity/tree/a389c0a299c4ee1007b2438d88d96093a3fbb994",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "vendor/stratigraphic-amenity/LICENSE and SOURCE.json",
+      "versionInfo": "a389c0a299c4ee1007b2438d88d96093a3fbb994"
+    },
+    {
+      "SPDXID": "SPDXRef-Vendor-cdt",
+      "name": "CDT",
+      "downloadLocation": "https://github.com/artem-ogre/CDT/tree/53eff288a4e77ad1c0afe1a10f60bd2b57f877b8",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MPL-2.0 AND BSD-3-Clause AND (Apache-2.0 WITH LLVM-exception)",
+      "licenseConcluded": "MPL-2.0 AND BSD-3-Clause AND (Apache-2.0 WITH LLVM-exception)",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "vendor/cdt/SOURCE.json, CDT/LICENSE, CDT/LICENSE-predicates.txt and CDT/LICENSE-LLVM.txt",
+      "versionInfo": "2.0.1"
+    },
+    {
+      "SPDXID": "SPDXRef-Source-winhlp",
+      "name": "winhlp",
+      "downloadLocation": "https://github.com/bitplane/winhlp/tree/cb2661ef85693799641cf7ab258e7a4074732568",
+      "filesAnalyzed": false,
+      "licenseDeclared": "GPL-2.0-only",
+      "licenseConcluded": "GPL-2.0-only",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "third_party/winhlp/LICENSE.md, README.md and NOTICE.md; separate help-indexing subprocess",
+      "versionInfo": "0.4.3"
+    },
+    {
+      "SPDXID": "SPDXRef-Source-gdal-los",
+      "name": "GDAL LOS (alg/los.cpp)",
+      "downloadLocation": "https://github.com/OSGeo/gdal/blob/130cb4675a0b42bd32acad56e57022cca44fc008/alg/los.cpp",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "third_party/gdal_los/SOURCE.json and los.cpp",
+      "versionInfo": "3.13.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Source-hydrology",
+      "name": "PyFlwDir hydrology provenance",
+      "downloadLocation": "https://github.com/Deltares/pyflwdir/tree/v0.5.12",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "third_party/hydrology/SOURCE.json; Numba and llvmlite have separate distribution records",
+      "versionInfo": "0.5.12"
+    },
+    {
+      "SPDXID": "SPDXRef-Vendor-ovobj-grids",
+      "name": "ovobj-converter grid kernel",
+      "downloadLocation": "https://github.com/good9527/ovobj-converter/tree/ef5a338f7c45d22c48c841bff8ae059cf75a1cd9",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "src/mapgis_agent/_vendor/ovobj-grids.LICENSE and PATCH.md",
+      "versionInfo": "ef5a338f7c45d22c48c841bff8ae059cf75a1cd9"
+    },
+    {
+      "SPDXID": "SPDXRef-Vendor-wellpathpy",
+      "name": "wellpathpy (vendored)",
+      "downloadLocation": "https://github.com/Zabamund/wellpathpy/tree/ccbb7cd803485a74d2de83ef4dd5912bb7f9c2bd",
+      "filesAnalyzed": false,
+      "licenseDeclared": "LGPL-3.0-only",
+      "licenseConcluded": "LGPL-3.0-only",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "src/mapgis_agent/_vendor/wellpathpy/SOURCE.json and LICENSE.LGPL3",
+      "versionInfo": "0.5.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Runtime-CPython",
+      "name": "CPython (portable build)",
+      "downloadLocation": "https://github.com/astral-sh/python-build-standalone/releases/tag/20261026",
+      "filesAnalyzed": false,
+      "licenseDeclared": "Python-2.0",
+      "licenseConcluded": "Python-2.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "Pinned portable runtime in scripts/package_share.py, with the Python upstream LICENSE",
+      "versionInfo": "3.12.16"
+    },
+    {
+      "SPDXID": "SPDXRef-Runtime-Ghostscript",
+      "name": "Ghostscript",
+      "downloadLocation": "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs10080",
+      "filesAnalyzed": false,
+      "licenseDeclared": "AGPL-3.0-or-later",
+      "licenseConcluded": "AGPL-3.0-or-later",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "Artifex LICENSE and pinned source in scripts/package_share.py; separate CLI subprocess",
+      "versionInfo": "10.08.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Runtime-libvips",
+      "name": "libvips",
+      "downloadLocation": "https://github.com/libvips/libvips/releases/tag/v8.18.7",
+      "filesAnalyzed": false,
+      "licenseDeclared": "LGPL-3.0-or-later",
+      "licenseConcluded": "LGPL-3.0-or-later",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "packaging/native-sources.json and packaging/LIBVIPS-NOTICES.md",
+      "versionInfo": "8.18.7"
+    },
+    {
+      "SPDXID": "SPDXRef-Runtime-GEOS-3.14.1",
+      "name": "GEOS",
+      "downloadLocation": "https://github.com/libgeos/geos/releases/tag/3.14.1",
+      "filesAnalyzed": false,
+      "licenseDeclared": "LGPL-2.1-or-later",
+      "licenseConcluded": "LGPL-2.1-or-later",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "GEOS source pinned in scripts/package_share.py; Pyogrio and Shapely wheel readback",
+      "versionInfo": "3.14.1"
+    },
+    {
+      "SPDXID": "SPDXRef-Runtime-GEOS-3.13.0",
+      "name": "GEOS",
+      "downloadLocation": "https://github.com/libgeos/geos/releases/tag/3.13.0",
+      "filesAnalyzed": false,
+      "licenseDeclared": "LGPL-2.1-or-later",
+      "licenseConcluded": "LGPL-2.1-or-later",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "Rasterio 1.4.4 wheel readback and GEOS source licence",
+      "versionInfo": "3.13.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Runtime-GDAL-Rasterio",
+      "name": "GDAL (Rasterio)",
+      "downloadLocation": "https://github.com/OSGeo/gdal/tree/v3.10.3",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "Rasterio 1.4.4 wheel readback; separate rasterio.libs DLLs",
+      "versionInfo": "3.10.3"
+    },
+    {
+      "SPDXID": "SPDXRef-Runtime-GDAL-Pyogrio",
+      "name": "GDAL (Pyogrio)",
+      "downloadLocation": "https://github.com/OSGeo/gdal/tree/v3.12.4",
+      "filesAnalyzed": false,
+      "licenseDeclared": "MIT",
+      "licenseConcluded": "MIT",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "Pyogrio 0.13.0 wheel readback; separate pyogrio.libs DLLs",
+      "versionInfo": "3.12.4"
+    },
+    {
+      "SPDXID": "SPDXRef-Runtime-OpenCV",
+      "name": "OpenCV",
+      "downloadLocation": "https://github.com/opencv/opencv/tree/4.13.0",
+      "filesAnalyzed": false,
+      "licenseDeclared": "Apache-2.0",
+      "licenseConcluded": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "cv2/LICENSE-3RD-PARTY.txt in opencv-python-headless 4.13.0.92",
+      "versionInfo": "4.13.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Runtime-FFmpeg",
+      "name": "FFmpeg (OpenCV wheel)",
+      "downloadLocation": "https://ffmpeg.org/legal.html",
+      "filesAnalyzed": false,
+      "licenseDeclared": "LGPL-2.1-or-later",
+      "licenseConcluded": "LGPL-2.1-or-later",
+      "copyrightText": "NOASSERTION",
+      "licenseComments": "cv2/LICENSE-3RD-PARTY.txt names the bundled library and LGPL 2.1 terms"
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-affine"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-annotated-types"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-anyio"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-attrs"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-certifi"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-cffi"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-click"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-click-plugins"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-cligj"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-colorama"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-contourpy"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-cryptography"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-et-xmlfile"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-ezdxf"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-fonttools"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-geopandas"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-h11"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-httpcore"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-httpx"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-httpx-sse"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-idna"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-iniconfig"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-jsonschema"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-jsonschema-specifications"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-llvmlite"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-mapgis2shp"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-mcp"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-networkx"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-numba"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-numpy"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-opencv-python-headless"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-openpyxl"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-packaging"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pandas"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pluggy"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-psutil"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pycparser"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pydantic"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pydantic-core"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pydantic-settings"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pyflwdir"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pygments"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pyjwt"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pyogrio"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pyparsing"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pyproj"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pytest"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-python-dateutil"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-python-dotenv"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-python-multipart"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pyvips"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pyvips-binary"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-pywin32"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-rasterio"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-referencing"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-rpds-py"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-scipy"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-shapely"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-six"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-sse-starlette"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-starlette"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-typing-extensions"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-typing-inspection"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-tzdata"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-PyPI-uvicorn"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Vendor-mapgis2shp"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Vendor-geoscan"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Vendor-stratigraphic-amenity"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Vendor-cdt"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Source-winhlp"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Source-gdal-los"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Source-hydrology"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Vendor-ovobj-grids"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Vendor-wellpathpy"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-CPython"
+    },
+    {
+      "spdxElementId": "SPDXRef-MapGIS-Local-Agent",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-Ghostscript"
+    },
+    {
+      "spdxElementId": "SPDXRef-PyPI-pyvips-binary",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-libvips"
+    },
+    {
+      "spdxElementId": "SPDXRef-PyPI-pyogrio",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-GEOS-3.14.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-PyPI-shapely",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-GEOS-3.14.1"
+    },
+    {
+      "spdxElementId": "SPDXRef-PyPI-rasterio",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-GEOS-3.13.0"
+    },
+    {
+      "spdxElementId": "SPDXRef-PyPI-rasterio",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-GDAL-Rasterio"
+    },
+    {
+      "spdxElementId": "SPDXRef-PyPI-pyogrio",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-GDAL-Pyogrio"
+    },
+    {
+      "spdxElementId": "SPDXRef-PyPI-opencv-python-headless",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-OpenCV"
+    },
+    {
+      "spdxElementId": "SPDXRef-PyPI-opencv-python-headless",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-Runtime-FFmpeg"
+    }
+  ]
+}

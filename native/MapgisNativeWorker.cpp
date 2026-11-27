@@ -719,11 +719,13 @@ int project_main(int argc,wchar_t**argv){
 #include "NativeMsd.h"
 #include "NativeCom.h"
 #include "NativeSdk.h"
+#include "NativeL2.h"
 
 int wmain(int argc,wchar_t**argv){
  SetUnhandledExceptionFilter(native_failure);
- try{bind_private_desktop(argc==7&&(!wcscmp(argv[1],L"scene")||!wcscmp(argv[1],L"tin.scene")));}catch(const std::exception&e){fprintf(stderr,"%s\n",e.what());return 1;}
+ try{bind_private_desktop((argc==7&&(!wcscmp(argv[1],L"scene")||!wcscmp(argv[1],L"tin.scene")))||(argc==5&&!wcscmp(argv[1],L"l2")));}catch(const std::exception&e){fprintf(stderr,"%s\n",e.what());return 1;}
  if(argc==5&&wcscmp(argv[1],L"sdk")==0)return native_sdk::run(argv);
+ if(argc==5&&wcscmp(argv[1],L"l2")==0)return native_l2::run(argv);
  if(argc==7&&wcscmp(argv[1],L"tin.scene")==0)return native_tin_scene::run(argv);
  if(argc==7&&wcscmp(argv[1],L"scene")==0)return native_scene::run(argv);
  if(argc==6&&wcscmp(argv[1],L"terrain")==0)return terrain_main(argv);

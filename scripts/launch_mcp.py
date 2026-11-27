@@ -10,9 +10,7 @@ for variable in ('OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS'):
 
 root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(root / "src"))
-from mapgis_agent.server import main
+from mapgis_agent import _mcp_main
 
 if __name__ == "__main__":
-    if "--root" not in sys.argv:
-        sys.argv[1:1] = ["--root", str(root)]
-    main()
+    _mcp_main(default_root=root)

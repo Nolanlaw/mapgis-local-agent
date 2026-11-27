@@ -1,3 +1,10 @@
+## Scope
+
+Apache License 2.0 covers the original project-authored MapGIS MCP connector
+additions. Third-party code, data and binaries retain their respective licences
+and notices as identified in NOTICE.md and THIRD-PARTY.json. This licence grants
+no rights in the separately installed MapGIS product or its proprietary assets.
+
 # 来源与许可
 
 本机连接器增量代码与受控测试位于 `src/mapgis_agent/`、`scripts/`、`tests/`。
@@ -47,3 +54,6 @@ MapGIS 软件、许可程序、课程原件、私有测试输出及本机配置�
 GDAL 通视算法的 Python 适配来自 MIT 许可的 GDAL v3.13.0 `alg/los.cpp`，保留作者 Ryan Friedman 及上游许可。原件、许可证、提交和摘要见 `third_party/gdal_los/`；适配文件为 `src/mapgis_agent/_los.py`，不是本机 GDAL 二进制升级。
 
 D8水文分析使用MIT许可的Deltares PyFlwDir0.5.12，固定Numba0.68.1和llvmlite0.50.0。原始sdist/wheel摘要与五份完整上游许可见`third_party/hydrology/SOURCE.json`及相邻目录；没有修改上游源码或替换原有NumPy/SciPy运行时。
+
+The MCP distribution icon is Google's Material Design `map` icon under Apache-2.0.
+Its upstream source is `google/material-design-icons`, `src/maps/map/materialicons/24px.svg`.

@@ -23,7 +23,7 @@ from .multimedia import project_media_dependencies, copy_media_dependencies
 from .topology import _wp_arc_records, validate_wp_topology
 from .native_paths import NativePathAlias
 from .raster import file_sha
-from .sdk_catalog import sdk_describe
+from .sdk_catalog import PROFILE_PATH, sdk_describe
 
 LIBRARY = 'MapGisBasCom1.DLL'
 VALUE_CLASSES = frozenset({
@@ -45,6 +45,51 @@ AREA_PROPERTIES = frozenset({'type', 'Name', 'Changed', 'Empty', 'LastErrCode',
     'rect', 'count', 'logCount'})
 SAFE_INTERFACES = frozenset('I'+n for n in VALUE_CLASSES | AREA_CLASSES)
 SUPPORTED_VT = {0, 1, 2, 3, 4, 5, 7, 8, 9, 11, 12}
+
+# (readable properties, writable properties, callable methods). Empty entries
+# permit the original factory only. This is independent of discovery metadata.
+LAYER_MEMBERS = ('Describe MinDispRate MaxDispRate Visible Tag ModifyFlag SelectFlag',
+                 'Describe Visible Tag', '')
+LIBRARY_POLICY = {
+    LIBRARY: {
+        'TblArea': ('Name Empty LastErrCode nCount stru', 'Name stru', 'GetDef1 Get1 AppendRcd'),
+        'Record_Head': ('numbfield', '', 'AppendField'),
+        'Field_Head': ('fieldname fieldtype msk_leng', 'fieldname fieldtype msk_leng', ''),
+        'Record': ('count Value', 'Value', 'Append'),
+        'Field': ('ActualSize Value FieldHD', 'Value FieldHD', ''),
+    },
+    'proj60.dll': {
+        'EllipPara': ('CurEllipID', '', 'GetEllipParaById SToDMS SeparateDMS CountDMS1 CountDMSAdd'),
+    },
+    'AttCom.dll': {
+        'LinkAtt': ('linkFldName linkedFldName linkKeyFldType linkedKeyFldType ProcSameFldMethod',
+                    'linkFldName linkedFldName', ''),
+        'UpLoad': ('', '', 'GetUploadErrCode'),
+        'GisObj': ('', '', ''),
+    },
+    'MapGisMapCom.dll': {
+        'Map': ('MapName MapSurroundCount MapLayerCount ModifyFlag', 'MapName', ''),
+        'MapLayout': ('', '', ''), 'MapScaleBar': ('', '', ''), 'MapScaleText': ('', '', ''),
+        'MapNorthArrow': ('', '', ''),
+        'MapLegend': ('MapLegName ModifyFlag', 'MapLegName', ''),
+        'MapPrintParam': ('PageWidth PageHeight TranX TranY ScaleX ScaleY Angle',
+                          'PageWidth PageHeight TranX TranY ScaleX ScaleY Angle', ''),
+    },
+    'MapgisLayerCom.dll': {
+        'GroupLayer': (LAYER_MEMBERS[0]+' Count', LAYER_MEMBERS[1], 'GetSubLayerCount GetSubGroupLayerCount'),
+        'NetLayer': LAYER_MEMBERS, 'VectorLayer': LAYER_MEMBERS,
+        'SelectSet': ('Count Name', 'Name', 'Add RemoveAll'),
+        'SelectItem': ('ItemNo', 'ItemNo', ''),
+    },
+    'MapGisDspCom.dll': {'MapGisDC': ('OriginalDisp', '', '')},
+}
+LIBRARY_NAMES = {name.casefold(): name for name in LIBRARY_POLICY}
+
+
+def _library(value):
+    if not isinstance(value, str) or value.casefold() not in LIBRARY_NAMES:
+        raise BridgeError('SDK_LIBRARY_NOT_IN_EXACT_PROFILE')
+    return LIBRARY_NAMES[value.casefold()]
 
 
 def _id(value):
@@ -99,11 +144,20 @@ def _scalar(vt, value):
     raise BridgeError('SDK_SCALAR_TYPE: vt='+str(vt))
 
 
+def _literal(vt, value):
+    if vt == 12:
+        vt = {type(None): 1, bool: 11, int: 3, float: 5, str: 8}.get(type(value), 12)
+    return str(vt), _scalar(vt, value)
+
+
 def sdk_policy():
     return {'library': LIBRARY, 'value_classes': sorted(VALUE_CLASSES),
         'geometry_workspaces': sorted(AREA_CLASSES),
         'workspace_methods': sorted(AREA_METHODS),
         'workspace_read_properties': sorted(AREA_PROPERTIES),
+        'libraries': {library: {cls: dict(zip(('get', 'put', 'method'), (part.split() for part in rule)))
+                                for cls, rule in classes.items()}
+                      for library, classes in LIBRARY_POLICY.items()},
         'scope': 'Typed original SDK in private process; workspace outputs preserve source attributes and map parameters.',
         'coordinates': 'Original SDK workspace/drawing coordinates, without automatic source-unit conversion. Read GetPos/rect first; use existing higher-level tools for source-unit transforms.',
         'limitations': ['No dialogs, frontend input, database/remote access or physical printing.',
@@ -116,11 +170,13 @@ def sdk_policy():
 class Planner:
     def __init__(self, root, parameters):
         self.root = Path(root)
-        if not isinstance(parameters, dict) or set(parameters) != {'inputs', 'outputs', 'objects', 'steps'}:
+        required = {'inputs', 'outputs', 'objects', 'steps'}
+        if not isinstance(parameters, dict) or not required <= set(parameters) <= required | {'library'}:
             raise BridgeError('SDK_FLOW_PARAMETERS')
         self.parameters = parameters
+        self.library = _library(parameters.get('library', LIBRARY))
         self.inputs, self.outputs, self.objects, self.steps = (parameters[k] for k in ('inputs', 'outputs', 'objects', 'steps'))
-        if not all(isinstance(v, list) for v in (self.inputs, self.outputs, self.objects, self.steps)) or not 1 <= len(self.inputs) <= 20 or len(self.outputs) > 20 or not 1 <= len(self.objects) <= 100 or not 1 <= len(self.steps) <= 1000:
+        if not all(isinstance(v, list) for v in (self.inputs, self.outputs, self.objects, self.steps)) or len(self.inputs) > 20 or len(self.outputs) > 20 or not 1 <= len(self.objects) <= 100 or len(self.steps) > 1000 or (self.inputs and not self.steps):
             raise BridgeError('SDK_FLOW_LIMITS')
         self.sources = {}; self.destinations = {}; self.symbols = {}; self.contracts = {}; self.used_inputs = set(); self.saved_outputs = set()
         for entry in self.inputs:
@@ -142,20 +198,25 @@ class Planner:
             output_names.add(name.casefold()); self.destinations[identity] = entry
         self.lines = ['SDK1']; self.target_sources = {}
         for obj in self.objects:
-            if not isinstance(obj, dict) or set(obj) != {'id', 'class'} or obj['class'] not in VALUE_CLASSES | AREA_CLASSES:
+            if not isinstance(obj, dict) or set(obj) not in ({'id', 'class'}, {'id', 'class', 'library'}):
                 raise BridgeError('SDK_CLASS_NOT_ALLOWED')
-            identity = self.add(obj['id'], {'vt': 9, 'interface': 'I'+obj['class'], 'class': obj['class']})
-            contract = self.contract(obj['class'])
-            self.lines.append('\t'.join(('create', identity, _hex(LIBRARY), _hex(contract['clsid']))))
+            library, cls = _library(obj.get('library', self.library)), obj['class']
+            if not isinstance(cls, str) or (cls not in LIBRARY_POLICY[library] and
+                    (library != LIBRARY or cls not in VALUE_CLASSES | AREA_CLASSES)):
+                raise BridgeError('SDK_CLASS_NOT_ALLOWED')
+            contract = self.contract(library, class_name=cls)
+            identity = self.add(obj['id'], {'vt': 9, 'interface': contract.get('interface', 'I'+cls),
+                                           'class': cls, 'library': library})
+            self.lines.append('\t'.join(('create', identity, _hex(library), _hex(contract['clsid']))))
         for step in self.steps:
             self.step(step)
         if self.used_inputs != set(self.sources) or self.saved_outputs != set(self.destinations):
             raise BridgeError('SDK_UNUSED_INPUT_OR_UNSAVED_OUTPUT')
 
-    def contract(self, class_name=None, interface=None):
-        key = class_name or interface
+    def contract(self, library, class_name=None, interface=None):
+        key = (library, class_name, interface)
         if key not in self.contracts:
-            self.contracts[key] = sdk_describe(self.root, LIBRARY, class_name=class_name, interface=interface, limit=250)
+            self.contracts[key] = sdk_describe(self.root, library, class_name=class_name, interface=interface, limit=250)
             if self.contracts[key]['next_offset'] is not None:
                 raise BridgeError('SDK_CONTRACT_PAGE_REQUIRED')
         return self.contracts[key]
@@ -171,20 +232,28 @@ class Planner:
         if not isinstance(step, dict) or not {'id', 'target', 'member', 'kind'} <= set(step) or set(step) - {'id', 'target', 'member', 'kind', 'arguments', 'expect'}:
             raise BridgeError('SDK_STEP')
         target = self.symbols.get(step['target'])
-        if not target or target.get('vt') != 9 or target.get('interface') not in SAFE_INTERFACES:
+        if not target or target.get('vt') != 9 or not target.get('interface'):
             raise BridgeError('SDK_TARGET_NOT_ALLOWED')
         flags = {'method': 1, 'get': 2, 'put': 4, 'putref': 8}.get(step['kind'])
         if not flags:
             raise BridgeError('SDK_INVOKE_KIND')
         interface, member = target['interface'], step['member']
+        library = target.get('library', LIBRARY)
+        rule = LIBRARY_POLICY[library].get(target.get('class', interface[1:]))
         if not isinstance(member, str):
             raise BridgeError('SDK_MEMBER')
-        if interface in {'I'+n for n in AREA_CLASSES}:
+        if rule is not None:
+            index = {2: 0, 4: 1, 1: 2}.get(flags)
+            if index is None or member not in rule[index].split():
+                raise BridgeError('SDK_MEMBER_NOT_ALLOWED: '+member)
+        elif library != LIBRARY or interface not in SAFE_INTERFACES:
+            raise BridgeError('SDK_TARGET_NOT_ALLOWED')
+        elif interface in {'I'+n for n in AREA_CLASSES}:
             if not ((flags == 1 and member in AREA_METHODS) or (flags == 2 and member in AREA_PROPERTIES)):
                 raise BridgeError('SDK_WORKSPACE_MEMBER_NOT_ALLOWED: '+member)
         elif re.search(r'(?:load|save|file|path|print|dialog|modparam|db|register)', member, re.I):
             raise BridgeError('SDK_VALUE_IO_MEMBER_NOT_ALLOWED: '+member)
-        methods = [m for m in self.contract(interface=interface)['methods'] if m['name'] == member and m['invoke_kind'] == flags]
+        methods = [m for m in self.contract(library, interface=interface)['methods'] if m['name'] == member and m['invoke_kind'] == flags]
         if len(methods) != 1:
             raise BridgeError('SDK_MEMBER_NOT_FOUND: '+member)
         method = methods[0]; params = method['parameters']; arguments = step.get('arguments', [])
@@ -217,10 +286,14 @@ class Planner:
             required = {'IPntArea': '.wt', 'ILinArea': '.wl', 'IRegArea': '.wp'}[interface]
             if suffix != required or (member == 'Save' and Path(output['name']).suffix != required):
                 raise BridgeError('SDK_WORKSPACE_FILE_TYPE')
-        result = _shape(method['return']['type'])
+        result = _shape(method['return']['type']) | {'library': library}
         identity = self.add(step['id'], result)
         self.lines.append('\t'.join(('invoke', identity, _id(step['target']), _hex(member), str(method['member_id']), str(flags), str(len(arguments)), '-')))
-        for p, arg in zip(params, arguments):
+        ellipsoid = library == 'proj60.dll' and interface == 'IEllipPara' and member == 'GetEllipParaById'
+        if ellipsoid and (len(arguments) != 2 or not isinstance(arguments[0], dict) or
+                          type(arguments[0].get('value')) is not int or not 1 <= arguments[0]['value'] <= 50):
+            raise BridgeError('SDK_ELLIPSOID_ID: integer 1..50 required')
+        for index, (p, arg) in enumerate(zip(params, arguments)):
             shape = _shape(p['type']); vt = shape['vt']
             if not isinstance(arg, dict):
                 raise BridgeError('SDK_TYPED_ARGUMENT_REQUIRED')
@@ -229,22 +302,28 @@ class Planner:
             if p['flags'] & 2:
                 if p['flags'] & 1 or set(arg) != {'out'}:
                     raise BridgeError('SDK_OUT_PARAMETER_REQUIRED')
-                self.add(arg['out'], shape)
-                self.lines.append('\t'.join(('out', str(vt), arg['out'])))
+                if ellipsoid and index == 1:
+                    self.add(arg['out'], {'vt': 'real4'})
+                    self.lines.append('\t'.join(('out_real4', arg['out'])))
+                else:
+                    self.add(arg['out'], shape | {'library': library})
+                    self.lines.append('\t'.join(('out', str(vt), arg['out'])))
             elif set(arg) == {'ref'}:
                 previous = self.symbols.get(arg['ref'])
-                if arg['ref'] == identity or not previous or previous['vt'] != vt or (vt == 9 and previous.get('interface') != shape.get('interface')):
+                if arg['ref'] == identity or not previous or (previous['vt'] != vt and
+                        not (vt == 12 and previous['vt'] in SUPPORTED_VT - {9})) or (vt == 9 and
+                        (previous.get('interface') != shape.get('interface') or previous.get('library') != library)):
                     raise BridgeError('SDK_REFERENCE_TYPE')
                 self.lines.append('ref\t'+_id(arg['ref']))
             elif set(arg) == {'value'}:
-                self.lines.append('\t'.join(('value', str(vt), _scalar(vt, arg['value']))))
+                self.lines.append('\t'.join(('value', *_literal(vt, arg['value']))))
             elif member in {'Load', 'Save'} and (set(arg) == {'input'} or set(arg) == {'output'}):
                 self.lines.append('path\t'+next(iter(arg))+'\t'+_id(next(iter(arg.values()))))
             else:
                 raise BridgeError('SDK_ARGUMENT_BINDING')
         expected = True if member in {'Load', 'Save'} else step.get('expect', ...)
         if expected is not ...:
-            self.lines.append('\t'.join(('expect', identity, str(result['vt']), _scalar(result['vt'], expected))))
+            self.lines.append('\t'.join(('expect', identity, *_literal(result['vt'], expected))))
 
     def control(self, input_paths, output_paths):
         lines = []
@@ -299,6 +378,10 @@ def prepare_sdk_flow(bridge: Bridge, parameters: dict, request_id: str):
     for asset in media:
         bridge.owned_path(asset['file'])
         sources.append({'file': asset['file'], 'sha256': asset['sha256']})
+    if not sources:
+        # Inputless calculations bind the exact executable and COM profile as
+        # their provenance. The bundle ledger still has checked sources.
+        sources = [{'file': str(path), 'sha256': file_sha(path)} for path in (executable, PROFILE_PATH)]
     payload = {'operation': 'native.sdk_flow', 'protocol': 1, 'parameters': parameters}
     stage, receipt, fresh = begin_bundle(bridge, payload, request_id, sources, 'sdk-flow.json')
     if not fresh:
@@ -321,7 +404,7 @@ def prepare_sdk_flow(bridge: Bridge, parameters: dict, request_id: str):
             short_outputs = {k: alias.path/v.relative_to(stage) for k, v in output_paths.items()}
             control = stage/'flow.txt'
             control.write_text(planner.control(short_inputs, short_outputs), encoding='ascii', newline='\n')
-            host, events = _run_child([str(executable), 'sdk', str(dll), str(alias.path/runtime.relative_to(stage)), str(alias.path/'flow.txt')], stage, 'sdk-native.json')
+            host, events = _run_child([str(executable), 'sdk', str(dll), str(alias.path/runtime.relative_to(stage)), str(alias.path/'flow.txt')], stage, 'sdk-native.json', guard_process=True)
         values = []
         for event in events:
             if event.get('event') == 'sdk_value':

@@ -1,0 +1,22 @@
+{
+  "project": "OSGeo/gdal",
+  "tag": "v3.13.0",
+  "commit": "130cb4675a0b42bd32acad56e57022cca44fc008",
+  "upstream_source": "https://raw.githubusercontent.com/OSGeo/gdal/130cb4675a0b42bd32acad56e57022cca44fc008/alg/los.cpp",
+  "files": [
+    {
+      "name": "los.cpp",
+      "sha256": "041ed18f3f00cee77267d8979e45d50492e32f3597fe0414150d93c12a07f963",
+      "size": 11480
+    },
+    {
+      "name": "LICENSE.TXT",
+      "sha256": "1dae3468e81d00da56e2936f74d33b8b3ad09d726437f19ce209a5dabea41f77",
+      "size": 21841
+    }
+  ],
+  "license": "MIT for alg/los.cpp",
+  "reused": "src/mapgis_agent/_los.py dominant-axis Bresenham tie rule, axis/diagonal height interpolation, terrain equality fix",
+  "changes": "Python port; complete sample/clearance output and first ordered obstruction rather than callback final hit; added input NoData/units/source identity checks in visibility.py. No installed GDAL/DLL changes.",
+  "author": "Ryan Friedman; upstream surface-equality fix ctoney/PR14237"
+}

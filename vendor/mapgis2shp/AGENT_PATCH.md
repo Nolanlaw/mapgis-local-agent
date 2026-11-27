@@ -44,3 +44,33 @@ WT/WL/WP ranges at1000/50000 through raw sections, actual native open,
 normal save and fresh native reopen. The standard sheet workflow additionally
 checks mixed WT/WL assembly and real native output. Reader-only geometry
 roundtrips had not detected the bad WL drawing ranges.
+
+Also modified on 2026-11-05: `_build_attribute_section`. Bytes 12..15 of an
+attribute section header were written from a fixed per-geometry "type stamp"
+(`_ATTR_TYPE_STAMP`: 621/1011/972). MapGIS actually reads the record-data offset
+from these bytes, and it equals 348 + 39 per field descriptor in 277 of 278
+attribute sections of 154 native course/sample/DTM files checked. Created files
+with any other field count were therefore read misaligned by MapGIS itself:
+attribute browse and the 点对区 overlay copied bytes shifted by
+(stamp - true offset), while the agent's own reader looked correct. The offset is
+now derived from the actual header and descriptors. The `type_stamp` argument
+is retained for call compatibility. `mapgis_agent.attributes` sets the same
+offset when a schema edit changes the field count.
+
+`tests/test_attribute_schema.py::test_attribute_header_records_data_offset`
+checks created and schema-edited WT/WL/WP sections.
+
+Also modified on 2026-11-06: the reader. `Reader._parse` used to read records
+from 348 + 39 per declared field and ignored bytes 12..15, so the sample
+`Ku6_2.wl` (two fields plus a leftover third descriptor, offset 465) read
+garbage, and files from before the writer fix above looked fine to the agent
+while MapGIS misread them. `_attribute_record_origin(head, size)` now returns
+the header offset when it equals the descriptor end or fits the section after
+it. Any other value (the old 621/1011/972 stamps) is treated as stale: records
+are read right after the descriptors, where the old writer put them, and the
+caller is told. `mapgis_agent.core.stale_attribute_headers` turns that into an
+`ATTRIBUTE_HEADER_STALE` warning in inspect, verify_output and native_file_info.
+
+`tests/test_attribute_schema.py` checks `Ku6_2.wl` (when the installation is
+present), a stale-offset copy (read unchanged, flagged, repaired byte-exact by
+`prepare_attribute_schema`) and that fresh writer output is not flagged.

@@ -6,13 +6,57 @@ outside its own latest observation. Existing3BN/3DM tools remain separate.
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 from pathlib import Path, PureWindowsPath
 import re
 import shutil
+import time
+import uuid
 
 from .core import BridgeError
-from .native_ui_core import NativeUIClient, digest, file_sha, save
+from .native_ui_core import NativeUIClient, digest, encoded, file_sha, save
+
+
+class PrivateControlClient(NativeUIClient):
+    """Publish to the existing Windows helper with a non-overwriting rename."""
+
+    def request(self, request_id, action, *, token=None, parameters=None, timeout=12):
+        if not isinstance(request_id, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,99}', request_id):
+            raise ValueError('PRIVATE_UI_REQUEST_ID')
+        body = {'id': request_id, 'action': action, 'token': token, 'parameters': parameters or {}}
+        fingerprint = digest(body)
+        key = hashlib.sha256(request_id.encode()).hexdigest()[:32]
+        folder = self.folder/'requests'
+        path, response = folder/(key+'.json'), folder/(key+'.response.json')
+        if not path.exists():
+            incoming = folder/(key+'.incoming-'+uuid.uuid4().hex)
+            try:
+                with incoming.open('x', encoding='utf-8') as stream:
+                    stream.write(encoded(body))
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                try:
+                    os.rename(incoming, path)  # On Windows rename fails if the destination exists.
+                except FileExistsError:
+                    pass
+            finally:
+                incoming.unlink(missing_ok=True)
+        if json.loads(path.read_text(encoding='utf-8')) != body:
+            raise ValueError('PRIVATE_UI_REQUEST_CONFLICT')
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if response.exists():
+                value = json.loads(response.read_text(encoding='utf-8'))
+                if value['request_sha256'] != fingerprint:
+                    raise ValueError('PRIVATE_UI_RESPONSE_IDENTITY')
+                return value
+            state = self.status()
+            if state.get('state') in {'CLOSED', 'FAILED'}:
+                raise RuntimeError('PRIVATE_UI_ENDED_WITHOUT_REPLY: '+str(state))
+            time.sleep(.05)
+        raise RuntimeError('PRIVATE_UI_REQUEST_PENDING: reconcile '+str(path))
 
 
 def _profile():
@@ -53,10 +97,18 @@ def private_control(bridge, action, module='', session_id='', parameters=None, r
             'enabled': cfg.get('native_general_private_ui') is True,
             'modules': profiles, 'attach_existing_process': False, 'desktop_input_used': False,
             'operations': ['set_text', 'button', 'command', 'set_check', 'select', 'pointer', 'key', 'capture', 'tree_items', 'tree'],
+            'macro_action': 'macro',
             'state_semantics': 'POSTED_NOT_COMPLETION_PROOF is input acceptance only. Observe and independently validate native output.',
             'excluded': ['server-dependent modules', 'system input/clipboard changes', 'arbitrary executable paths', 'unobserved windows/commands'],
             'validation': 'Owned synthetic GUI controls and file output tested. General non-server private UI authorized; per-module execution evidence is recorded separately.'}
     session_id = bridge.request_id(session_id)
+    if action == 'macro':
+        _enabled(bridge.root)
+        if set(parameters)-{'steps', 'artifact_checks', 'timeout_seconds'}:
+            raise BridgeError('UI_MACRO_PARAMETERS')
+        from .ui_macros import VerifiedUIMacroRunner
+        return VerifiedUIMacroRunner(bridge, session_id).run(parameters.get('steps'), parameters.get('artifact_checks', ()),
+                    request_id=request_id, timeout_seconds=parameters.get('timeout_seconds', 4))
     folder = bridge.destination_path(bridge.root/'work/private-controls'/digest(session_id)[:24])
     controller = folder/'controller.json'
     if action == 'open':
@@ -112,7 +164,7 @@ def private_control(bridge, action, module='', session_id='', parameters=None, r
                 bindings[identity] = {'role':'output','relative':str(Path('outputs')/identity/name)}
             save(folder/'bindings.json',{'bindings':bindings,'sources':sources})
             installation = Path(cfg['mapgis_installation'])
-            client = NativeUIClient.start(exe,profile['sha256'],runtime,idle_seconds=parameters.get('idle_seconds',900),
+            client = PrivateControlClient.start(exe,profile['sha256'],runtime,idle_seconds=parameters.get('idle_seconds',900),
                 mapgis_environment={'system_library':str(installation/('SuvSlib' if module=='survey' else 'Slib')),
                     'color_library':str(installation/'CLIB')})
             # Move prepared copies only after the helper has established its own
@@ -128,7 +180,7 @@ def private_control(bridge, action, module='', session_id='', parameters=None, r
         except Exception as exc:
             save(folder/'open-state.json',{'state':'FAILED','error':str(exc)})
             if (runtime/'status.json').is_file():
-                try: NativeUIClient(runtime).close('failed-open-cleanup',discard=True)
+                try: PrivateControlClient(runtime).close('failed-open-cleanup',discard=True)
                 except Exception: pass  # Durable runtime status/identity remain available to reconcile.
             raise
     if not controller.is_file(): raise BridgeError('PRIVATE_CONTROL_SESSION_NOT_FOUND')
@@ -139,7 +191,7 @@ def private_control(bridge, action, module='', session_id='', parameters=None, r
             state = folder/'open-state.json'
             return {'session_id':session_id,'module':record['module'],'status':json.loads(state.read_text(encoding='utf8')) if state.is_file() else {'state':'PREPARING'},'processes_alive':{}}
         raise BridgeError('PRIVATE_CONTROL_NOT_STARTED')
-    client = NativeUIClient(folder/'control')
+    client = PrivateControlClient(folder/'control')
     bindings = json.loads((folder/'bindings.json').read_text(encoding='utf8'))
     if action == 'status':
         status = client.status()

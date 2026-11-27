@@ -49,7 +49,8 @@ def private_com_runtime(program:Path,folder:Path):
 def _table(blob,reader,sections,index=None):
     index=native._ATTR_HEADER_INDEX[reader.shapeType] if index is None else index
     start,size=sections[index]
-    stream=io.BytesIO(blob);count,length,fields=native._read_attribute_header(stream,start);data=stream.tell()
+    count,length,fields=native._read_attribute_header(io.BytesIO(blob),start)
+    data=start+native._attribute_record_origin(blob[start:start+348],size)[0]
     if count<1 or length<1 or data+count*length>start+size:raise BridgeError('SUBSET_ATTRIBUTE_LAYOUT')
     return index,start,data,count,length
 

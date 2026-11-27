@@ -1,0 +1,148 @@
+{
+  "project": "Deltares/pyflwdir",
+  "version": "0.5.12",
+  "upstream": "https://github.com/Deltares/pyflwdir/tree/v0.5.12",
+  "license": "MIT, Copyright Deltares",
+  "reuse": [
+    "dem.fill_depressions",
+    "from_array(d8)",
+    "upstream_area(cell)",
+    "basins",
+    "vectorize"
+  ],
+  "project_changes": "No upstream package files modified; explicit unit/calibration/float32rounding/NoDataboundary/conservation checks, nativeWT/WL/WP/GeoTIFF+atomicledger integration",
+  "licenses": [
+    {
+      "distribution": "pyflwdir-0.5.12",
+      "file": "pyflwdir-0.5.12/LICENSE",
+      "size": 1060,
+      "sha256": "c5e25ded8122aaa072198ccd0ddad7968a5a5f630ad114efba5a5667feef423b"
+    },
+    {
+      "distribution": "numba-0.68.1",
+      "file": "numba-0.68.1/LICENSE",
+      "size": 1310,
+      "sha256": "5f7ae5e48a0a107a9d86a9ef6c18dcce68e55959855d39380050deaea366631c"
+    },
+    {
+      "distribution": "numba-0.68.1",
+      "file": "numba-0.68.1/LICENSES.third-party",
+      "size": 26891,
+      "sha256": "e5ea3f50f1c1aa518a86903b85dfd40c4765589998eb683b9382d111d91bb9ee"
+    },
+    {
+      "distribution": "llvmlite-0.50.0",
+      "file": "llvmlite-0.50.0/LICENSE",
+      "size": 1309,
+      "sha256": "7d6aa93e52a7ae9a995ff6a40c0ea5628311cdf1bd8dcd29c8ce9181f4af3a81"
+    },
+    {
+      "distribution": "llvmlite-0.50.0",
+      "file": "llvmlite-0.50.0/LICENSE.thirdparty",
+      "size": 12786,
+      "sha256": "7b564c7af9ab446d245ba66adc8cda2f61d1d162f842899557499e80b715993a"
+    }
+  ],
+  "downloads": [
+    {
+      "name": "pyflwdir",
+      "version": "0.5.12",
+      "requires_python": ">=3.11",
+      "requires_dist": [
+        "affine",
+        "numba<1.0,>=0.54",
+        "numpy",
+        "scipy",
+        "nbsphinx; extra == \"doc\"",
+        "pydata-sphinx-theme; extra == \"doc\"",
+        "sphinx; extra == \"doc\"",
+        "sphinx_design; extra == \"doc\"",
+        "cartopy>=0.20; extra == \"examples\"",
+        "descartes; extra == \"examples\"",
+        "geopandas>0.8; extra == \"examples\"",
+        "jupyter; extra == \"examples\"",
+        "matplotlib; extra == \"examples\"",
+        "rasterio; extra == \"examples\"",
+        "pandoc; extra == \"examples\"",
+        "pyflwdir[doc,examples,test]; extra == \"full\"",
+        "black[jupyter]; extra == \"test\"",
+        "pre-commit; extra == \"test\"",
+        "pytest>=2.7.3; extra == \"test\"",
+        "pytest-cov; extra == \"test\""
+      ],
+      "files": [
+        {
+          "filename": "pyflwdir-0.5.12-py3-none-any.whl",
+          "url": "https://files.pythonhosted.org/packages/ad/8b/0382a28d88e48b4788bca131c86de9447e6bd34f9bc14e1884917a18786e/pyflwdir-0.5.12-py3-none-any.whl",
+          "sha256": "0e1b292fb6671b32d502f0c1425b5205b4bce73aee9c0f49c8b664accd615438",
+          "size": 66517
+        },
+        {
+          "filename": "pyflwdir-0.5.12.tar.gz",
+          "url": "https://files.pythonhosted.org/packages/8a/4f/745448e062d51fda4f2879ef18a16b1ad7afffc3bab2a5d66dc803353f52/pyflwdir-0.5.12.tar.gz",
+          "sha256": "b7ac69ee90f09626a827a3db3648bf28781400171ec8ed432c46020cf048c32a",
+          "size": 1172720
+        }
+      ]
+    },
+    {
+      "name": "numba",
+      "version": "0.68.1",
+      "requires_python": ">=3.10",
+      "requires_dist": [
+        "llvmlite<0.51,>=0.50.0dev0",
+        "numpy<2.6,>=1.22"
+      ],
+      "files": [
+        {
+          "filename": "numba-0.68.1-cp312-cp312-win_amd64.whl",
+          "url": "https://files.pythonhosted.org/packages/e9/bb/c9b0129a57e82b97befeca60a53289359653eef33dd3bffd840898fa33aa/numba-0.68.1-cp312-cp312-win_amd64.whl",
+          "sha256": "6d115039768cc2eb3cc99b32355ca507e1bbc653eca5492c83ab6399f218df27",
+          "size": 2832823
+        },
+        {
+          "filename": "numba-0.68.1.tar.gz",
+          "url": "https://files.pythonhosted.org/packages/0f/a4/a60b14d955b898ce00d815dfe14435ae3b30c1dd2587aa0a172e92310cf8/numba-0.68.1.tar.gz",
+          "sha256": "9de461812470173a14eeb7e0bbd27c897dffe835402a33861166842fc5f6ea57",
+          "size": 2858572
+        }
+      ]
+    },
+    {
+      "name": "llvmlite",
+      "version": "0.50.0",
+      "requires_python": ">=3.10",
+      "requires_dist": null,
+      "files": [
+        {
+          "filename": "llvmlite-0.50.0-cp312-cp312-win_amd64.whl",
+          "url": "https://files.pythonhosted.org/packages/64/70/f395702c20b514363061055b5bdebe3513e544139e6d412a5c86e8ea0b30/llvmlite-0.50.0-cp312-cp312-win_amd64.whl",
+          "sha256": "c20595cc3a76e3c85140fdafbf9246c732ddf8e0e646ba2f4e4881f87567300d",
+          "size": 41865553
+        },
+        {
+          "filename": "llvmlite-0.50.0.tar.gz",
+          "url": "https://files.pythonhosted.org/packages/11/c5/907cec40688a34eb489cded74d555e1ee4af8cf49d83e03dba2c2d4cfe27/llvmlite-0.50.0.tar.gz",
+          "sha256": "f2a2cd6ec9ffcc1b7147dea0d7a49efebf17a2b434e0c2844fe175999d571eb4",
+          "size": 194522
+        }
+      ]
+    }
+  ],
+  "baseline": {
+    "numpy": "2.5.4",
+    "scipy": "1.16.2",
+    "rasterio": "1.4.4",
+    "affine": "3.0.1"
+  },
+  "installed_versions": {
+    "pyflwdir": "0.5.12",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0"
+  },
+  "startup_note": "Load pyflwdir/scipy.integrate before MCP stdin pump to avoid observed Windows _odepack cold-import stall; no SDK/NumPy/SciPy upgrade",
+  "validation": {
+    "normal": "work/automation-20261030/hydrology-native-v2/evidence/acceptance.json",
+    "recovery": "work/automation-20261030/hydrology-parent-recovery-v2/evidence/acceptance.json"
+  }
+}

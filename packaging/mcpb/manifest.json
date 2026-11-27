@@ -1,0 +1,43 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
+  "manifest_version": "0.4",
+  "name": "mapgis-local-agent",
+  "display_name": "MapGIS Local Agent",
+  "version": "3.0.0",
+  "description": "Local MapGIS file operations, geological map plans, cartographic checks, and GIS interchange.",
+  "long_description": "Launches the hybrid MapGIS MCP surface in the selected local Python environment. Native MapGIS 6.7 operations use an exact-build installation and a package-local configuration in the task directory.",
+  "author": {"name": "MapGIS Local Agent contributors", "url": "https://github.com/Nolanlaw/mapgis-local-agent"},
+  "repository": {"type": "git", "url": "https://github.com/Nolanlaw/mapgis-local-agent"},
+  "homepage": "https://github.com/Nolanlaw/mapgis-local-agent",
+  "documentation": "https://github.com/Nolanlaw/mapgis-local-agent/blob/main/docs/V3-DELIVERY-REPORT.md",
+  "icon": "icon.svg",
+  "license": "Apache-2.0",
+  "compatibility": {"platforms": ["win32"], "runtimes": {"python": ">=3.12"}},
+  "tools_generated": true,
+  "prompts_generated": true,
+  "server": {
+    "type": "python",
+    "entry_point": "scripts/launch_mcp.py",
+    "mcp_config": {
+      "command": "${user_config.python_executable}",
+      "args": ["-s", "-B", "-X", "utf8", "${__dirname}/scripts/launch_mcp.py", "--root", "${user_config.task_root}", "--transport", "stdio"],
+      "env": {"MAPGIS_MCP_SURFACE": "hybrid"}
+    }
+  },
+  "user_config": {
+    "python_executable": {
+      "type": "file",
+      "title": "Local Python executable",
+      "description": "Select Python from the MapGIS Agent checkout environment or the offline share with dependencies installed.",
+      "required": true,
+      "sensitive": false
+    },
+    "task_root": {
+      "type": "directory",
+      "title": "MapGIS task directory",
+      "description": "A writable local task folder. Supply its package-local MapGIS configuration for licensed native operations.",
+      "required": true,
+      "sensitive": false
+    }
+  }
+}

@@ -1,30 +1,39 @@
 from __future__ import annotations
 
+if __name__ == '__main__':
+    # The module entry, source launcher and installed command share the fd guard.
+    from . import _mcp_main
+
+    _mcp_main()
+    raise SystemExit
+
 import os
 # Each idle Windows BLAS pool otherwise commits about 0.6 GiB; NumPy and SciPy
 # each own one. Keep this tool process small and respect explicit caller choices.
 os.environ.setdefault('OPENBLAS_NUM_THREADS','1')
 import argparse
+from functools import cache
+from importlib.util import find_spec
+from ipaddress import IPv6Address, ip_address
 from pathlib import Path
-from typing import Annotated, Literal
+import re
+from typing import Annotated, Collection, Literal
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field, StrictInt, StrictFloat, StrictBool
 
-from .core import Bridge
+from .core import Bridge, BridgeError
 from .deletion import prepare_deletion
 from .environment import capabilities
 from .native_state import live_state
-from .operations import find_operations, describe_operation
+from .operations import add_operation_schema, find_operations, describe_operation
 from .native_help import search_native_help
 from .raster import RasterWorkspace, write_georeferenced_window
 from .creation import prepare_creation
 from .vector import prepare_vector_operation
-from .candidates import extract_candidates, merge_candidate_tiles
 from .features import read_features, prepare_file_operation
 from .comparison import compare_native_files
 from .native_backend import native_file_info, prepare_native_operation, reconcile_native_request
-from .native_plot import prepare_native_plot
 from .workspace import NativeWorkspaces
 from .exchange import query_attributes,prepare_export,prepare_import,vector_source_info
 from .terrain import analyze_terrain,prepare_terrain
@@ -46,20 +55,11 @@ from .spatial import spatial_query,polygon_overlay
 from .table_join import JoinTable,JoinParameters,prepare_table_join
 from .database_sources import DatabaseSource
 from .external_database import DatabaseJoinParameters,WritebackParameters,database_info,prepare_database_join,prepare_database_writeback
-from .grid_analysis import SurfaceParameters,prepare_grid_analysis
-from .visibility import ViewshedParameters,LineOfSightParameters,prepare_viewshed,line_of_sight
-from .hydrology import HydrologyParameters,prepare_hydrology_isolated
-from .native_scene import SceneParameters,prepare_native_scene
-from .tin_scene import TinSceneParameters,prepare_native_tin_scene
 from .tin_flight import TinFlightParameters
-from .tin_lines import TinLineOverlayInput
-from .scene_texture import TextureInput
 from .scene_lines import LineOverlayInput
 from .scene_annotations import AnnotationOverlayInput
 from .scene_regions import RegionOverlayInput
 from .scene_flight import FlightParameters
-from .tin_edit import TinEditParameters
-from .tin_profile import ProfileParameters
 from .spatial_summary import SpatialSource,SummaryParameters,prepare_spatial_summary
 from .raster_processing import ImageParameters,prepare_raster_processing
 from .raster_classification import ClassificationParameters,prepare_raster_classification
@@ -73,7 +73,6 @@ from .sample_numbering import SoilGridParameters,SedimentNumberingParameters,pre
 from .raster_processing import RasterReference
 from .native_msd import MsiSource,MsdParameters,msd_source_info,native_msd_info,prepare_native_msd,prepare_msd_edit
 from pydantic import StrictInt
-from .seed_following import SeedTraceParameters,seed_trace
 from .cad_exchange import DxfSource,DxfExportParameters,DxfImportParameters,dxf_source_info,prepare_dxf_export,prepare_dxf_import
 from .native_com import prepare_native_subset
 from .native_project_parameters import native_project_parameters_info,prepare_project_parameters
@@ -83,13 +82,36 @@ from .volume import (VolumeImportParameters,VolumeGridParameters,VolumeSlicePara
 from .volume_plot import VolumePlotParameters,prepare_volume_plot,reconcile_volume_plot
 
 
-def build_server(root: str | Path) -> FastMCP:
-    bridge = Bridge(root)
-    raster = RasterWorkspace(root)
-    workspaces = NativeWorkspaces(bridge)
-    projects = ProjectWorkspaces(bridge,workspaces)
-    server = FastMCP("MapGIS 6.7 本机原生文件工具")
+def _requires_opencv(*args, **kwargs):
+    raise BridgeError('PROVIDER_UNAVAILABLE: this operation requires OpenCV from the full or scan-cv profile')
 
+
+if find_spec('cv2') is not None:
+    from .candidates import extract_candidates, merge_candidate_tiles
+    from .grid_analysis import SurfaceParameters, prepare_grid_analysis
+    from .hydrology import HydrologyParameters, prepare_hydrology_isolated
+    from .native_plot import prepare_native_plot
+    from .native_scene import SceneParameters, prepare_native_scene
+    from .scene_texture import TextureInput
+    from .seed_following import SeedTraceParameters, seed_trace
+    from .tin_edit import TinEditParameters
+    from .tin_lines import TinLineOverlayInput
+    from .tin_profile import ProfileParameters
+    from .tin_scene import TinSceneParameters, prepare_native_tin_scene
+    from .visibility import ViewshedParameters, LineOfSightParameters, prepare_viewshed, line_of_sight
+else:
+    # Core shares retain tool names and discovery. These modules import cv2,
+    # directly or through grid_analysis, so only the full share has their schemas.
+    SurfaceParameters = HydrologyParameters = SceneParameters = TextureInput = dict
+    SeedTraceParameters = ProfileParameters = TinSceneParameters = dict
+    TinEditParameters = TinLineOverlayInput = dict
+    ViewshedParameters = LineOfSightParameters = dict
+    extract_candidates = merge_candidate_tiles = prepare_grid_analysis = _requires_opencv
+    prepare_hydrology_isolated = prepare_native_plot = prepare_native_scene = _requires_opencv
+    seed_trace = prepare_native_tin_scene = prepare_viewshed = line_of_sight = _requires_opencv
+
+
+def _register_legacy_tools(server, bridge, raster, workspaces, projects):
     @server.tool(annotations={'readOnlyHint':True,'openWorldHint':False})
     def mapgis_volume_source_info(file:str,expected_sha256:str,native_reopen:StrictBool=False,statistics_policy:Literal['strict','report_discrepancies']='strict',encoding_policy:Literal['linear_only','stored','physical']='linear_only')->dict:
         """Inspect MapGIS6.7 count-first XYZV .3bn or linear-axis 3DEM .3dm. Checks dimensions, directory/data offsets, finite scalar values and layer statistics before native access. Returns [nx,ny,nz], XYZ bounds, physical zyx order and hash-bound frame when present; absent CRS/Z direction/value units remain unknown. native_reopen requests a fresh original analysis-program header read on a task copy. It checks all layer dimensions/ranges/means; it is not a claim that every scalar was read through a native numeric API. Sources stay unchanged. Statistics policy defaults strict. Explicit report_discrepancies is3DM-only: keep every finite saved voxel, report saved global/per-layer statistics separately from independently recomputed values, and retain strict byte/dimension/axis/finite guards. Original application header readback verifies declared headers, not voxel-statistic agreement; discrepancy status stays explicit. Source coordinate/value units and CRS remain unspecified without bound metadata. Encoding defaults linear_only, preserving prior strict behaviour. Explicit encoding_policy=stored permits exact saved jointlog10Z/value flag1,1 data; physical individually reconstructs float64 10**savedfloat32logZ/value and recomputes physical statistics, with stored metrics separate. Log0 represents physical1, not missing. Overflow/positive-underflow and unverified mixedflags fail. Unknown CRS/units and prelog quantization remain explicit. This is a read-only policy; production grid/slice/plot still reject log profiles unless an explicit separate transformation is implemented. Native readback verifies stored headers only."""
@@ -810,7 +832,7 @@ def build_server(root: str | Path) -> FastMCP:
                 return result|{'executable_by_mcp':False,'execution_status':'MCP_TOOL_NOT_LOADED',
                     'availability':'RUNTIME_RELOAD_REQUIRED',
                     'resolution':'Use a fresh existing stdio/CLI entry for this source revision; the described tool is not registered in this process.'}
-            result["input_schema"] = tool.inputSchema
+            add_operation_schema(result, tool.inputSchema)
             result["execution_status"] = "MCP_TOOL_AVAILABLE"
         else:
             result["execution_status"] = "HOST_OBSERVATION_REQUIRED"
@@ -974,9 +996,9 @@ def build_server(root: str | Path) -> FastMCP:
         return prepare_deletion(bridge, file, expected_sha256, record_ids, request_id)
 
     @server.tool()
-    def mapgis_apply_patch(request_id: str) -> dict:
+    def mapgis_apply_patch(request_id: str, expected_epoch: StrictInt | None = None) -> dict:
         """Apply a prepared PATCH, CREATE or DELETE to a NEW output branch after source hash recheck. Idempotent; does not overwrite originals or live documents. Reconcile get_request after interruption before retrying."""
-        return bridge.apply(request_id)
+        return bridge.apply(request_id, expected_epoch)
 
     @server.tool()
     def mapgis_get_request(request_id: str) -> dict:
@@ -1003,15 +1025,172 @@ def build_server(root: str | Path) -> FastMCP:
         """Prepare a NEW recovery branch reverting only this request's fields. Uses compatible spans or a guarded mapping of unchanged physical records after native layout changes. Preserves later independent edits; same-field, deleted, renumbered or changed-geometry conflicts fail. Not universal native Undo."""
         return bridge.recover(applied_request, later_file, expected_sha256, request_id)
 
+@cache
+def registered_input_schemas() -> dict[str, dict]:
+    # Registration derives schemas from signatures without opening a project or
+    # calling any backend. Standalone description can use the same schemas.
+    registry = FastMCP("MapGIS schema registry")
+    _register_legacy_tools(registry, None, None, None, None)
+    return {tool.name: tool.parameters for tool in registry._tool_manager.list_tools()}
+
+
+def _legacy_registry(bridge: Bridge, workspaces: NativeWorkspaces) -> FastMCP:
+    from .mcp_surface import complete_annotations
+
+    raster = RasterWorkspace(bridge.root)
+    projects = ProjectWorkspaces(bridge, workspaces)
+    legacy = FastMCP("MapGIS 6.7 本机原生文件工具")
+    _register_legacy_tools(legacy, bridge, raster, workspaces, projects)
+    complete_annotations(legacy)
+    return legacy
+
+
+def build_server(root: str | Path, surface: Literal['legacy', 'compact', 'hybrid'] | None = None) -> FastMCP:
+    from .mcp_surface import (StructuredFastMCP, register_modern_tools,
+                              register_resources_and_prompts, select_surface)
+
+    surface = select_surface(surface)
+    bridge = Bridge(root)
+    legacy = _legacy_registry(bridge, NativeWorkspaces(bridge))
+    if surface == 'legacy':
+        server = legacy
+    else:
+        server = StructuredFastMCP(legacy.name)
+        register_modern_tools(server, legacy, bridge, surface)
+    register_resources_and_prompts(server, legacy, bridge.root, surface)
     return server
 
 
-def main():
+_AUTHORITY = re.compile(r'(\[[0-9a-fA-F:.]+\]|[a-zA-Z0-9.-]+)(?::([0-9]{1,5}))?')
+_HOST_LABEL = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?')
+
+
+def _host_name(value: str) -> str:
+    try:
+        return str(ip_address(value))
+    except ValueError:
+        name = value.lower()
+        if len(name) <= 253 and all(_HOST_LABEL.fullmatch(label) for label in name.split('.')):
+            return name
+        raise ValueError('Invalid HTTP hostname') from None
+
+
+def _loopback(host: str) -> bool:
+    if host == 'localhost':
+        return True
+    try:
+        return ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def validate_streamable_http_config(host: str, allow_non_loopback: bool = False) -> str:
+    """Normalize a bind address and require explicit opt-in outside loopback."""
+    if '%' in host:
+        raise ValueError('HTTP bind addresses must omit interface scope identifiers')
+    if host.startswith('[') and host.endswith(']'):
+        host = str(IPv6Address(host[1:-1]))
+    host = _host_name(host)
+    if not _loopback(host) and not allow_non_loopback:
+        raise ValueError('Streamable HTTP requires a loopback host or --allow-non-loopback')
+    return host
+
+
+def _authority(value: str | None) -> tuple[str, int] | None:
+    match = _AUTHORITY.fullmatch(value or '')
+    if match is None:
+        return None
+    host, port = match.groups()
+    try:
+        name = str(IPv6Address(host[1:-1])) if host.startswith('[') else _host_name(host)
+    except ValueError:
+        return None
+    port = int(port) if port is not None else 80
+    return (name, port) if 0 < port <= 65535 else None
+
+
+def validate_http_request_headers(host_header: str | None, origin_header: str | None,
+                                  allowed_hosts: Collection[str]) -> bool:
+    """Accept an exact HTTP authority and, when supplied, a same-origin browser request."""
+    authority = _authority(host_header)
+    if authority is None or authority not in {_authority(value) for value in allowed_hosts}:
+        return False
+    if origin_header is None:
+        return True
+    return origin_header.startswith('http://') and _authority(origin_header[7:]) == authority
+
+
+def streamable_http_app(server: FastMCP, host: str, port: int, *, allow_non_loopback: bool = False):
+    """Wrap the SDK's HTTP endpoint with exact authority and Origin checks."""
+    from mcp.server.transport_security import TransportSecuritySettings
+    from starlette.responses import PlainTextResponse
+
+    host = validate_streamable_http_config(host, allow_non_loopback)
+    if not 0 < port <= 65535:
+        raise ValueError('HTTP port must be between 1 and 65535')
+    names = {host}
+    if _loopback(host) or host in {'0.0.0.0', '::'}:
+        names.update({'localhost', '127.0.0.1', '::1'})
+    authorities = (f'[{name}]' if ':' in name else name for name in names)
+    allowed_hosts = {f'{authority}:{port}' for authority in authorities}
+    server.settings.json_response = True
+    # The outer ASGI guard also rejects duplicate headers and cross-alias Origins.
+    # The SDK still validates Content-Type and enforces its request body limit.
+    server.settings.transport_security = TransportSecuritySettings(enable_dns_rebinding_protection=False)
+    app = server.streamable_http_app()
+
+    async def guarded(scope, receive, send):
+        if scope['type'] == 'http':
+            hosts = [value.decode('latin-1') for key, value in scope['headers'] if key.lower() == b'host']
+            origins = [value.decode('latin-1') for key, value in scope['headers'] if key.lower() == b'origin']
+            if len(hosts) != 1 or not validate_http_request_headers(hosts[0], None, allowed_hosts):
+                await PlainTextResponse('Invalid Host header', status_code=421)(scope, receive, send)
+                return
+            if origins and (len(origins) != 1 or not validate_http_request_headers(hosts[0], origins[0], allowed_hosts)):
+                await PlainTextResponse('Invalid Origin header', status_code=403)(scope, receive, send)
+                return
+        await app(scope, receive, send)
+
+    return guarded
+
+
+async def _run_guarded_stdio(server, protocol_output):
+    import anyio
+    from mcp.server.stdio import stdio_server
+
+    protocol = server._mcp_server
+    async with stdio_server(stdout=anyio.wrap_file(protocol_output)) as (read, write):
+        await protocol.run(read, write, protocol.create_initialization_options())
+
+
+def main(*, default_root: Path | None = None, protocol_output=None):
+    from .mcp_surface import SURFACES
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--root", type=Path, required=default_root is None, default=default_root)
+    parser.add_argument("--surface", choices=SURFACES)
+    parser.add_argument("--transport", choices=("stdio", "streamable-http"), default="stdio")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--allow-non-loopback", action="store_true")
     args = parser.parse_args()
-    build_server(args.root).run(transport="stdio")
+    if args.transport == 'streamable-http':
+        import uvicorn
 
+        try:
+            host = validate_streamable_http_config(args.host, args.allow_non_loopback)
+        except ValueError as exc:
+            parser.error(str(exc))
+        if not 0 < args.port <= 65535:
+            parser.error('--port must be between 1 and 65535')
+        server = build_server(args.root, surface=args.surface)
+        app = streamable_http_app(server, host, args.port, allow_non_loopback=args.allow_non_loopback)
+        uvicorn.run(app, host=host, port=args.port, proxy_headers=False)
+    else:
+        server = build_server(args.root, surface=args.surface)
+        if protocol_output is None:
+            server.run(transport='stdio')
+        else:
+            import anyio
 
-if __name__ == "__main__":
-    main()
+            anyio.run(_run_guarded_stdio, server, protocol_output)

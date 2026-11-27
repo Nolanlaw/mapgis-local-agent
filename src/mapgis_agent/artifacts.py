@@ -1,24 +1,36 @@
 """Publish multi-file results through the existing request ledger.
 
-Every member is frozen in SQLite before publication. A single directory rename
-publishes the set; reconciliation never reruns the producing algorithm or DLL.
+The ledger binds each member to immutable storage before publication. A single
+directory rename publishes the set. Reconciliation consumes saved bytes only.
 """
 from __future__ import annotations
 
 import json
 import os
-import hashlib
 from pathlib import Path
 
 from .core import Bridge, BridgeError, json_text, sha
+from .object_store import ContentAddressedStore, ObjectStoreError, copy_verified, file_sha256 as _file_sha
 
 
 def _members(db, identity):
-    return db.execute('SELECT rowid,name,digest,length(data) AS size FROM artifact_members WHERE request_id=? ORDER BY name',(identity,)).fetchall()
-
-
-def _file_sha(path):
-    with Path(path).open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
+    tables = {row[0] for row in db.execute(
+        "SELECT name FROM sqlite_schema WHERE type='table' AND name IN ('artifact_members','artifact_member_refs')")}
+    members = {}
+    if 'artifact_members' in tables:
+        for row in db.execute("SELECT rowid,name,digest,length(data) AS size,'sqlite' AS storage "
+                              "FROM artifact_members WHERE request_id=?", (identity,)):
+            members[row['name']] = row
+    if 'artifact_member_refs' in tables:
+        for row in db.execute("SELECT name,digest,size,storage FROM artifact_member_refs WHERE request_id=?",
+                              (identity,)):
+            if row['storage'] != 'cas':
+                raise BridgeError('ARTIFACT_STORAGE_UNSUPPORTED')
+            old = members.get(row['name'])
+            if old is not None and (old['digest'], old['size']) != (row['digest'], row['size']):
+                raise BridgeError('ARTIFACT_MEMBER_CONFLICT')
+            members[row['name']] = row
+    return [members[name] for name in sorted(members)]
 
 
 def _check_source(source):
@@ -107,13 +119,19 @@ def apply_bundle(bridge,db,row):
     for name,path in actual.items():
         if name not in expected or _file_sha(path)!=expected[name]['digest']:
             raise BridgeError('ARTIFACT_PUBLICATION_CONFLICT')
+    store = ContentAddressedStore(bridge.root / 'evidence' / 'objects')
     for member in members:
         target=staging.joinpath(*_member_parts(member['name']))
         if target.exists():continue
         target.parent.mkdir(parents=True,exist_ok=True)
-        with target.open('xb') as stream,db.blobopen('artifact_members','data',member['rowid'],readonly=True) as blob:
-            while chunk:=blob.read(1024*1024):stream.write(chunk)
-            stream.flush();os.fsync(stream.fileno())
+        try:
+            if member['storage'] == 'cas':
+                store.copy_to(member['digest'], target, expected_size=member['size'], scratch=staging.parent)
+            else:
+                with db.blobopen('artifact_members', 'data', member['rowid'], readonly=True) as blob:
+                    copy_verified(blob, target, member['digest'], member['size'], staging.parent)
+        except ObjectStoreError as exc:
+            raise BridgeError(str(exc)) from exc
     if not _tree_matches(staging,members):
         raise BridgeError('INCOMPLETE_ARTIFACT_PUBLICATION: inspect the owned staging directory')
     os.rename(staging,output.parent)
@@ -131,7 +149,7 @@ def begin_bundle(bridge:Bridge,payload:dict,request_id:str,sources:list[dict],pr
     output=bridge.destination_path(bridge.root/'deliverables/artifacts'/request_id/primary_name)
     with bridge.connect() as db:
         db.execute('BEGIN IMMEDIATE')
-        old=db.execute('SELECT * FROM commands WHERE id=?',(request_id,)).fetchone()
+        old=db.execute('SELECT payload_hash,state,receipt FROM commands WHERE id=?',(request_id,)).fetchone()
         if old:
             if old['payload_hash']!=fingerprint:raise BridgeError('REQUEST_ID_CONFLICT')
             return stage,bridge._receipt(old),False
@@ -142,7 +160,6 @@ def begin_bundle(bridge:Bridge,payload:dict,request_id:str,sources:list[dict],pr
         if not sources:raise BridgeError('ARTIFACT_SOURCE_REQUIRED')
         if stage.exists():raise BridgeError('ARTIFACT_STAGE_CONFLICT')
         stage.mkdir(parents=True)
-        db.execute('CREATE TABLE IF NOT EXISTS artifact_members (request_id TEXT NOT NULL,name TEXT NOT NULL,digest TEXT NOT NULL,data BLOB NOT NULL,PRIMARY KEY(request_id,name))')
         receipt={'id':request_id,'kind':'BUNDLE','artifact_type':payload['operation'],'stage':str(stage),
             'output':str(output),'sources':sources,'source_sha256':sources[0]['sha256'],'payload':payload}
         db.execute('INSERT INTO commands VALUES (?,?,?,?,?,?,?,?)',(request_id,fingerprint,'RUNNING',sources[0]['file'],
@@ -153,7 +170,7 @@ def begin_bundle(bridge:Bridge,payload:dict,request_id:str,sources:list[dict],pr
 def finish_bundle(bridge:Bridge,request_id:str,files:Path,metadata:dict)->dict:
     """Freeze a completed staging set, including metadata needed after parent loss."""
     with bridge.connect() as db:
-        row=db.execute('SELECT * FROM commands WHERE id=?',(request_id,)).fetchone()
+        row=db.execute('SELECT state,receipt FROM commands WHERE id=?',(request_id,)).fetchone()
     if row is None:raise BridgeError('Unknown request_id')
     receipt=bridge._receipt(row);stage=bridge.destination_path(receipt['stage'])
     files=bridge.destination_path(files)
@@ -173,42 +190,44 @@ def reconcile_bundle(bridge:Bridge,request_id:str)->dict:
     bridge.request_id(request_id)
     with bridge.connect() as db:
         db.execute('BEGIN IMMEDIATE')
-        row=db.execute('SELECT * FROM commands WHERE id=?',(request_id,)).fetchone()
+        row=db.execute('SELECT id,state,receipt FROM commands WHERE id=?',(request_id,)).fetchone()
         if row is None:raise BridgeError('Unknown request_id')
         receipt=bridge._receipt(row)
         if receipt.get('kind')!='BUNDLE':raise BridgeError('ARTIFACT_REQUEST_REQUIRED')
         if row['state'] not in ('RUNNING','FAILED'):return bundle_status(db,row)
         stage=bridge.destination_path(receipt['stage']);complete=stage/'complete.json'
         if not complete.is_file():raise BridgeError('ARTIFACT_INCOMPLETE: no producing operation was replayed')
-        record=json.loads(complete.read_text(encoding='utf8'));members=record['members'];paths={}
-        _member_directories(member['name'] for member in members)
+        record=json.loads(complete.read_text(encoding='utf8'));members=record['members']
+        names={member['name'] for member in members}
+        directories=_member_directories(member['name'] for member in members)
         for source in receipt['sources']:
             _check_source(source)
-        actual,_=_disk_tree(stage/'files')
-        for member in members:
-            name=member['name']
-            if name in paths:raise BridgeError('ARTIFACT_FILENAME')
-            path=bridge.owned_path((stage/'files').joinpath(*_member_parts(name)))
-            if name not in actual:raise BridgeError('ARTIFACT_CANDIDATE_CHANGED')
-            if _file_sha(path)!=member['sha256']:raise BridgeError('ARTIFACT_CANDIDATE_CHANGED')
-            paths[name]=path
+        actual,actual_directories=_disk_tree(stage/'files')
+        if set(actual)!=names or actual_directories!=directories:
+            raise BridgeError('ARTIFACT_CANDIDATE_CHANGED')
         primary=Path(receipt['output']).name
-        if primary not in paths and os.name=='nt':
-            aliases=[name for name in paths if name.casefold()==primary.casefold()]
+        if primary not in names and os.name=='nt':
+            aliases=[name for name in names if name.casefold()==primary.casefold()]
             if len(aliases)==1:
                 primary=aliases[0]
                 receipt['output']=str(Path(receipt['output']).with_name(primary))
-        if primary not in paths:raise BridgeError('ARTIFACT_PRIMARY_MISSING')
+        if primary not in names:raise BridgeError('ARTIFACT_PRIMARY_MISSING')
         if set(record['metadata']) & {'id','kind','output','sources','stage','payload','state'}:raise BridgeError('ARTIFACT_METADATA_IDENTITY')
-        receipt.update(record['metadata'],candidate_sha256=_file_sha(paths[primary]),members=members,replayed=False)
+        digests={member['name']:member['sha256'] for member in members}
+        receipt.update(record['metadata'],candidate_sha256=digests[primary],members=members,replayed=False)
         receipt.pop('failure',None);receipt.pop('state',None)
+        db.execute('''CREATE TABLE IF NOT EXISTS artifact_member_refs (
+            request_id TEXT NOT NULL, name TEXT NOT NULL, digest TEXT NOT NULL,
+            size INTEGER NOT NULL, storage TEXT NOT NULL, PRIMARY KEY(request_id, name))''')
+        store = ContentAddressedStore(bridge.root / 'evidence' / 'objects')
         for member in members:
-            path=paths[member['name']]
-            cursor=db.execute('INSERT INTO artifact_members VALUES (?,?,?,zeroblob(?))',(request_id,member['name'],member['sha256'],path.stat().st_size))
-            digest=hashlib.sha256()
-            with path.open('rb') as stream,db.blobopen('artifact_members','data',cursor.lastrowid) as blob:
-                while chunk:=stream.read(1024*1024):digest.update(chunk);blob.write(chunk)
-            if digest.hexdigest()!=member['sha256']:raise BridgeError('ARTIFACT_CANDIDATE_CHANGED')
+            name = member['name']
+            try:
+                obj = store.put(actual[name], expected_digest=member['sha256'])
+            except ObjectStoreError as exc:
+                raise BridgeError(str(exc)) from exc
+            db.execute('INSERT INTO artifact_member_refs(request_id,name,digest,size,storage) VALUES (?,?,?,?,?)',
+                       (request_id, name, obj.digest, obj.size, 'cas'))
         db.execute("UPDATE commands SET state='PREPARED',after_blob=?,receipt=? WHERE id=?",(json_text(members).encode('utf8'),json_text(receipt),request_id))
     return receipt|{'state':'PREPARED'}
 

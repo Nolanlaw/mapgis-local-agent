@@ -1,12 +1,22 @@
 [build-system]
-requires = ["hatchling>=1.18"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
 name = "mapgis-local-agent"
-version = "0.7.0"
-description = "MapGIS 6.7 native files, isolated native backend and exact-build live state"
+version = "3.0.0"
+description = "Local MapGIS 6.7 file tools, native workflows and reproducible map plans"
 requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE.md"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+]
 dependencies = [
     "mapgis2shp==2.6.0", "mcp>=1.20,<2", "psutil>=6",
     "pyvips==3.0.0", "pyvips-binary==8.18.7",
@@ -16,11 +26,20 @@ dependencies = [
     "ezdxf==1.4.5",
     "pyflwdir==0.5.12", "numba==0.68.1", "llvmlite==0.50.0",
     "pywin32==312; sys_platform == 'win32'",
+    "packaging>=24.2",
 ]
+
+[project.optional-dependencies]
+hydrology = ["pyflwdir==0.5.12", "numba==0.68.1", "llvmlite==0.50.0"]
+scan-cv = ["opencv-python-headless==4.13.0.92"]
+cad = ["ezdxf==1.4.5"]
+dev = ["pytest>=8", "mcp==1.30.0"]
+full = ["pyflwdir==0.5.12", "numba==0.68.1", "llvmlite==0.50.0", "opencv-python-headless==4.13.0.92", "ezdxf==1.4.5"]
 
 [project.scripts]
 mapgis-agent = "mapgis_agent.cli:main"
-mapgis-agent-mcp = "mapgis_agent.server:main"
+mapgis-agent-mcp = "mapgis_agent:_mcp_main"
+mapgis-local-agent = "mapgis_agent:_mcp_main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mapgis_agent"]

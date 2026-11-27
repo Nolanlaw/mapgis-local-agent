@@ -1,0 +1,63 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nolanlaw/mapgis-local-agent",
+  "title": "MapGIS Local Agent",
+  "description": "Local MapGIS 6.7 file editing, reproducible map plans, cartographic checks, and GIS interchange.",
+  "version": "3.0.0",
+  "repository": {
+    "url": "https://github.com/Nolanlaw/mapgis-local-agent",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/Nolanlaw/mapgis-local-agent/blob/main/docs/V3-DELIVERY-REPORT.md",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/google/material-design-icons/master/src/maps/map/materialicons/24px.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "mapgis-local-agent",
+      "version": "3.0.0",
+      "runtimeHint": "uvx",
+      "transport": {"type": "stdio"},
+      "packageArguments": [
+        {
+          "type": "named",
+          "name": "--root",
+          "value": "{task_root}",
+          "isRequired": true,
+          "variables": {
+            "task_root": {
+              "description": "An absolute local task directory. Configure its MapGIS installation separately for native operations.",
+              "isRequired": true,
+              "isSecret": false,
+              "format": "string"
+            }
+          }
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "MAPGIS_MCP_SURFACE",
+          "description": "Tool surface. Use hybrid for the 21 recommended tools.",
+          "default": "hybrid",
+          "choices": ["legacy", "compact", "hybrid"],
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "releaseStatus": "Manifest for owner-controlled publication. Use the offline share or a trusted local installation until the owner publishes the listed package.",
+      "nativePlatform": "win32",
+      "recommendedSurface": "hybrid",
+      "documentation": "https://github.com/Nolanlaw/mapgis-local-agent/blob/main/docs/V3-DELIVERY-REPORT.md"
+    }
+  }
+}

@@ -423,7 +423,6 @@ def _build_attribute_section(
     prefix[0:2] = _ATTR_PREFIX_SIGNATURE
     today = datetime.date.today()
     struct.pack_into("<hBB", prefix, 2, today.year, today.month, today.day)
-    struct.pack_into("<i", prefix, 12, type_stamp)
     prefix[320:322] = _ATTR_PREFIX_SIGNATURE
 
     if record_length is None:
@@ -432,6 +431,9 @@ def _build_attribute_section(
     descriptors = b"".join(
         _pack_field_descriptor(i, spec) for i, spec in enumerate(specs)
     )
+    # MapGIS reads the records from this offset (348 + 39 per field), so it must
+    # follow the field count; *type_stamp* is kept only for call compatibility.
+    struct.pack_into("<i", prefix, 12, len(prefix) + len(head) + len(descriptors))
 
     records = bytearray(b"\x01" + b"\x00" * (record_length - 1))
     for _, row in df.iterrows():

@@ -1,8 +1,10 @@
 {
   "protocol": 1,
   "architecture": "x86",
-  "sha256": "f152913a7217511e4774081749d0e47b348fa15eaf7f06d7236e8a0264403049",
-  "source_sha256": "687e26c76733ebe122c83b66db2094a47b66deb1b1d5065dee2f7ebb0abe9e3d",
+  "pe_machine": 332,
+  "nx_compatible": false,
+  "sha256": "dc9a17789824418f2b903332dcf17a07c67a1141118b1206b82184cdacbb5d41",
+  "source_sha256": "191afc0661020e12c46893c3fc5bf84565baa33592a907c238892b6f454637b6",
   "bas60_sha256": "680029d3ed7a04338a6799f1e16cab30d6e421d13e3d8c66bbeccb057a50ee24",
   "legacy_dep_compatibility": true,
   "operations": [
@@ -48,15 +50,16 @@
     "scene.flight",
     "scene.inspect",
     "tin.scene.render",
-    "tin.scene.inspect"
+    "tin.scene.inspect",
+    "l2.projection_items"
   ],
   "headers": {
     "PrivateDesktop.h": "6ebaa482005a4a21d8ed81f28b548047068986c2eae9a400e5e76fdb6520db08",
     "NativeTerrain.h": "a0a7fd64b95d6a23cf30b370bfd70c89b163cd51b3183546fae5d41e81da92c0",
     "NativeTin.h": "26826ea69e14e22dd1f17c9d4c9380632cc0b46b12b53fac0107119d37ada866",
     "NativeMsd.h": "ee1b91cc015b6c0e4872a54446536acb9f3833c442f4aa87378effa115fe5523",
-    "NativeCom.h": "a41dff1b15415e7eab4892e43d819284e1683fa8bac401412b7ed16f2a7f9b73",
-    "NativeSdk.h": "773cc9b8d0b1a2c48d0daed8f28c6280bec9deb356ed65bfc9b9baed5aefd5c9",
+    "NativeCom.h": "8c73497109e0847787592afc147afc49b6512d4081573f95898b0173e520ca8f",
+    "NativeSdk.h": "19ab1d6512ae865f4092bcffbbf68149e45e3a46854339e8094921549679276f",
     "NativeLegend.h": "d18a4fff33f4e76d704217b1226744a5c6ace0343e18b7ddc6c6355a98de1e7c",
     "NativeScene.h": "6d630d4dfe14564df579d8271e558f94ada3d3ce615dcf3e9a2c25d2920c9508",
     "NativeCamera.h": "10535d2cfbeb4ade79217119ab3eb4ae43425c2bd0c12196a6de9ebcb68d2b86",
@@ -65,7 +68,8 @@
     "NativeRegions.h": "4fffbea06fb118167034f92600334c1bfada5b252df36f902ffee39e29862570",
     "NativeTinScene.h": "6d3c8cd39860ac48842e158b01f2efc8fc6e714f4c7c9efd186fa716ac9c0cfd",
     "NativeTinLines.h": "bab326bdc9cc6bc95d28edbd87a4e961ee8881e423c3f7d775204770e5523d8c",
-    "NativeTinFlight.h": "1ede49450d07c6aa6246ac2a123a127001dd65412996f9f07feee1acbf477b86"
+    "NativeTinFlight.h": "1ede49450d07c6aa6246ac2a123a127001dd65412996f9f07feee1acbf477b86",
+    "NativeL2.h": "bbabd7c20955495d7b26dfe1ed98f190ba1ee4c27da5aa58f52340f8cd018cc1"
   },
   "cdt": {
     "version": "2.0.1",

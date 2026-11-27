@@ -95,7 +95,8 @@ def _attribute_table(blob:bytes,sections:list,index:int):
     """Decode an actual signed attribute section, not a metadata-only block."""
     start,size=sections[index]
     if size<348 or blob[start:start+2]!=b'\x60\x44' or blob[start+320:start+322]!=b'\x60\x44':return None
-    stream=io.BytesIO(blob);count,width,fields=read_header(stream,start);data=stream.tell()
+    stream=io.BytesIO(blob);count,width,fields=read_header(stream,start)
+    data=start+native._attribute_record_origin(blob[start:start+348],size)[0]
     declared=struct.unpack_from('<h',blob,start+322)[0]
     if count<1 or width<1 or len(fields)!=declared or data+count*width>start+size:raise BridgeError('SCHEMA_ATTRIBUTE_TABLE_LAYOUT')
     descriptors={f.name:blob[start+348+i*39:start+348+(i+1)*39] for i,f in enumerate(fields)}
@@ -218,6 +219,7 @@ def prepare_attribute_schema(bridge: Bridge, file: str, expected_sha256: str,
                 output_record[spec.offset:spec.offset + spec.storage] = encoded
         records.extend(output_record)
     header = bytearray(old[:348])
+    struct.pack_into('<i', header, 12, 348 + len(descriptors))  # MapGIS record-data offset
     struct.pack_into('<hih', header, 322, len(planned), count, new_length)
     candidate = _replace_sections(before, sections, {index: bytes(header) + bytes(descriptors) + records})
     payload = {'operation': 'attributes.schema', 'file': str(path), 'expected_sha256': expected_sha256, 'fields': fields}

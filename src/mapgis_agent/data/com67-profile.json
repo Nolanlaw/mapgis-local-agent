@@ -430,6 +430,26 @@
       ]
     },
     {
+      "name": "proj60.dll",
+      "sha256": "9e85c489a16814352bfaaf7008942f4e90d335a622e6a2a3f2438c090dd8f2cb",
+      "typelib": "{5CEBBEC3-DD0E-11D2-9527-000021DC1F51}",
+      "version": "1.0",
+      "classes": [
+        {"name": "EllipPara", "clsid": "{5CEBBED2-DD0E-11D2-9527-000021DC1F51}"}
+      ]
+    },
+    {
+      "name": "AttCom.dll",
+      "sha256": "28238214d883764c4958b23a6553cf47a51b8891db0b27ae790a326346e04629",
+      "typelib": "{9186E5B1-9DB9-4F10-9224-5274CD2C4985}",
+      "version": "1.0",
+      "classes": [
+        {"name": "LinkAtt", "clsid": "{25257A69-9B3F-4C82-B33D-25D462D6E91F}"},
+        {"name": "UpLoad", "clsid": "{439F2DF0-167F-4BCF-AD81-69DC909439CB}"},
+        {"name": "GisObj", "clsid": "{985ACB27-904E-48CD-8F92-9DB69C8BAA80}"}
+      ]
+    },
+    {
       "name": "MapGisMapCom.dll",
       "sha256": "f01519451e70e2a1ae4c419d7e4f42cfe447a85afcb8cda5a8d1449c248562df",
       "typelib": "{A060DC63-A02B-476A-8D94-089205E445F5}",

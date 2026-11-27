@@ -1,0 +1,77 @@
+{
+  "schema_version": "mapgis-abi-profile/v1",
+  "profile_id": "mapgis-6.7-051118-x86",
+  "product": "MapGIS 6.7",
+  "build": "051118",
+  "arch": "x86",
+  "certified": true,
+  "modules": {
+    "mdiedit6x.exe": "34e34d198cce7a10bfa16ddf11e74dbd6afb85d68ac0a8e7f8561a136d052504",
+    "maped6x.dll": "bd627edec5ac0c1940854596f769bffc98601fd22f2f2f728b0766a6e48b2478",
+    "mapprj60.dll": "faeeddbe9d4190f6b3645bfb0610a60bd68a6724f03d1e638932939f083f3291",
+    "bas60.dll": "680029d3ed7a04338a6799f1e16cab30d6e421d13e3d8c66bbeccb057a50ee24"
+  },
+  "layout": {
+    "view": {
+      "bytes": 1609,
+      "project_pointer": 1605,
+      "selection_header": 373,
+      "selection_record_bytes": 8,
+      "vtable_rva": 135416
+    },
+    "project": {
+      "bytes": 2871,
+      "path": 992,
+      "name": 1508,
+      "string_bytes": 256,
+      "modified": 10,
+      "layer_count": 1766,
+      "layer_head": 2867
+    },
+    "layer": {
+      "bytes": 410,
+      "path": 6,
+      "path_bytes": 256,
+      "type": 4,
+      "state": 5,
+      "area": 404,
+      "next": 406
+    },
+    "workspace": {
+      "head_rva": 579880,
+      "area": 0,
+      "next": 8,
+      "flags": 3767,
+      "references_owner": 12,
+      "external": 323,
+      "layout": 2765,
+      "layout_bytes": 29,
+      "type": 0,
+      "first_counts": 5,
+      "region_counts": 21
+    }
+  },
+  "guards": [
+    {
+      "module": "maped6x.dll",
+      "rva": 153376,
+      "hex": "8b8145060000c3"
+    },
+    {
+      "module": "mapprj60.dll",
+      "rva": 34112,
+      "hex": "668b410ac3"
+    },
+    {
+      "module": "mdiedit6x.exe",
+      "rva": 44830,
+      "hex": "c706",
+      "append_relocated_vtable": true
+    },
+    {
+      "module": "bas60.dll",
+      "rva": 110115,
+      "hex": "8a80b70e00002401"
+    }
+  ]
+}

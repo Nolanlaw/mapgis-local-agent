@@ -2,6 +2,11 @@
   "schema": 1,
   "scope": "Exact installed6.7 non-server task entries and its original DTM3DFly submodule. The DTM6x main-menu file is an extractor whose payload is absent; use the existing native scene tools and terrain_flight. Permission requires local opt-in.",
   "modules": {
+    "section": {
+      "label": "自由工作室 section V5（地质剖面与柱状图）",
+      "executable": "section.exe",
+      "sha256": "e3e85a4756f1ec2216e88dd47274a1e42b591c5904e3be37097535d8747f82b9"
+    },
     "survey": {
       "label": "数字测量/测图",
       "executable": "MapSuvL67.exe",

@@ -21,6 +21,8 @@ from typing import Any, Iterator
 from pymapgis import Reader
 from pymapgis import reader as native
 
+from .object_store import CHUNK_SIZE, file_sha256
+
 
 class BridgeError(ValueError):
     pass
@@ -46,6 +48,8 @@ def scalar(value: Any) -> Any:
 
 def read_native(path: Path) -> tuple[bytes, Reader, list[tuple[int, int]]]:
     blob = path.read_bytes()
+    from .crs_contract import read_crs_sidecar
+    declared = read_crs_sidecar(path, file_bytes=blob)
     if len(blob) < 817 or blob[:8] not in (b"WMAP`D21", b"WMAP`D22", b"WMAP`D23"):
         raise BridgeError("Unsupported or truncated MapGIS 6.x vector file")
     start = struct.unpack_from("<i", blob, 12)[0]
@@ -57,6 +61,8 @@ def read_native(path: Path) -> tuple[bytes, Reader, list[tuple[int, int]]]:
             raise BridgeError("Native section is outside the file")
     from .attribute_codec import Reader as AttributeReader
     reader = AttributeReader(path, make_valid=False, read_graphic_params=True)
+    if declared is not None:
+        reader.mapgis_crs_contract, reader.effective_crs = declared
     _filter_deleted_rows(blob, reader, sections)
     from .point_primitives import decode
     decode(blob,reader,sections)
@@ -77,7 +83,7 @@ def _filter_deleted_rows(blob: bytes, reader: Reader, sections: list[tuple[int, 
     stream = io.BytesIO(blob)
     attr_start, attr_size = sections[native._ATTR_HEADER_INDEX[reader.shapeType]]
     count, length, _ = native._read_attribute_header(stream, attr_start)
-    table_start = stream.tell()
+    table_start = attr_start + native._attribute_record_origin(blob[attr_start:attr_start + 348], attr_size)[0]
     if length < 1 or table_start + count * length > attr_start + attr_size:
         raise BridgeError("Invalid native active-record table")
     physical = list(reader._polygon_active_ids) if reader.shapeType == "POLYGON" else list(range(1, len(reader.geom) + 1))
@@ -149,6 +155,23 @@ def annotation_text(blob: bytes, entries: list, record_id: int) -> str | None:
         return blob[pool+offset:pool+offset+length].decode("gbk",errors="strict")
     except UnicodeDecodeError as exc:
         raise BridgeError("INVALID_GBK_ANNOTATION") from exc
+
+
+def stale_attribute_headers(blob: bytes) -> list[str]:
+    """Warn about signed attribute tables whose header offset MapGIS would misread."""
+    kind = {b"WMAP`D23": "POLYGON", b"WMAP`D22": "POINT", b"WMAP`D21": "LINE"}[blob[:8]]
+    entries = native._read_header_entries(io.BytesIO(blob), struct.unpack_from("<i", blob, 12)[0], 16)
+    warnings = []
+    for index in (native._ATTR_HEADER_INDEX[kind], *((2, 5) if kind == "POLYGON" else ())):
+        start, size = entries[index]
+        head = blob[start:start + 348]
+        if size >= 348 and head[:2] == head[320:322] == b"\x60\x44":
+            origin, stale = native._attribute_record_origin(head, size)
+            if stale:
+                warnings.append(f"ATTRIBUTE_HEADER_STALE: 属性表头偏移过期，原生属性管理会错位 (section {index}: header "
+                                f"offset {struct.unpack_from('<i', head, 12)[0]}, records at {origin}); "
+                                "repair with prepare_attribute_schema keeping every field")
+    return warnings
 
 
 def layout_signature(blob: bytes) -> str:
@@ -229,16 +252,19 @@ class Bridge:
                          "valid": bool(geometry.is_valid), "bounds": list(geometry.bounds)})
             if reader.shapeType=="POINT":
                 rows[-1]["text"]=annotation_text(blob,entries,ids[row])
+        effective_crs = getattr(reader, 'effective_crs', reader.crs)
         return {"path": str(path), "sha256": sha(blob), "bytes": len(blob),
                 "type": reader.shapeType, "count": len(reader),
-                "crs": reader.crs.to_wkt() if reader.crs else None,
+                "crs": effective_crs.to_wkt() if effective_crs else None,
+                **({'crs_sidecar': reader.mapgis_crs_contract} if hasattr(reader, 'mapgis_crs_contract') else {}),
                 "coordinate_context": {"projection_index": blob[109], "ellipsoid_index": blob[110],
                                        "stored_map_scale": struct.unpack_from("<d", blob, 143)[0],
                                        "unit": "NOT_VERIFIED"},
                 "bounds": reader.bbox.tolist(), "fields": reader.fields,
                 "rows": rows, "next_offset": offset + len(rows) if offset + len(rows) < len(ids) else None,
                 "selection_source": "EXPLICIT_PHYSICAL_RECORDS_NOT_DESKTOP_SELECTION",
-                "warnings": ["CRS and units require the originating MapGIS index tables."] if not reader.crs else [],
+                "warnings": (["CRS and units require the originating MapGIS index tables."] if not effective_crs else [])
+                            + stale_attribute_headers(blob),
                 "native_rendering": "NOT_VERIFIED_BY_FILE_READ"}
 
     def copy(self, source: str, request_id: str) -> dict:
@@ -318,7 +344,7 @@ class Bridge:
         stream = io.BytesIO(before)
         from .attribute_codec import read_header
         count, record_length, fields = read_header(stream, attr_start)
-        table_start = stream.tell()
+        table_start = attr_start + native._attribute_record_origin(before[attr_start:attr_start + 348], attr_size)[0]
         if count < 1 or record_length <= 0 or table_start + count * record_length > attr_start + attr_size:
             raise BridgeError("Unsupported attribute storage layout")
         field_map = {f.name: f for f in fields}
@@ -413,7 +439,7 @@ class Bridge:
         payload_hash = sha(json_text(payload).encode())
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            existing = db.execute("SELECT * FROM commands WHERE id=?", (request_id,)).fetchone()
+            existing = db.execute("SELECT payload_hash,state,receipt FROM commands WHERE id=?", (request_id,)).fetchone()
             if existing:
                 if existing["payload_hash"] != payload_hash:
                     raise BridgeError("REQUEST_ID_CONFLICT: use a new request_id for different parameters")
@@ -434,10 +460,49 @@ class Bridge:
     def _receipt(self, row: sqlite3.Row) -> dict:
         return {**json.loads(row["receipt"]), "state": row["state"]}
 
+    @staticmethod
+    def _blob_digest(db: sqlite3.Connection, rowid: int, column: str) -> str:
+        digest = hashlib.sha256()
+        with db.blobopen("commands", column, rowid, readonly=True) as blob:
+            while chunk := blob.read(CHUNK_SIZE):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    def _candidate_digest(self, db: sqlite3.Connection, row: sqlite3.Row, receipt: dict) -> str:
+        # Older rows may omit the recorded digest. Read their BLOB incrementally
+        # only when a saved output actually needs verification.
+        digest = receipt.get("candidate_sha256")
+        if isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest):
+            return digest
+        return self._blob_digest(db, row["command_rowid"], "after_blob")
+
+    @staticmethod
+    def _epoch(db: sqlite3.Connection) -> int:
+        if db.execute("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='publisher_state'").fetchone():
+            row = db.execute("SELECT epoch FROM publisher_state WHERE scope='commands'").fetchone()
+            if row is not None:
+                return row["epoch"]
+        return 0
+
+    def current_epoch(self) -> int:
+        with self.connect() as db:
+            return self._epoch(db)
+
+    def advance_epoch(self) -> int:
+        """Acquire a newer publication fence, serialized with any in-flight apply."""
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            db.execute("CREATE TABLE IF NOT EXISTS publisher_state (scope TEXT PRIMARY KEY, epoch INTEGER NOT NULL)")
+            epoch = self._epoch(db) + 1
+            db.execute("INSERT INTO publisher_state(scope,epoch) VALUES ('commands',?) "
+                       "ON CONFLICT(scope) DO UPDATE SET epoch=excluded.epoch", (epoch,))
+        return epoch
+
     def status(self, request_id: str) -> dict:
         self.request_id(request_id)
         with self.connect() as db:
-            row = db.execute("SELECT * FROM commands WHERE id=?", (request_id,)).fetchone()
+            row = db.execute("SELECT rowid AS command_rowid,id,state,receipt FROM commands WHERE id=?",
+                             (request_id,)).fetchone()
             if not row:
                 raise BridgeError("Unknown request_id")
             result = self._receipt(row)
@@ -446,16 +511,21 @@ class Bridge:
                 return bundle_status(db,row)
             output = Path(result["output"])
             result["output_exists"] = output.exists()
-            result["output_matches"] = output.exists() and sha(output.read_bytes()) == sha(row["after_blob"])
+            result["output_matches"] = output.is_file() and file_sha256(output) == self._candidate_digest(db, row, result)
             if result["state"] == "APPLIED" and not result["output_matches"]:
                 result["state"] = "OUTPUT_CHANGED"
             return result
 
-    def apply(self, request_id: str) -> dict:
+    def apply(self, request_id: str, expected_epoch: int | None = None) -> dict:
         self.request_id(request_id)
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            row = db.execute("SELECT * FROM commands WHERE id=?", (request_id,)).fetchone()
+            if expected_epoch is not None:
+                epoch = self._epoch(db)
+                if type(expected_epoch) is not int or expected_epoch != epoch:
+                    raise BridgeError(f"STALE_PUBLISHER_EPOCH: active epoch is {epoch}")
+            row = db.execute("SELECT rowid AS command_rowid,id,source,state,receipt FROM commands WHERE id=?",
+                             (request_id,)).fetchone()
             if not row:
                 raise BridgeError("Unknown request_id")
             receipt = self._receipt(row)
@@ -466,34 +536,44 @@ class Bridge:
             if receipt.get('kind')=='BUNDLE':
                 from .artifacts import apply_bundle
                 return apply_bundle(self,db,row)
-            output = Path(receipt["output"])
-            if output.exists():
-                if sha(output.read_bytes()) != sha(row["after_blob"]):
+            output = self.destination_path(receipt["output"])
+            if output != Path(receipt["output"]):
+                raise BridgeError("OUTPUT_CONFLICT: output path resolves to a different location")
+            if os.path.lexists(output):
+                if not output.is_file() or file_sha256(output) != self._candidate_digest(db, row, receipt):
                     raise BridgeError("OUTPUT_CONFLICT: existing output changed; not replacing or replaying")
                 db.execute("UPDATE commands SET state='APPLIED' WHERE id=?", (request_id,))
                 return {**receipt, "state": "APPLIED", "reconciled_existing_output": True}
             if row["state"] == "APPLIED":
                 raise BridgeError("OUTPUT_MISSING: previously applied output was removed; use a new request")
-            if sha(Path(row["source"]).read_bytes()) != sha(row["before_blob"]):
+            if file_sha256(row["source"]) != self._blob_digest(db, row["command_rowid"], "before_blob"):
                 raise BridgeError("STALE_SOURCE: source changed after preview")
             if receipt.get("sources"):
-                if any(sha(Path(item["file"]).read_bytes()) != item["sha256"] for item in receipt["sources"]):
+                if any(file_sha256(item["file"]) != item["sha256"] for item in receipt["sources"]):
                     raise BridgeError("STALE_SOURCE: bound input changed after preview")
             output.parent.parent.mkdir(parents=True, exist_ok=True)
-            if output.parent.exists():
+            if os.path.lexists(output.parent):
                 raise BridgeError("INCOMPLETE_OUTPUT: inspect the existing request directory")
-            output.parent.mkdir()
-            with output.open("xb") as stream:
-                stream.write(row["after_blob"])
-                stream.flush()
-                os.fsync(stream.fileno())
-            if receipt.get("kind") == "NATIVE_PLOT":
-                from .native_plot import validate_eps
-                validate_eps(output, receipt["view"]["paper_mm"])
-            else:
-                read_native(output)
-            if sha(output.read_bytes()) != sha(row["after_blob"]):
-                raise BridgeError("Output readback failed")
+            with tempfile.TemporaryDirectory(prefix=".single-publishing-", dir=output.parent.parent) as folder:
+                staged = Path(folder) / output.name
+                with db.blobopen("commands", "after_blob", row["command_rowid"], readonly=True) as blob, \
+                        staged.open("xb") as stream:
+                    while chunk := blob.read(CHUNK_SIZE):
+                        stream.write(chunk)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                if receipt.get("kind") == "NATIVE_PLOT":
+                    from .native_plot import validate_eps
+                    validate_eps(staged, receipt["view"]["paper_mm"])
+                else:
+                    read_native(staged)
+                if file_sha256(staged) != self._candidate_digest(db, row, receipt):
+                    raise BridgeError("Output readback failed")
+                if os.path.lexists(output.parent):
+                    raise BridgeError("INCOMPLETE_OUTPUT: inspect the existing request directory")
+                # Publish the complete one-file branch in one rename, including
+                # the request directory so interruption cannot strand an empty one.
+                os.replace(folder, output.parent)
             db.execute("UPDATE commands SET state='APPLIED' WHERE id=?", (request_id,))
         return {**receipt, "state": "APPLIED", "reconciled_existing_output": False}
 
@@ -501,7 +581,7 @@ class Bridge:
         self.request_id(request_id)
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            row = db.execute("SELECT * FROM commands WHERE id=?", (request_id,)).fetchone()
+            row = db.execute("SELECT state,receipt FROM commands WHERE id=?", (request_id,)).fetchone()
             if not row:
                 raise BridgeError("Unknown request_id")
             if row["state"] != "PREPARED" or Path(json.loads(row["receipt"])["output"]).exists():
@@ -515,13 +595,15 @@ class Bridge:
 
         self.request_id(request_id)
         with self.connect() as db:
-            row = db.execute("SELECT * FROM commands WHERE id=?", (request_id,)).fetchone()
+            row = db.execute("SELECT rowid AS command_rowid,state,receipt FROM commands WHERE id=?",
+                             (request_id,)).fetchone()
             if row is None or row["state"] != "APPLIED":
                 raise BridgeError("Verification requires a previously applied request")
             receipt = self._receipt(row)
-            candidate = row["after_blob"]
             if receipt.get('kind') in ('BUNDLE','NATIVE_PLOT'):
                 raise BridgeError('NATIVE_VECTOR_REQUEST_REQUIRED: use get_request for artifact member hashes')
+            with db.blobopen("commands", "after_blob", row["command_rowid"], readonly=True) as blob:
+                candidate = blob.read()
         actual = Path(file).resolve(strict=True)
         with tempfile.TemporaryDirectory(prefix="verify-request-", dir=self.root / "work") as folder:
             baseline = Path(folder) / Path(receipt["output"]).name
@@ -533,6 +615,7 @@ class Bridge:
                 "candidate_sha256": sha(candidate), "candidate_source": "persisted request candidate",
                 "matches_candidate_records": comparison["records_equal"] and not comparison["metadata_changes"],
                 "comparison": comparison, "native_reopen": "NOT_VERIFIED",
+                "warnings": stale_attribute_headers(actual.read_bytes()),
                 "scope": "saved disk records, text, graphic parameters and coordinate header; native session requires separate binding"}
 
     def recover(self, applied_request: str, later_file: str, expected_sha256: str, request_id: str) -> dict:
@@ -542,22 +625,25 @@ class Bridge:
                                      "later_file": str(later_path), "sha256": expected_sha256}).encode())
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            old = db.execute("SELECT * FROM commands WHERE id=?", (request_id,)).fetchone()
+            old = db.execute("SELECT payload_hash,state,receipt FROM commands WHERE id=?", (request_id,)).fetchone()
             if old:
                 if old["payload_hash"] != payload_hash:
                     raise BridgeError("REQUEST_ID_CONFLICT")
                 return self._receipt(old)
-            original = db.execute("SELECT * FROM commands WHERE id=?", (applied_request,)).fetchone()
+            original = db.execute("SELECT state,receipt FROM commands WHERE id=?", (applied_request,)).fetchone()
             if original is None or original["state"] != "APPLIED":
                 raise BridgeError("Recovery requires a previously applied request")
-            if json.loads(original["receipt"]).get("kind") in ("NATIVE_PLOT","BUNDLE"):
+            kind = json.loads(original["receipt"]).get("kind")
+            if kind in ("NATIVE_PLOT","BUNDLE"):
                 raise BridgeError("Plot output is a new artifact; its input files were preserved")
+            original = db.execute("SELECT changes,before_blob,after_blob FROM commands WHERE id=?",
+                                  (applied_request,)).fetchone()
             later, later_reader, later_entries = read_native(later_path)
             if sha(later) != expected_sha256:
                 raise BridgeError("STALE_SOURCE: later file changed")
             recovered = bytearray(later)
             changes = json.loads(original["changes"])
-            pristine_native_snapshot = (json.loads(original["receipt"]).get("kind") == "NATIVE"
+            pristine_native_snapshot = (kind == "NATIVE"
                                         and not changes and original["before_blob"] != original["after_blob"])
             if pristine_native_snapshot:
                 if later != original["after_blob"]:
@@ -566,11 +652,11 @@ class Bridge:
                             "after": original["after_blob"].hex(), "record_id": None,
                             "group": "native", "field": "pristine_saved_snapshot"}]
             structural = layout_signature(later) != layout_signature(original["after_blob"])
-            if json.loads(original["receipt"]).get("kind") == "NATIVE" and (
+            if kind == "NATIVE" and (
                     structural or (not changes and original["before_blob"] != original["after_blob"])):
                 raise BridgeError("NATIVE_RECOVERY_REQUIRES_SAME_LAYOUT: use the preserved source snapshot")
             if structural:
-                if json.loads(original["receipt"]).get("kind") == "DELETE":
+                if kind == "DELETE":
                     raise BridgeError("DELETE_RECOVERY_REQUIRES_SAME_LAYOUT: native compaction or rebuilding changed the slots")
                 changes = self._relocate_recovery(original["after_blob"], later, later_reader,
                                                    later_entries, changes, later_path.suffix)
@@ -626,7 +712,7 @@ class Bridge:
         stream = io.BytesIO(later)
         from .attribute_codec import read_header
         count, length, fields = read_header(stream, attr_start)
-        table_start = stream.tell()
+        table_start = attr_start + native._attribute_record_origin(later[attr_start:attr_start + 348], attr_size)[0]
         if length <= 0 or table_start + count * length > attr_start + attr_size:
             raise BridgeError('STRUCTURAL_CONFLICT: invalid attribute storage')
         field_map = {field.name: field for field in fields}

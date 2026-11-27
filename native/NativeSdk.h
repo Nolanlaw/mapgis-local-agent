@@ -1,11 +1,21 @@
 // Typed Automation calls in the existing private x86 host. No code evaluation,
 // vtable offsets, editor injection, registration or desktop input.
 #pragma once
+#include <array>
+#include <limits>
 #include <map>
 #include <climits>
 
 namespace native_sdk {
 using Values=std::map<std::string,_variant_t>;
+struct DiscardTransientChanges {
+ std::vector<ComDispatch> objects;
+ void reset(){
+  for(auto& object:objects)com_invoke(object,L"ModifyFlag",DISPATCH_PROPERTYPUT,{_variant_t(short(0))});
+  objects.clear();
+ }
+ ~DiscardTransientChanges(){try{reset();}catch(const std::exception& error){fprintf(stderr,"SDK transient cleanup: %s\n",error.what());}}
+};
 std::vector<std::string> columns(const std::string& line){
  std::vector<std::string> out;size_t start=0,end;
  while((end=line.find('\t',start))!=std::string::npos){out.push_back(line.substr(start,end-start));start=end+1;}
@@ -68,16 +78,20 @@ int run(wchar_t** argv){
  SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX|SEM_NOOPENFILEERRORBOX);
  try{
   DWORD dep=0;BOOL permanent=FALSE;if(!GetProcessDEPPolicy(GetCurrentProcess(),&dep,&permanent)||dep)throw std::runtime_error("SDK legacy host opt-in");
-  printf("{\"event\":\"host\",\"protocol\":1,\"pid\":%lu,\"bits\":32,\"dep_flags\":%lu,\"desktop\":\"%s\"}\n",GetCurrentProcessId(),dep,desktop_name().c_str());fflush(stdout);
-  ComContext context(argv[2],argv[3]);Values values;std::ifstream input(argv[4]);std::string line;
+  const auto desktop=desktop_name();if(desktop.rfind("MapGISAgent_",0)!=0)throw std::runtime_error("SDK private desktop required");
+  printf("{\"event\":\"host\",\"protocol\":1,\"pid\":%lu,\"bits\":32,\"dep_flags\":%lu,\"desktop\":\"%s\"}\n",GetCurrentProcessId(),dep,desktop.c_str());fflush(stdout);
+  ComContext context(argv[2],argv[3]);Values values;DiscardTransientChanges transient;std::ifstream input(argv[4]);std::string line;
   if(!std::getline(input,line)||line!="SDK1")throw std::runtime_error("SDK control version");int count=0;
   while(std::getline(input,line)){
    if(++count>4096)throw std::runtime_error("SDK call limit");auto c=columns(line);
    if(c.size()==4&&c[0]=="create"){
     auto id=token(c[1]);if(values.count(id))throw std::runtime_error("SDK duplicate identity");
     auto library=wide(c[2]),cls=wide(c[3]);
-    if(library!=L"MapGisBasCom1.DLL")throw std::runtime_error("SDK library policy");
     auto object=context.create(library.c_str(),cls.c_str());
+    // These in-memory objects prompt to save on Release when their names
+    // change. The typed flow cannot write them to disk.
+    if(library==L"MapGisMapCom.dll"&&(cls==L"{F2FE2977-230D-48E5-BEEB-D8DBD5C507E2}"||cls==L"{E823F1D0-8E0B-420B-B175-03A6D10D97FE}"))
+     transient.objects.push_back(object);
     if(cls==L"{815B7C63-500E-4D86-BFFD-35677B9CEC53}"||cls==L"{C18776C2-9AF5-4A6F-88C9-7F96F2E6DDF8}"||cls==L"{6F5430C6-5A6D-4D4C-88C4-CAFFAFF66AF1}"){
      com_invoke(object,L"ShowErrMsg",DISPATCH_PROPERTYPUT,{_variant_t(false)});com_invoke(object,L"Warning",DISPATCH_PROPERTYPUT,{_variant_t(false)});
     }
@@ -90,8 +104,22 @@ int run(wchar_t** argv){
     if(dispid!=integer(c[4]))throw std::runtime_error("SDK contract DISPID changed");long flags=integer(c[5]),n=integer(c[6]);
     if((flags!=1&&flags!=2&&flags!=4&&flags!=8)||n<0||n>64||c[7]!="-")throw std::runtime_error("SDK invoke control");
     std::vector<_variant_t> backing(n);std::vector<VARIANTARG> args(n);std::vector<std::string> outs(n);
+    const bool ellipsoid=member==L"GetEllipParaById";
+    std::array<double,4> axes;axes.fill(std::numeric_limits<double>::quiet_NaN());std::string axesId;
+    if(ellipsoid){
+     if(dispid!=1||flags!=DISPATCH_METHOD||n!=2)throw std::runtime_error("SDK ellipsoid signature");
+     IID iid{};com_require(IIDFromString(L"{5CEBBED1-DD0E-11D2-9527-000021DC1F51}",&iid),"ellipsoid IID");
+     IUnknown* declared=nullptr;com_require(target.pdispVal->QueryInterface(iid,reinterpret_cast<void**>(&declared)),"ellipsoid interface");declared->Release();
+    }
     for(long i=0;i<n;++i){
      if(!std::getline(input,line))throw std::runtime_error("SDK argument missing");auto a=columns(line);VariantInit(&args[i]);
+     // proj60's exact-build GetEllipParaById writes four doubles, although
+     // the typelib declares only double*. The scalar out slot is too small.
+     if(ellipsoid&&i==1){
+      if(a.size()!=2||a[0]!="out_real4"||args[0].vt!=VT_I2||args[0].iVal<1||args[0].iVal>50)throw std::runtime_error("SDK ellipsoid buffer");
+      axesId=token(a[1]);if(axesId==id||values.count(axesId))throw std::runtime_error("SDK duplicate ellipsoid output");
+      args[i].vt=VT_R8|VT_BYREF;args[i].pdblVal=axes.data();continue;
+     }
      if(a.size()==3&&a[0]=="value"){backing[i]=literal(integer(a[1]),a[2]);args[i]=static_cast<const VARIANT&>(backing[i]);}
      else if(a.size()==2&&a[0]=="ref"){backing[i]=values.at(token(a[1]));args[i]=static_cast<const VARIANT&>(backing[i]);}
      else if(a.size()==3&&a[0]=="out"){outs[i]=token(a[2]);if(values.count(outs[i]))throw std::runtime_error("SDK duplicate out identity");out_argument(integer(a[1]),backing[i],args[i]);}
@@ -105,11 +133,18 @@ int run(wchar_t** argv){
     if(FAILED(hr))fprintf(stderr,"SDK step %s, HRESULT 0x%08lx, reversed argument %u, exception 0x%08lx\n",id.c_str(),hr,arg,info.scode);
     if(info.bstrSource)SysFreeString(info.bstrSource);if(info.bstrDescription)SysFreeString(info.bstrDescription);if(info.bstrHelpFile)SysFreeString(info.bstrHelpFile);
     com_require(hr,"SDK invoke");values.emplace(id,result);value_event(id,result);
+    if(ellipsoid){
+     printf("{\"event\":\"sdk_value\",\"id\":\"%s\",\"vt\":\"real4\",\"value\":",axesId.c_str());
+     if(std::all_of(axes.begin(),axes.end(),[](double n){return std::isfinite(n);}))
+      printf("[%.17g,%.17g,%.17g,%.17g]",axes[0],axes[1],axes[2],axes[3]);
+     else printf("null");
+     puts("}");fflush(stdout);
+    }
     for(long i=0;i<n;++i)if(!outs[i].empty()){if(!values.emplace(outs[i],backing[i]).second)throw std::runtime_error("SDK duplicate output");value_event(outs[i],backing[i]);}
    }else if(c.size()==4&&c[0]=="expect")expect(values.at(token(c[1])),literal(integer(c[2]),c[3]));
    else throw std::runtime_error("SDK control syntax");
   }
-  if(!input.eof())throw std::runtime_error("SDK control read failure");values.clear();puts("{\"event\":\"complete\"}");fflush(stdout);return 0;
+  if(!input.eof())throw std::runtime_error("SDK control read failure");transient.reset();values.clear();puts("{\"event\":\"complete\"}");fflush(stdout);return 0;
  }catch(const _com_error& e){fprintf(stderr,"SDK Automation error 0x%08lx\n",e.Error());return 1;}
  catch(const std::exception& e){fprintf(stderr,"%s\n",e.what());return 1;}
 }

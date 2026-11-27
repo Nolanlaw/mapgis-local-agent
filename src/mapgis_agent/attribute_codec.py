@@ -109,7 +109,7 @@ class Reader(native.Reader):
         kind = native._GEOMETRY_TYPE_MAP[blob[:8]]
         attr, size = sections[native._ATTR_HEADER_INDEX[kind]]
         count, width, fields = read_header(io.BytesIO(blob), attr)
-        origin = attr + 348 + len(fields) * 39
+        origin = attr + native._attribute_record_origin(blob[attr:attr + 348], size)[0]
         if origin + count * width > attr + size:
             invalid('ATTRIBUTE_RECORDS_TRUNCATED')
         extended = any(f.type_code >= 6 for f in fields)
