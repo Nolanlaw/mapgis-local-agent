@@ -1,0 +1,11 @@
+# Preserve exact upstream bytes for hash-verified vendored and third-party sources.
+vendor/** -text
+third_party/** -text
+src/mapgis_agent/_vendor/** -text
+packaging/*.json -text
+packaging/LIBVIPS-NOTICES.md -text
+native/** -text
+*.png binary
+*.svg text eol=lf
+*.exe binary
+*.dll binary

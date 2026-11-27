@@ -51,9 +51,12 @@ def public_sources(portable: bool = False) -> dict[str, Path]:
     """One explicit public source set shared by both archive builders."""
     selected = {name: ROOT/name for name in
                 ('AGENTS.md', 'LICENSE', 'NOTICE.md', 'SECURITY.md', 'server.json', 'pyproject.toml',
-                 'requirements.lock.txt', '.gitignore', '.github/workflows/ci.yml')}
+                 'requirements.lock.txt', '.gitignore', '.gitattributes', 'README.zh-CN.md', '.github/workflows/ci.yml')}
     selected['README.md'] = ROOT/('docs/SHARE.md' if portable else 'README.GITHUB.md')
     selected['docs/NATIVE.md'] = ROOT/'docs/NATIVE-PORTABLE.md'
+    showcase = ROOT/'docs/assets/v3-showcase.png'
+    if showcase.is_file():
+        selected['docs/assets/v3-showcase.png'] = showcase
     for name in ('SHARE.md', 'THIRD-PARTY.md', 'CAPABILITIES.md', 'SOURCES.md', 'VALIDATION.md', 'AUTOMATION.md',
                  'LOCAL67-CALLING-CONTRACT.md', 'LOCAL67-ROUTES.md', 'PRIVATE-CALLS-PROPOSAL.md',
                  'SDK-CALLS.md', 'MULTIMEDIA.md', 'FULL-COVERAGE.md', 'DATABASES.md', 'VOLUME.md', 'RELEASE-0.7.0.md',
