@@ -31,13 +31,25 @@ _LICENSE_HEADERS = {
     'bsd 2-clause license': 'BSD-2-Clause',
     'mit license': 'MIT',
     'apache license, version 2.0': 'Apache-2.0',
+    'apache software license': 'Apache-2.0',
     'apache software license 2.0': 'Apache-2.0',
+    'apache 2.0': 'Apache-2.0',
+    'isc license': 'ISC',
+    'python software foundation license': 'PSF-2.0',
 }
 
 _CLASSIFIERS = {
     'MIT License': 'MIT',
+    'Apache Software License': 'Apache-2.0',
+    'ISC License (ISCL)': 'ISC',
+    'Python Software Foundation License': 'PSF-2.0',
     'Mozilla Public License 2.0 (MPL 2.0)': 'MPL-2.0',
     'GNU Lesser General Public License v3 or later (LGPLv3+)': 'LGPL-3.0-or-later',
+    'GNU Lesser General Public License v3 (LGPLv3)': 'LGPL-3.0-only',
+    'GNU Lesser General Public License v2 or later (LGPLv2+)': 'LGPL-2.1-or-later',
+    'GNU General Public License v3 (GPLv3)': 'GPL-3.0-only',
+    'GNU General Public License v3 or later (GPLv3+)': 'GPL-3.0-or-later',
+    'GNU General Public License v2 (GPLv2)': 'GPL-2.0-only',
 }
 
 # The generic PSF wheel metadata does not identify the pywin32 project code's
@@ -79,10 +91,14 @@ def _license_signature(text: str) -> str | None:
             return 'BSD-2-Clause'
     if 'permission is hereby granted, free of charge' in primary and 'deal in the software without restriction' in primary:
         return 'MIT'
-    if re.search(r'apache license\s+version 2\.0, january 2004', primary):
+    if re.search(r'apache license,?\s+version 2\.0(?:, january 2004)?', primary):
         return 'Apache-2.0'
     if 'mozilla public license version 2.0' in primary:
         return 'MPL-2.0'
+    if 'permission to use, copy, modify, and/or distribute this software for any purpose' in primary:
+        return 'ISC'
+    if 'python software foundation license version 2' in primary:
+        return 'PSF-2.0'
     return None
 
 
@@ -107,7 +123,7 @@ def resolve_license(distribution: metadata.Distribution) -> LicenseEvidence:
         return LicenseEvidence(expression, 'Classifier', f'METADATA Classifier {label}')
 
     candidates = []
-    primary_names = {'license', 'license.txt', 'license.md', 'copying', 'copying.txt'}
+    primary_names = {'license', 'license.txt', 'license.md', 'license.rst', 'copying', 'copying.txt', 'copying.rst'}
     for entry in distribution.files or ():
         parts = entry.parts
         if (len(parts) not in (2, 3) or not parts[0].endswith('.dist-info')
